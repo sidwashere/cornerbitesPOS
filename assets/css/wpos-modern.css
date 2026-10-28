@@ -1,0 +1,132 @@
+:root {
+  --wpos-primary: #ff6b35;
+  --wpos-primary-dark: #e85a24;
+  --wpos-secondary: #1f2937;
+  --wpos-accent: #10b981;
+  --wpos-bg: #f5f7fb;
+  --wpos-card: #ffffff;
+  --wpos-text: #111827;
+  --wpos-muted: #6b7280;
+  --wpos-border: #e5e7eb;
+  --wpos-radius: 14px;
+  --wpos-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+}
+
+body {
+  background: var(--wpos-bg);
+  color: var(--wpos-text);
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.card,
+.widget-box,
+.panel,
+.modal-content,
+.wpos-card {
+  background: var(--wpos-card);
+  border: 1px solid var(--wpos-border);
+  border-radius: var(--wpos-radius);
+  box-shadow: var(--wpos-shadow);
+}
+
+.btn,
+button {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-primary,
+.btn-success {
+  background: var(--wpos-primary) !important;
+  border-color: var(--wpos-primary) !important;
+}
+
+.btn-primary:hover,
+.btn-success:hover {
+  background: var(--wpos-primary-dark) !important;
+  border-color: var(--wpos-primary-dark) !important;
+}
+
+.navbar,
+.navbar-default {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--wpos-border);
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.05);
+}
+
+.sidebar,
+#sidebar {
+  background: var(--wpos-secondary);
+  color: #e5e7eb;
+}
+
+.sidebar a,
+#sidebar a {
+  color: #e5e7eb;
+  border-radius: 8px;
+  margin: 2px 8px;
+}
+
+.sidebar a:hover,
+#sidebar a:hover,
+.sidebar li.active > a,
+#sidebar li.active > a {
+  background: rgba(255, 107, 53, 0.18);
+  color: #ffffff;
+}
+
+.table {
+  border-radius: var(--wpos-radius);
+  overflow: hidden;
+}
+
+.table thead th {
+  background: #111827;
+  color: #ffffff;
+  border: none;
+}
+
+.badge,
+.label {
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.wpos-status-queue {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.wpos-status-preparing {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.wpos-status-ready {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.wpos-status-delivery {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.wpos-kitchen-card {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .navbar-brand small {
+    font-size: 14px;
+  }
+
+  .table {
+    font-size: 12px;
+  }
+
+  .btn {
+    min-height: 40px;
+  }
+}
