@@ -303,6 +303,8 @@ function WPOSAdmin(){
         curuser.sections.reports>0?$("#menureports").show():$("#menureports").hide();
         curuser.sections.graph>0?$("#menugraph").show():$("#menugraph").hide();
         curuser.sections.sales>0?$("#menusales").show():$("#menusales").hide();
+    $("#menukitchen").show();
+    $("#menukitchenembed").show();
         curuser.sections.invoices>0?$("#menuinvoices").show():$("#menuinvoices").hide();
         curuser.sections.items>0?$("#menuitems").show():$("#menuitems").hide();
         curuser.sections.stock>0?$("#menustock").show():$("#menustock").hide();

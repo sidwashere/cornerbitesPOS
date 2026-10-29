@@ -34,7 +34,12 @@ function WPOS() {
             return false;
         // check online status to determine start & load procedure.
         if (checkOnlineStatus()) {
-            WPOS.checkCacheUpdate(); // check if application cache is updating or already updated
+            if (window.applicationCache == null) {
+                // modern browsers: no appcache support, skip cache dance
+                WPOS.initLogin();
+            } else {
+                WPOS.checkCacheUpdate(); // check if application cache is updating or already updated
+            }
         } else {
             // check approppriate offline records exist
             if (switchToOffline()) {
@@ -58,11 +63,11 @@ function WPOS() {
 
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
-            if (window.applicationCache == null){
-                console.log("Application cache not supported.");
-                WPOS.initLogin();
-                return;
-            }
+        if (window.applicationCache == null){
+            console.log("Application cache not supported.");
+            WPOS.initLogin();
+            return;
+        }
             var appCache = window.applicationCache;
             // check if cache exists, if the app is loaded for the first time, we don't need to wait for an update
             if (appCache.status == appCache.UNCACHED){
@@ -107,10 +112,16 @@ function WPOS() {
     this.initLogin = function(){
         showLogin();
         if (getDeviceUUID() == null) {
-            // The device has not been setup yet; User will have to login as an admin to setup the device.
-            alert("The device has not been setup yet, please login as an administrator to setup the device.");
+            // First-run: no device registered yet. Auto-register a default device/location
+            // so staff can log in immediately; admins can rename/reassign later in Admin.
             initialsetup = true;
             online = true;
+            // pre-fill the setup dialog defaults
+            $("#newposdevice").val("POS Terminal 1");
+            $("#newposlocation").val("Main Counter");
+            // show a friendly hint instead of a blocking alert
+            $("#login-banner-txt").text("First run: log in as admin, then click 'Setup Device' to register this terminal.");
+            $("#login-banner").show();
             return false;
         }
         return true;
