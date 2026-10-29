@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `config` (
 --
 
 INSERT INTO `config` (`id`, `name`, `data`) VALUES
-(1, 'general', '{"version":"1.4.0","dateformat":"d\\/m\\/y","currencyformat":"Ksh~2~.~,~0","accntype":"cash","bizname":"Wallace IT","biznumber":"9999 999 999","bizemail":"demo@wallacepos.com","bizaddress":"1 Some St","bizsuburb":"Someville","bizstate":"NSW","bizpostcode":"2000","bizcountry":"Australia","bizlogo":"\\/assets\\/images\\/receipt-logo.png","bizicon":"\\/icon.ico","gcontact":0,"gcontacttoken":"","altlabels":{"cash":"Cash","credit":"Credit","eftpos":"Eftpos","cheque":"Cheque","deposit":"Deposit","tendered":"Tendered","change":"Change","transaction-ref":"Transaction Ref","sale-time":"Sale Time","subtotal":"Subtotal","total":"Total","item":"Item","items":"Items","refund":"Refund","void-transaction":"Void Transaction"}}'),
+(1, 'general', '{"version":"1.4.0","dateformat":"d\\/m\\/y","currencyformat":"Ksh~2~.~,~0","accntype":"cash","bizname":"Cornerbites","biznumber":"9999 999 999","bizemail":"info@cornerbites.co.ke","bizaddress":"1 Some St","bizsuburb":"Someville","bizstate":"NSW","bizpostcode":"2000","bizcountry":"Kenya","bizlogo":"\\/assets\\/images\\/receipt-logo.png","bizicon":"\\/icon.ico","gcontact":0,"gcontacttoken":"","altlabels":{"cash":"Cash","credit":"Credit","eftpos":"Eftpos","cheque":"Cheque","deposit":"Deposit","tendered":"Tendered","change":"Change","transaction-ref":"Transaction Ref","sale-time":"Sale Time","subtotal":"Subtotal","total":"Total","item":"Item","items":"Items","refund":"Refund","void-transaction":"Void Transaction"}}'),
 (2, 'pos', '{"rectemplate":"receipt","recline2":"Your business in the cloud","recline3":"an application by WallaceIT","reclogo":"\\/assets\\/images\\/receipt-logo-mono.png","recprintlogo":true,"reccurrency":"","reccurrency_codepage":"0","recemaillogo":"\\/assets\\/images\\/receipt-logo.png","recfooter":"Thanks for shopping with us!","recqrcode":"https:\\/\\/wallaceit.com.au","salerange":"week","saledevice":"location","priceedit":"blank","cashrounding":"5", "negative_items":false}'),
 (3, 'invoice', '{"defaulttemplate":"invoice","defaultduedt":"+2 weeks","payinst":"Please contact us for payment instructions","emailmsg":"<div align=\\"left\\">Dear %name%,<br><\\/div><br>Please find the attached invoice.<br><br>Kind regards,<br>Administration"}'),
 (4, 'accounting', '{"xeroenabled":0,"xerotoken":"","xeroaccnmap":""}'),
@@ -179,10 +179,10 @@ CREATE TABLE IF NOT EXISTS `sales` (
   `userid` int(11) NOT NULL,
   `deviceid` int(11) NOT NULL,
   `locationid` int(11) NOT NULL,
-  `custid` int(11) NOT NULL,
+  `custid` int(11) NULL DEFAULT NULL,
   `discount` decimal(4,0) NOT NULL,
-  `rounding` decimal(10,2) NOT NULL DEFAULT 0,
-  `cost` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `rounding` decimal(10,2) NULL DEFAULT 0,
+  `cost` decimal(12,2) NULL DEFAULT 0.00,
   `total` decimal(10,2) NOT NULL,
   `balance` decimal(10,2) NOT NULL DEFAULT 0,
   `status` int(1) NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS `sale_items` (
   `tax` varchar(2048) NOT NULL,
   `tax_incl` int(1) NOT NULL DEFAULT 1,
   `tax_total` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `cost` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `cost` decimal(12,2) NULL DEFAULT 0.00,
   `unit_original` decimal(12,2) NOT NULL DEFAULT 0.00,
   `unit` decimal(12,2) NOT NULL,
   `price` decimal(12,2) NOT NULL,

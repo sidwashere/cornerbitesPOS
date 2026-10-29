@@ -5,3 +5,14 @@ AddType application/x-httpd-php .appcache
       ExpiresDefault "access plus 0 seconds"
   </Files>
 </IfModule>
+
+
+# --- Cornerbites POS production hardening ---
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+<FilesMatch "(\.dbconfig\.json|\.config\.json|composer\.(json|lock)|package(-lock)?\.json|Procfile|\.buildpacks|apt-packages|nginx\.conf\.sigil)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

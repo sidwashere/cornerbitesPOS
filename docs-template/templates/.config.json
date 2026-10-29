@@ -1,11 +1,14 @@
 {
-  "timezone":"Australia/Sydney",
-  "email_host":"127.0.0.1",
-  "email_port":"25",
-  "email_tls":true,
-  "email_user":"",
-  "email_pass":"",
-  "feedserver_port":8080,
-  "feedserver_proxy":true,
-  "feedserver_key":"5d40b50e172646b845640f50f296ac3fcbc191a7469260c46903c43cc6310ace"
+  "app_name": "Cornerbites POS",
+  "app_domain": "cornerbites.co.ke",
+  "app_url": "https://cornerbites.co.ke",
+  "timezone": "Africa/Nairobi",
+  "email_host": "mail.cornerbites.co.ke",
+  "email_port": "587",
+  "email_tls": true,
+  "email_user": "info@cornerbites.co.ke",
+  "email_pass": "",
+  "feedserver_port": 8080,
+  "feedserver_proxy": true,
+  "feedserver_key": "5d40b50e172646b845640f50f296ac3fcbc191a7469260c46903c43cc6310ace"
 }

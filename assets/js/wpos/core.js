@@ -1,15 +1,15 @@
 /**
  * core.js is part of Wallace Point of Sale system (WPOS)
  *
- * core.js is the main object that provides base functionality to the WallacePOS terminal.
+ * core.js is the main object that provides base functionality to the Cornerbites POS terminal.
  * It loads other needed modules and provides authentication, storage and data functions.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -498,7 +498,7 @@ function WPOS() {
     function initDataSuccess(loginloader){
         if (loginloader){
             setLoadingBar(100, "Massaging the data...");
-            $("title").text("WallacePOS - Your POS in the cloud");
+            $("title").text("Cornerbites POS - Your POS in the cloud");
             WPOS.initPlugins();
             populateDeviceInfo();
             setTimeout(hideLogin, 500);
@@ -1753,11 +1753,10 @@ $(function () {
     });
 
     // dev/demo quick login
-    if (document.location.host=="demo.wallacepos.com" || document.location.host=="alpha.wallacepos.com"){
+    if (false){ // demo/alpha host checks disabled for Cornerbites
         var login = $("#logindiv");
         login.append('<button class="btn btn-primary btn-sm" onclick="$(\'#username\').val(\'admin\');$(\'#password\').val(\'admin\'); WPOS.userLogin();">Demo Login</button>');
-        if (document.location.host=="alpha.wallacepos.com")
-            login.append('<button class="btn btn-primary btn-sm" onclick="$(\'#loginmodal\').hide();">Hide Login</button>');
+        // alpha host check disabled for Cornerbites
     }
 
     // window size

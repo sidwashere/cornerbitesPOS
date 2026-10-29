@@ -2,7 +2,6 @@
 <head>
     <title>Password Reset</title>
     <script src='/admin/assets/js/jquery-2.0.3.min.js'></script>
-    <link rel="stylesheet" href="https://admin.wallaceit.com.au/assets/ace.form.css"/>
     <script src="/myaccount/assets/accountplugin.js"></script>
     <script>
         $(function(){

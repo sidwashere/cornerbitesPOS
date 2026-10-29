@@ -28,7 +28,7 @@
             </div>
             <div class="widget-body" style="padding-top: 10px;">
                 <p>Please refer here for information on support & development:<br/>
-                <a href="https://wallacepos.com/get" target="_blank">https://wallacepos.com/get</a></p>
+                <a href="https://cornerbites.co.ke/get" target="_blank">https://cornerbites.co.ke/get</a></p>
             </div>
         </div>
     </div>

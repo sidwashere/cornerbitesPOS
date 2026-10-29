@@ -3,12 +3,12 @@
  *
  * transactions.js Provides functions loading and viewing transaction data/IU across all admin dash pages.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -743,10 +743,10 @@ function WPOSTransactions() {
                 stathtml = '<span class="label label-success arrowed">Closed</span>';
                 break;
             case 2:
-                stathtml = '<span class="label arrowed">Void</span>';
+                stathtml = '<span class="label label-warning arrowed">Refunded</span>';
                 break;
             case 3:
-                stathtml = '<span class="label label-warning arrowed">Refunded</span>';
+                stathtml = '<span class="label arrowed">Void</span>';
                 break;
             default:
                 stathtml = '<span class="label arrowed">Unknown</span>';

@@ -4,12 +4,12 @@
  * utilities.js Provides a global set of general functions.
  * These functions are used accross the WPOS system including the admin and client login areas.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -129,14 +129,13 @@ function WPOSUtil() {
     var ordercount = null;
     this.getSequencialOrderNumber = function(){
         if (!ordercount){
-            ordercount = localStorage.getItem("wpos_ordercount");
-            if (ordercount<0)
+            ordercount = parseInt(localStorage.getItem("wpos_ordercount"), 10);
+            if (isNaN(ordercount) || ordercount < 0)
                 ordercount = 0;
         }
-        // increment or reset count
-        if (ordercount<99){
-            ordercount++;
-        }
+        // increment or reset count (no artificial 99 cap)
+        ordercount++;
+        if (ordercount > 9999) ordercount = 1;
         localStorage.setItem("wpos_ordercount", ordercount);
         // pad order number, include deviceid
         var orderStr = WPOS.getConfigTable().deviceid.toString();

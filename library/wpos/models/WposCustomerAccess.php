@@ -79,7 +79,11 @@ class WposCustomerAccess {
         if (($mres = $mailer->sendPredefinedMessage($this->data->email, 'register_email', ['name'=>$this->data->name, 'link'=>$linkhtml]))!==true){
             $result['error'] = $mres;
         }
-        $mailer->sendPredefinedMessage("micwallace@gmx.com", 'register_notify', ['name'=>"Michael", 'custname'=>$this->data->name]);
+        // notify the business mailbox (configured in Settings > General > Business Email)
+        $genconf = WposAdminSettings::getSettingsObject("general");
+        if (!empty($genconf->bizemail)) {
+            $mailer->sendPredefinedMessage($genconf->bizemail, 'register_notify', ['name'=>$genconf->bizname, 'custname'=>$this->data->name]);
+        }
         return $result;
     }
 

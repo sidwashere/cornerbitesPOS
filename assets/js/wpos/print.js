@@ -4,12 +4,12 @@
  * print.js Controls rendering of print jobs and outputs them according to current settings.
  * Provides functionality for ESCP and HTML receipt output.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -378,7 +378,7 @@ function WPOSPrint(kitchenMode) {
         var printer = getPrintSetting('reports', 'printer');
         switch (getPrintSetting('reports', 'method')) {
             case "br":
-                browserPrintHtml($("#reportcontain").html(), 'WallacePOS Report', 600, 800);
+                browserPrintHtml($("#reportcontain").html(), 'Cornerbites POS Report', 600, 800);
                 break;
             case "qz":
                 alert("QZ-Print integration is no longer available, switch to the new webprint applet");
@@ -431,7 +431,7 @@ function WPOSPrint(kitchenMode) {
         var method = getPrintSetting(printer, 'method');
         switch (method) {
             case "br":
-                browserPrintHtml("<pre style='text-align: center; background-color: white;'>" + text + "</pre>", 'WallacePOS Receipt', 310, 600);
+                browserPrintHtml("<pre style='text-align: center; background-color: white;'>" + text + "</pre>", 'Cornerbites POS Receipt', 310, 600);
                 return true;
             case "qz":
                 alert("QZ-Print integration is no longer available, switch to the new webprint applet");
@@ -455,9 +455,9 @@ function WPOSPrint(kitchenMode) {
         switch (method) {
             case "br":
                 if (curset.printinv) {
-                    browserPrintHtml(getHtmlReceipt(record, false, true), 'WallacePOS Invoice', 600, 800);
+                    browserPrintHtml(getHtmlReceipt(record, false, true), 'Cornerbites POS Invoice', 600, 800);
                 } else {
-                    browserPrintHtml(getHtmlReceipt(record, false), 'WallacePOS Receipt', 310, 600);
+                    browserPrintHtml(getHtmlReceipt(record, false), 'Cornerbites POS Receipt', 310, 600);
                 }
                 return true;
             case "qz":

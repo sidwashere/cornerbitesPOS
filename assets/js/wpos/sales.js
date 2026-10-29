@@ -4,12 +4,12 @@
  * sales.js Provides functions for processing sales, including the storage and upload of offline sales,
  * It also includes WPOSItems object for adding items to the sale.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -147,70 +147,18 @@ function WPOSItems() {
     };
 
     this.generateQuickItemsGrid = function(){
-        var iboxitems = $("#iboxitems");
-        iboxitems.html('<div style="padding: 5px;"><button class="btn btn-sm btn-primary" onclick="WPOS.items.generateItemGridCategories();"><i class="icon-backward">&nbsp;</i>Categories</button></div>');
-        var items = WPOS.getItemsTable();
-        var quickIds = null;
-        try {
-            quickIds = JSON.parse(localStorage.getItem('wpos_quick_items') || 'null');
-        } catch (e) {
-            quickIds = null;
-        }
-        if (!quickIds || !quickIds.length) {
-            // default to first 8 items
-            quickIds = [];
-            var count = 0;
-            for (var k in items) {
-                if (count >= 8) break;
-                quickIds.push(items[k].id);
-                count++;
-            }
-            localStorage.setItem('wpos_quick_items', JSON.stringify(quickIds));
-        }
-        var quickSet = {};
-        for (var q = 0; q < quickIds.length; q++) {
-            quickSet[quickIds[q]] = true;
-        }
-        // build lookup
-        var byId = {};
-        for (var i in items) {
-            byId[items[i].id] = items[i];
-        }
-        for (var qid in quickSet) {
-            var item = byId[qid];
-            if (!item) continue;
-            var price = (item.price==""?"??.??":parseFloat(item.price).toFixed(2));
-            var imgPath = item.image ? item.image : '/docs/images/items/'+item.code+'.png';
-            iboxitems.append('<div class="iboxitem wpos-quick-item" style="position:relative;" onclick="WPOS.items.addItemFromId('+item.id+'); toggleItemBox(false);">' +
-                '<span class="wpos-quick-star" onclick="event.stopPropagation(); WPOS.sales.toggleQuickItem('+item.id+');" style="position:absolute;top:4px;right:6px;cursor:pointer;color:#f59e0b;">&#9733;</span>' +
-                '<img src="'+imgPath+'" onerror="this.style.display=\'none\';" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-bottom:4px;" />' +
-                '<h6>'+item.name+'</h6>'+
-                '<h5>'+WPOS.util.currencyFormat(price)+'</h5>'+
-            '</div>');
-        }
-        // allow adding more favorites from all items
-        iboxitems.append('<div class="iboxitem" onclick="WPOS.sales.showQuickItemPicker();"><h5>+ Add Favorite</h5><h6>Pick items</h6></div>');
+        // delegate to WPOSSales implementation
+        return WPOS.sales.generateQuickItemsGrid();
     };
 
     this.toggleQuickItem = function(itemId){
-        var quickIds = [];
-        try { quickIds = JSON.parse(localStorage.getItem('wpos_quick_items') || '[]'); } catch (e) { quickIds = []; }
-        var idx = quickIds.indexOf(itemId);
-        if (idx >= 0) {
-            quickIds.splice(idx, 1);
-        } else {
-            quickIds.push(itemId);
-        }
-        localStorage.setItem('wpos_quick_items', JSON.stringify(quickIds));
-        WPOS.sales.generateQuickItemsGrid();
+        return WPOS.sales.toggleQuickItem(itemId);
     };
 
     this.showQuickItemPicker = function(){
-        var items = WPOS.getItemsTable();
-        var names = [];
-        for (var i in items) {
-            names.push(items[i].id + ': ' + items[i].name);
-        }
+        return WPOS.sales.showQuickItemPicker();
+    };
+
         var input = prompt('Enter item IDs to add to Quick Items (comma separated):\\n' + names.join('\\n'));
         if (input) {
             var ids = input.split(',').map(function(x){ return parseInt(x.trim()); }).filter(function(x){ return !isNaN(x); });
@@ -532,7 +480,6 @@ function WPOSItems() {
             return false;
         }
     }
-}
 // Item UI stuff
 $(function () {
     $.ui.autocomplete.prototype._renderItem = function (ul, item) {
@@ -617,6 +564,10 @@ $(function () {
 });
 
 function WPOSSales() {
+    // Quick Items (favourites) live on WPOS.items; expose them here too for back-compat
+    this.generateQuickItemsGrid = function(){ return WPOS.items.generateQuickItemsGrid(); };
+    this.toggleQuickItem = function(itemId){ return WPOS.items.toggleQuickItem(itemId); };
+    this.showQuickItemPicker = function(){ return WPOS.items.showQuickItemPicker(); };
     var paymentMethods = ['eftpos', 'credit', 'cash', 'cheque', 'deposit'];
     var cursubtotal = 0.00;
     var curtaxtotal = 0.00;

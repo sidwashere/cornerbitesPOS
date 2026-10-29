@@ -211,8 +211,8 @@
                     var status;
                     switch (value){
                         case 1: status = "Complete"; break;
-                        case 2: status = "Void"; break;
-                        case 3: status = "Refunded"; break;
+                        case 2: status = "Refunded"; break;
+                        case 3: status = "Void"; break;
                     }
                     return status;
                 }},

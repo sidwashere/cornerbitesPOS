@@ -22,7 +22,7 @@
  * @author     Michael B Wallace <micwallace@gmx.com>
  * @since      File available since 14/12/13 07:46 PM
  */
-ini_set('display_errors', 'On');
+ini_set('display_errors', 'Off');
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
 $_SERVER['APP_ROOT'] = "/";
 require($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'library/wpos/AutoLoader.php'); //Autoload all the classes.
@@ -161,25 +161,21 @@ function writeDatabaseConfig(){
     return true;
 }
 
-function addAnalytics($type){
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => 'https://admin.wallaceit.com.au/customerapi/stats/add/'.$type.'?hostname='.$_SERVER['SERVER_NAME'].'&version='.(isset($_REQUEST['version']) ? $_REQUEST['version'] : DbUpdater::getLatestVersionName()),
-        CURLOPT_USERAGENT => 'WallacePOS_Installer'
-    ));
-    curl_exec($curl);
-    curl_close($curl);
-}
+// Analytics beacon to a third-party server removed for production (no outbound telemetry).
 
 session_start();
+// Production guard: the installer is disabled unless an empty file named
+// "install.enabled" exists in the document root. Remove it after installation.
+if (!file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'install.enabled')) {
+    http_response_code(403);
+    echo "Installer disabled. Create an empty 'install.enabled' file in the document root to enable it.";
+    exit;
+}
 // installer scripts
 // update
 if (isset($_REQUEST['upgrade'])){
     $dbUpdater = new DbUpdater();
     $result = $dbUpdater->upgrade((isset($_REQUEST['version']) ? $_REQUEST['version'] : null));
-    // register analytics
-    addAnalytics("upgrade");
     echo($result);
     exit;
 }
@@ -189,8 +185,6 @@ if (isset($_REQUEST['install'])){
         $_REQUEST['setupvars'] = $_SESSION['setupvars'];
     $dbUpdater = new DbUpdater();
     $result = $dbUpdater->install();
-    // register analytics
-    addAnalytics("install");
     echo($result);
     exit;
 }

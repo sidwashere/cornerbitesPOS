@@ -719,9 +719,9 @@ function routeApiCall($action, $data, $result) {
 
                 $uploaddir = 'docs';
 
-                $file_type = $_FILES['foreign_character_upload']['type']; //returns the mimetype
+                $file_type = $_FILES['file']['type']; //returns the mimetype
 
-                $allowed = array("image/jpeg", "image/gif", "image/png", "application/pdf");
+                $allowed = array("image/jpeg", "image/gif", "image/png", "application/pdf", "image/x-icon", "image/vnd.microsoft.icon");
                 if(!in_array($file_type, $allowed)) {
                     $result['error'] = 'Only jpg, gif, and pdf files are allowed.';
                     break;

@@ -223,7 +223,10 @@ class WposPosSale {
             return $result;
         }
         $this->jsonobj = $json;
-        $this->broadcastSale(0, true);
+        // broadcast to every device (including the kitchen terminals and the admin Fast Food Ops board).
+        // curdeviceid=0 is the admin dashboard sentinel; broadcastSale() with 0 would call
+        // getLocationDeviceIds(0) which fails, so force the "all" path by setting saledevice handling:
+        $this->broadcastSaleAll(true);
         $result['data'] = true;
         return $result;
     }
@@ -658,6 +661,25 @@ class WposPosSale {
 
         $socket->sendSaleUpdate($dobject, ($delete?$this->jsonobj->ref:$this->jsonobj));
 
+        return true;
+    }
+
+    /**
+     * Broadcast a sale update to ALL registered devices (used for status changes where the
+     * originating device is unknown / is the admin dashboard).
+     */
+    private function broadcastSaleAll($updatedsaleflag = false, $delete = false){
+        $socket = new WposSocketIO();
+        $devMdl = new DevicesModel();
+        $devices = $devMdl->getDeviceIds();
+        $dobject = new stdClass();
+        foreach ($devices as $value){
+            $dobject->$value = $value;
+        }
+        if ($updatedsaleflag==true){
+            $this->jsonobj->isupdate = 1;
+        }
+        $socket->sendSaleUpdate($dobject, ($delete?$this->jsonobj->ref:$this->jsonobj));
         return true;
     }
 

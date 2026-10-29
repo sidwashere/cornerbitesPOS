@@ -34,8 +34,14 @@ set_exception_handler("exceptionHandler");
 require($_SERVER['DOCUMENT_ROOT'] . $_SERVER['APP_ROOT'] . 'library/wpos/AutoLoader.php'); //Autoload all the classes.
 $auth = new Auth();
 // enable cross origin requests
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: *");
+// allow only the configured app origin (docs/.config.json app_url), never wildcard with credentials
+$_cfgPath = $_SERVER['DOCUMENT_ROOT'] . '/docs/.config.json';
+$_cfg = file_exists($_cfgPath) ? json_decode(file_get_contents($_cfgPath)) : null;
+if ($_cfg && !empty($_cfg->app_url)) {
+    header("Access-Control-Allow-Origin: " . $_cfg->app_url);
+    header("Vary: Origin");
+}
+header("Access-Control-Allow-Headers: Content-Type, anti-csrf-token");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: OPTIONS, POST, GET");
 

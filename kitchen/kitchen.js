@@ -1,15 +1,15 @@
 /**
  * core.js is part of Wallace Point of Sale system (WPOS)
  *
- * core.js is the main object that provides base functionality to the WallacePOS terminal.
+ * core.js is the main object that provides base functionality to the Cornerbites POS terminal.
  * It loads other needed modules and provides authentication, storage and data functions.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -377,7 +377,7 @@ function WPOSKitchen() {
     function initDataSuccess(loginloader){
         if (loginloader){
             setLoadingBar(100, "Initializing the awesome...");
-            $("title").text("WallacePOS - Your POS in the cloud");
+            $("title").text("Cornerbites POS - Your POS in the cloud");
             WPOS.initPlugins();
             setTimeout('$("#modaldiv").hide();', 500);
         }
@@ -1159,6 +1159,8 @@ function WPOSKitchenMod(){
         var sales = WPOS.getSalesTable();
         for (var ref in sales){
             var sale = sales[ref];
+            // only active orders (status 0) belong on the kitchen board
+            if (sale.status !== undefined && sale.status != 0) continue;
             if (sale.hasOwnProperty('orderdata'))
                 for (var o in sale.orderdata){
                     insertOrder(sale, o);
@@ -1178,6 +1180,11 @@ function WPOSKitchenMod(){
         elem.find('.orderbox_orderid').text(order.id);
         elem.find('.orderbox_saleref').text(saleobj.ref);
         elem.find('.orderbox_orderdt').text(WPOS.util.getDateFromTimestamp(order.processdt));
+        var _st = (saleobj.orderstatus || 'queued');
+        var _badge = elem.find('.orderbox_status');
+        _badge.text(_st);
+        _badge.removeClass('label-warning label-info label-success label-primary label-default')
+              .addClass('label-'+({'queued':'warning','preparing':'info','ready':'success','completed':'default'}[_st]||'default'));
         var itemtbl = elem.find('.orderbox_items');
         for (var i in order.items){
             var item = saleobj.items[order.items[i]]; // the items object links the item id with it's index in the data
@@ -1192,6 +1199,21 @@ function WPOSKitchenMod(){
         }
         ordercontain.prepend(elem);
     }
+    this.setStatus = function(element, status){
+        var box = $(element).closest('.orderbox');
+        var ref = box.find('.orderbox_saleref').text();
+        var result = WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref:ref, orderstatus:status}));
+        if (result !== false) {
+            var badge = box.find('.orderbox_status');
+            badge.text(status);
+            badge.removeClass('label-warning label-info label-success label-primary label-default')
+                 .addClass('label-'+({'queued':'warning','preparing':'info','ready':'success','completed':'default'}[status]||'default'));
+            if (status === 'completed') {
+                // move to history after a short delay so the kitchen sees the completion
+                setTimeout(function(){ WPOS.kitchen.moveOrderToHistory(ref, box.find('.orderbox_orderid').text()); }, 1500);
+            }
+        }
+    };
     this.removeOrder = function(ref, orderid){
         $("#order_box_" + ref + '-' + orderid).remove();
     };
@@ -1258,6 +1280,20 @@ function WPOSKitchenMod(){
         }
         // save new sales data
         WPOS.updateSalesTable(data);
+
+        // if an order status changed (broadcast from admin/another terminal), refresh the badge
+        if (typeof data === "object" && data.hasOwnProperty('orderstatus')) {
+            var box = $("#order_box_" + data.ref + '-' + (data.orderdata ? Object.keys(data.orderdata)[0] : ''));
+            // best-effort: refresh any matching card
+            $(".orderbox").each(function(){
+                if ($(this).find('.orderbox_saleref').text() === data.ref) {
+                    var b = $(this).find('.orderbox_status');
+                    b.text(data.orderstatus);
+                    b.removeClass('label-warning label-info label-success label-primary label-default')
+                     .addClass('label-'+({'queued':'warning','preparing':'info','ready':'success','completed':'default'}[data.orderstatus]||'default'));
+                }
+            });
+        }
 
         if (modcount)
             WPOS.sendAcknowledgement(deviceid, ref);
@@ -1388,7 +1424,7 @@ $(function () {
     });
 
     // dev/demo quick login
-    if (document.location.host=="demo.wallacepos.com" || document.location.host=="alpha.wallacepos.com"){
+    if (false){ // demo/alpha host checks disabled for Cornerbites
         $("#logindiv").append('<button class="btn btn-primary btn-sm" onclick="$(\'#username\').val(\'admin\');$(\'#password\').val(\'admin\'); WPOS.userLogin();">Demo Login</button>');
     }
 });

@@ -3,12 +3,12 @@
  *
  * wpos.js Provides core functions for the admin dashboard.
  *
- * WallacePOS is free software; you can redistribute it and/or
+ * Cornerbites POS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
  *
- * WallacePOS is distributed in the hope that it will be useful,
+ * Cornerbites POS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details:
@@ -44,7 +44,7 @@ $(function(){
     // init
     WPOS.isLogged();
     // dev/demo quick login
-    if (document.location.host=="demo.wallacepos.com" || document.location.host=="alpha.wallacepos.com"){
+    if (false){ // demo/alpha host checks disabled for Cornerbites
         $("#logindiv").append('<button class="btn btn-primary btn-sm" onclick="$(\'#loguser\').val(\'admin\');$(\'#logpass\').val(\'admin\'); WPOS.login();">Demo Login</button>');
     }
 });
@@ -104,7 +104,7 @@ function WPOSAdmin(){
     this.loadPageContent = function(query){
         var contenturl;
         if (sec=="faq"){
-            contenturl = "https://wallacepos.com/content/faq.php"
+            contenturl = "https://cornerbites.co.ke/content/faq.php"
         } else {
             contenturl = "content/"+sec+".php";
         }

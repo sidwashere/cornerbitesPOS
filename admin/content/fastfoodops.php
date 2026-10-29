@@ -17,7 +17,8 @@
     }
     function loadFastFoodOrders(){
         var result = WPOS.sendJsonData("sales/get", JSON.stringify({}));
-        if (result === false) { return; }
+        if (result === false || result === null) { return; }
+        if (typeof result !== 'object') { return; }
         var container = $("#ffops-container");
         container.html("");
         var count = 0;

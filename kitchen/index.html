@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html manifest="/wpos.appcache">
 <head>
-    <meta name="copyright" content="Copyright (c) 2014 WallaceIT <micwallace@gmx.com> <https://www.gnu.org/licenses/lgpl.html>" />
+    <meta name="copyright" content="Copyright (c) 2026 Cornerbites <info@cornerbites.co.ke>" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>WallacePOS - Kitchen (Alpha Version)</title>
+    <title>Cornerbites POS - Kitchen Display</title>
 
     <link rel="shortcut icon" href="/assets/images/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
@@ -89,7 +89,16 @@
 
             </tbody>
         </table>
-        <button class="btn btn-sm btn-primary" style="width: 50%; display: inline-block;" onclick="WPOS.kitchen.onPrintButtonClick(this);"><i class="icon icon-print"></i>&nbsp;Print</button><button class="btn btn-sm btn-success" style="width: 50%; display: inline-block;" onclick="WPOS.trans.showTransactionInfo($(this).parent().find('.orderbox_saleref').text());"><i class="icon icon-check"></i>&nbsp;Despatched</button>
+        <div style="padding:8px 10px; border-top:1px solid #444;">
+            <span class="orderbox_status label label-warning" style="margin-right:8px;">queued</span>
+            <button class="btn btn-xs btn-warning" onclick="WPOS.kitchen.setStatus(this,'preparing')">Preparing</button>
+            <button class="btn btn-xs btn-success" onclick="WPOS.kitchen.setStatus(this,'ready')">Ready</button>
+            <button class="btn btn-xs btn-primary" onclick="WPOS.kitchen.setStatus(this,'completed')">Complete</button>
+        </div>
+        <div style="padding:0 10px 8px;">
+            <button class="btn btn-xs btn-default" style="width:49%;" onclick="WPOS.kitchen.onPrintButtonClick(this);"><i class="icon icon-print"></i>&nbsp;Print</button>
+            <button class="btn btn-xs btn-default" style="width:49%;" onclick="WPOS.trans.showTransactionInfo($(this).parent().parent().find('.orderbox_saleref').text());"><i class="icon icon-info"></i>&nbsp;Details</button>
+        </div>
     </div>
 </div>
 <div id="tabs-2">
@@ -234,7 +243,7 @@
     <div id="loginbox" class="login-box widget-box visible no-border">
         <div class="widget-main">
             <h2 class="header blue lighter bigger">
-                <img style="height: 40px; margin-top: -5px;" src="/assets/images/apple-touch-icon-72x72.png">&nbsp;WallacePOS Kitchen<br/><small>Alpha Version</small>
+                <img style="height: 40px; margin-top: -5px;" src="/assets/images/apple-touch-icon-72x72.png">&nbsp;Cornerbites POS Kitchen
             </h2>
             <div class="space-6"></div>
             <div class="space-6"></div>
