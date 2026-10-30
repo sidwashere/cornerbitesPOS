@@ -79,24 +79,62 @@ class DbUpdater {
     }
 
     public function checkStorageTemplate(){
-        // set permissions
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            if (file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/logs')==false){
-                exec('ROBOCOPY "'.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs-template/." "'.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/" /E');
-            }
-        } else { //  Assume Linux
-            // copy docs template if it doesn't exist
-            if (file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/logs')==false){
-                exec('cp -arn "'.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs-template/." "'.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/"');
-            }
-            // copy static config file from template if it doesn't exist
-            if (file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/.config.json')==false)
-                copy($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs-template/templates/.config.json', $_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/.config.json');
-            exec('chmod -R 774 '.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/');
-            exec('chmod -R 774 '.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/.config.json');
+        $root = $_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'];
+        // copy docs template if it doesn't exist
+        if (file_exists($root.'docs/logs')==false){
+            $this->copyRecursive($root.'docs-template', $root.'docs');
+        }
+        // copy static config file from template if it doesn't exist
+        if (file_exists($root.'docs/.config.json')==false && file_exists($root.'docs-template/templates/.config.json')){
+            copy($root.'docs-template/templates/.config.json', $root.'docs/.config.json');
+        }
+        // ensure writable permissions (PHP chmod works even when exec is disabled)
+        $this->chmodRecursive($root.'docs', 0774);
+        @chmod($root.'docs/.config.json', 0774);
+        if (class_exists('WposSocketIO')) {
             $socket = new WposSocketIO();
             $socket->generateHashKey();
-	    }
+        }
+    }
+
+    /**
+     * Recursively copy a directory tree using PHP (no exec/shell required).
+     */
+    private function copyRecursive($src, $dst){
+        if (!is_dir($src)) return false;
+        if (!is_dir($dst)) @mkdir($dst, 0775, true);
+        $dir = opendir($src);
+        if ($dir === false) return false;
+        while (($file = readdir($dir)) !== false){
+            if ($file === '.' || $file === '..') continue;
+            $s = $src.'/'.$file;
+            $d = $dst.'/'.$file;
+            if (is_dir($s)){
+                $this->copyRecursive($s, $d);
+            } else {
+                @copy($s, $d);
+            }
+        }
+        closedir($dir);
+        return true;
+    }
+
+    /**
+     * Recursively set permissions using PHP chmod (no exec/shell required).
+     */
+    private function chmodRecursive($path, $mode){
+        if (is_dir($path)){
+            @chmod($path, $mode);
+            $dir = opendir($path);
+            if ($dir === false) return;
+            while (($file = readdir($dir)) !== false){
+                if ($file === '.' || $file === '..') continue;
+                $this->chmodRecursive($path.'/'.$file, $mode);
+            }
+            closedir($dir);
+        } else {
+            @chmod($path, $mode);
+        }
     }
 
     private static $versions = [

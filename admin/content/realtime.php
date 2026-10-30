@@ -627,4 +627,39 @@ $(function () {
     WPOS.util.hideLoader();
 })
 
+// --- Realtime fallback: HTTP polling when the node feed server is unavailable ---
+// The shared host cannot run node.js, so when the websocket fails we poll
+// api/poll.php for new/changed orders and feed them to the existing handler.
+var _feedPollTimer = null;
+var _feedPollSince = Math.floor(Date.now() / 1000) - 120;
+
+WPOS.onFeedDown = function () {
+    if (_feedPollTimer) return;
+    _feedPollTimer = setInterval(_feedPollOnce, 4000);
+    _feedPollOnce();
+    if (typeof setStatusBar === 'function') setStatusBar(5, "Live feed down - polling", "The realtime feed server is unavailable; using HTTP polling instead.", 0);
+};
+
+WPOS.onFeedUp = function () {
+    if (_feedPollTimer) { clearInterval(_feedPollTimer); _feedPollTimer = null; }
+};
+
+function _feedPollOnce() {
+    fetch("api/poll.php?since=" + _feedPollSince, { credentials: "same-origin", cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+            if (resp && resp.result && resp.result.sales) {
+                for (var i = 0; i < resp.result.sales.length; i++) {
+                    var s = resp.result.sales[i];
+                    // Only feed genuinely new sales to avoid double-counting today's takings.
+                    if (!sales.hasOwnProperty(s.ref)) {
+                        processIncomingSale(s);
+                    }
+                }
+            }
+            _feedPollSince = Math.floor(Date.now() / 1000);
+        })
+        .catch(function () { /* ignore transient poll errors */ });
+}
+
 </script>

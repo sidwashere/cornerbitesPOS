@@ -7,6 +7,15 @@
 $root = $_SERVER['DOCUMENT_ROOT'];
 $uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Webhook calls -> api/webhooks.php?platform=<platform>
+if (preg_match('#^/(api/)?webhooks/([^/]+)$#', $uri, $m)) {
+    $_SERVER['APP_ROOT'] = "/";
+    $_GET['platform'] = $m[2];
+    $_REQUEST['platform'] = $m[2];
+    require($root . '/api/webhooks.php');
+    return true;
+}
+
 // API calls -> api/wpos.php?a=<action>  (see api/.htaccess: a = full path after /api/)
 if (preg_match('#^/api/(.+)$#', $uri, $m)) {
     $_SERVER['APP_ROOT'] = "/";
@@ -32,6 +41,13 @@ if (preg_match('#^/(library|node_modules|docs)/(?!template)#', $uri)) {
 }
 if (preg_match('#(^|/)(\.dbconfig\.json|\.config\.json|composer\.(json|lock)|package(-lock)?\.json|Procfile|\.buildpacks|apt-packages|nginx\.conf\.sigil|install\.enabled)$#', $uri)) {
     http_response_code(403);
+    return true;
+}
+
+// Directory requests without a trailing slash: redirect (same as Apache/nginx),
+// otherwise relative asset paths inside index.html resolve incorrectly.
+if ($uri !== '/' && substr($uri, -1) !== '/' && is_dir($root . $uri)) {
+    header('Location: ' . $uri . '/', true, 301);
     return true;
 }
 

@@ -38,6 +38,10 @@ class WposSocketControl {
      * @return mixed API result array
      */
     public function startSocketServer($result=['error'=>'OK']){
+        // On shared hosts exec/popen (and node) are unavailable; skip silently so install can complete.
+        if (!function_exists('popen') && !function_exists('exec')) {
+            return $result;
+        }
 		if ($this->isWindows) {
 			pclose(popen('START "WPOS" node '.$_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'api/server.js','r'));
 		} else {
@@ -61,8 +65,10 @@ class WposSocketControl {
      */
     public function stopSocketServer($result=['error'=>'OK']){
 		if ($this->isWindows) {
+		    if (!function_exists('exec')) { return $result; }
 			exec('TASKKILL /F /FI "WindowTitle eq WPOS"', $output);
 		} else {
+		    if (!function_exists('exec')) { return $result; }
 			exec('kill `ps aux | grep "[n]odejs '.$_SERVER['DOCUMENT_ROOT'].'" | awk \'{print $2}\'`', $output);
 		}
         if ($this->getServerStat()===true){
@@ -114,8 +120,11 @@ class WposSocketControl {
 			}
 			return false;
 		} else {
+		    if (!function_exists('exec')) {
+		        return false;
+		    }
 			exec('ps aux | grep -E "[n]ode(js)? '.$_SERVER['DOCUMENT_ROOT'].'"', $output);
-			if (strpos($output[0], $_SERVER['DOCUMENT_ROOT'])!==false){
+			if (isset($output[0]) && strpos($output[0], $_SERVER['DOCUMENT_ROOT'])!==false){
 				return true;
 			} else {
 				return false;

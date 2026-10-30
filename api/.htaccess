@@ -2,5 +2,9 @@ Options +FollowSymlinks
 Options -MultiViews
 RewriteEngine on
 RewriteBase /api/
+# Allow direct access to webhooks.php
+RewriteCond %{REQUEST_URI} webhooks\.php
+RewriteRule ^ - [L]
+# Route everything else to wpos.php
 RewriteCond %{REQUEST_URI} !wpos.php
 RewriteRule ^(.*)$ wpos.php?a=$1 [L,NS,QSA]

@@ -159,19 +159,6 @@ function WPOSItems() {
         return WPOS.sales.showQuickItemPicker();
     };
 
-        var input = prompt('Enter item IDs to add to Quick Items (comma separated):\\n' + names.join('\\n'));
-        if (input) {
-            var ids = input.split(',').map(function(x){ return parseInt(x.trim()); }).filter(function(x){ return !isNaN(x); });
-            var quickIds = [];
-            try { quickIds = JSON.parse(localStorage.getItem('wpos_quick_items') || '[]'); } catch (e) { quickIds = []; }
-            for (var i = 0; i < ids.length; i++) {
-                if (quickIds.indexOf(ids[i]) < 0) quickIds.push(ids[i]);
-            }
-            localStorage.setItem('wpos_quick_items', JSON.stringify(quickIds));
-            WPOS.sales.generateQuickItemsGrid();
-        }
-    };
-
     /**
      * Adds a html row into the sales table, if sitem id is greater than 0, all fields that are filled are disabled to prevent modification.
      * @param {Number} qty
@@ -1808,4 +1795,5 @@ function WPOSSales() {
         }
         return true;
     }
+}
 }

@@ -102,7 +102,7 @@ class WposPosSale {
      */
     private function extractSaleData()
     {
-        $this->ref = $this->jsonobj->ref;
+        $this->ref = isset($this->jsonobj->ref) ? $this->jsonobj->ref : null;
         $this->custdata = (isset($this->jsonobj->custdata) ? $this->jsonobj->custdata : null);
         // check for void or refund data
         $this->refunddata = (isset($this->jsonobj->refunddata) ? $this->jsonobj->refunddata : null);
@@ -175,6 +175,158 @@ class WposPosSale {
     }
 
     /**
+     * Ingest an order from an external source (website, Glovo, Uber Eats, etc.)
+     * Creates a new order record with source tracking and broadcasts to all devices.
+     * @param $result
+     * @return mixed
+     */
+    public function ingestOrder($result){
+        // Validate required fields
+        if (!isset($this->jsonobj->source) || empty($this->jsonobj->source)) {
+            $result["error"] = "Source is required";
+            $result["errorCode"] = "validation";
+            return $result;
+        }
+        if (!isset($this->jsonobj->items) || (count((array)$this->jsonobj->items) === 0)) {
+            $result["error"] = "At least one item is required";
+            $result["errorCode"] = "validation";
+            return $result;
+        }
+
+        $source = $this->jsonobj->source;
+        $externalRef = isset($this->jsonobj->external_ref) ? $this->jsonobj->external_ref : null;
+        $orderType = isset($this->jsonobj->order_type) ? $this->jsonobj->order_type : 'pickup';
+        $deliveryAddress = isset($this->jsonobj->delivery_address) ? $this->jsonobj->delivery_address : null;
+        $platformMetadata = isset($this->jsonobj->platform_metadata) ? json_encode($this->jsonobj->platform_metadata) : null;
+        $priority = isset($this->jsonobj->priority) ? (int)$this->jsonobj->priority : 0;
+
+        // Idempotency check: if external_ref already exists, return existing order
+        if ($externalRef !== null) {
+            $existing = $this->salesMdl->getByExternalRef($externalRef);
+            if ($existing === false) {
+                $result["error"] = "Could not check for existing order: ".$this->salesMdl->errorInfo;
+                return $result;
+            }
+            if (sizeof($existing) > 0) {
+                $result['data'] = json_decode($existing[0]['data']);
+                $result['data']->duplicate = true;
+                return $result;
+            }
+        }
+
+        // Generate a unique ref if not provided
+        if (!isset($this->jsonobj->ref) || empty($this->jsonobj->ref)) {
+            $this->jsonobj->ref = 'EXT-' . strtoupper(substr($source, 0, 3)) . '-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 6));
+        }
+        $this->ref = $this->jsonobj->ref;
+
+        // Set order metadata
+        $this->jsonobj->orderstatus = 'queued';
+        $this->jsonobj->source = $source;
+        $this->jsonobj->order_type = $orderType;
+        $this->jsonobj->received_at = date("Y-m-d H:i:s");
+        $this->jsonobj->dt = date("Y-m-d H:i:s");
+        // Defaults for POS-specific fields (external orders have no POS user/device)
+        if (!isset($this->jsonobj->userid)) $this->jsonobj->userid = 0;
+        if (!isset($this->jsonobj->devid)) $this->jsonobj->devid = 0;
+        if (!isset($this->jsonobj->locid)) $this->jsonobj->locid = 1;
+        if (!isset($this->jsonobj->custid)) $this->jsonobj->custid = null;
+        if (!isset($this->jsonobj->discount)) $this->jsonobj->discount = 0;
+        if (!isset($this->jsonobj->rounding)) $this->jsonobj->rounding = 0;
+        if (!isset($this->jsonobj->cost)) $this->jsonobj->cost = 0;
+        if (!isset($this->jsonobj->processdt)) $this->jsonobj->processdt = time();
+
+        // Calculate total from items
+        $total = 0;
+        foreach ($this->jsonobj->items as $item) {
+            $qty = isset($item->qty) ? (int)$item->qty : 1;
+            $price = isset($item->price) ? (float)$item->price : 0;
+            $total += $qty * $price;
+        }
+        $this->jsonobj->total = $total;
+
+        // Create the order record (status 0 = incomplete order)
+        if (($gid = $this->insertTransactionRecord(0, 0, $source, $externalRef, $orderType, $deliveryAddress, $platformMetadata, $this->jsonobj->received_at, null, $priority)) === false) {
+            $result["error"] = "Could not create order: ".$this->salesMdl->errorInfo;
+            return $result;
+        }
+        $this->id = $gid;
+        $this->jsonobj->id = $gid;
+
+        if ($this->salesMdl->edit($gid, null, json_encode($this->jsonobj)) === false) {
+            $this->removeTransactionRecords();
+            $result["error"] = "Could not update order: ".$this->salesMdl->errorInfo;
+            return $result;
+        }
+
+        // Log initial status
+        try {
+            $historyMdl = new OrderStatusHistoryModel();
+            $historyMdl->log($gid, null, 'queued', 'system', "Order ingested from $source");
+        } catch (Exception $e) {
+            error_log("Failed to log order status history: " . $e->getMessage());
+        }
+
+        // Log data
+        Logger::write("External order ingested from $source with ref: ".$this->ref." (ID:".$this->id.")", "ORDER", json_encode($this->jsonobj));
+
+        $result['data'] = $this->jsonobj;
+
+        // Broadcast to all devices
+        $this->broadcastSaleAll(true);
+
+        return $result;
+    }
+
+    /**
+     * Get orders with optional filtering by source, status, order_type, etc.
+     * @param $result
+     * @param $data
+     * @return mixed
+     */
+    public function getOrders($result, $data){
+        $source = isset($data->source) ? $data->source : null;
+        $orderStatus = isset($data->orderstatus) ? $data->orderstatus : null;
+        $orderType = isset($data->order_type) ? $data->order_type : null;
+        $limit = isset($data->limit) ? (int)$data->limit : 100;
+        $offset = isset($data->offset) ? (int)$data->offset : 0;
+
+        $sql = 'SELECT * FROM sales WHERE status = 0'; // orders only (status 0)
+        $placeholders = [];
+
+        if ($source !== null) {
+            $sql .= ' AND source = :source';
+            $placeholders[':source'] = $source;
+        }
+        if ($orderType !== null) {
+            $sql .= ' AND order_type = :order_type';
+            $placeholders[':order_type'] = $orderType;
+        }
+
+        $sql .= ' ORDER BY dt DESC LIMIT ' . (int)$limit . ' OFFSET ' . (int)$offset;
+
+        $orders = $this->salesMdl->select($sql, $placeholders);
+
+        if ($orders === false) {
+            $result["error"] = "Could not fetch orders: ".$this->salesMdl->errorInfo;
+            return $result;
+        }
+
+        // Filter by orderstatus in PHP (since it's stored in JSON data column)
+        $filtered = [];
+        foreach ($orders as $order) {
+            $json = json_decode($order['data']);
+            if ($orderStatus !== null && isset($json->orderstatus) && $json->orderstatus !== $orderStatus) {
+                continue;
+            }
+            $filtered[] = $json;
+        }
+
+        $result['data'] = $filtered;
+        return $result;
+    }
+
+    /**
      * Remove an order using the specified reference
      * @param $result
      * @return mixed
@@ -202,6 +354,18 @@ class WposPosSale {
         return $result;
     }
 
+    /**
+     * Valid order status transitions.
+     * Key = current status, Value = array of allowed next statuses.
+     */
+    private static $validTransitions = [
+        'queued'     => ['preparing', 'cancelled'],
+        'preparing'  => ['ready', 'cancelled'],
+        'ready'      => ['completed', 'cancelled'],
+        'completed'  => [],
+        'cancelled'  => [],
+    ];
+
     public function updateOrderStatus($result){
         if (($sale=$this->salesMdl->getByRef($this->ref))===false){
             $result["error"] = "Could not lookup order: ".$this->salesMdl->errorInfo;
@@ -217,11 +381,50 @@ class WposPosSale {
             $result["error"] = "Could not decode order data";
             return $result;
         }
-        $json->orderstatus = (isset($this->jsonobj->orderstatus) ? $this->jsonobj->orderstatus : 'queued');
+        $fromStatus = isset($json->orderstatus) ? $json->orderstatus : 'queued';
+        $toStatus = (isset($this->jsonobj->orderstatus) ? $this->jsonobj->orderstatus : 'queued');
+
+        // Validate transition
+        if (!isset(self::$validTransitions[$fromStatus]) || !in_array($toStatus, self::$validTransitions[$fromStatus])) {
+            $result["error"] = "Invalid status transition from '$fromStatus' to '$toStatus'";
+            $result["errorCode"] = "invalid_transition";
+            return $result;
+        }
+
+        $json->orderstatus = $toStatus;
+
+        // Set timestamp for the new status
+        $now = date("Y-m-d H:i:s");
+        switch ($toStatus) {
+            case 'preparing':
+                $json->preparing_at = $now;
+                break;
+            case 'ready':
+                $json->ready_at = $now;
+                break;
+            case 'completed':
+                $json->completed_at = $now;
+                break;
+            case 'cancelled':
+                $json->cancelled_at = $now;
+                break;
+        }
+
         if ($this->salesMdl->edit($sale['id'], null, json_encode($json))===false){
             $result["error"] = "Could not update order status: ".$this->salesMdl->errorInfo;
             return $result;
         }
+
+        // Log status change to history
+        try {
+            $historyMdl = new OrderStatusHistoryModel();
+            $changedBy = isset($this->jsonobj->changed_by) ? $this->jsonobj->changed_by : 'system';
+            $historyMdl->log($sale['id'], $fromStatus, $toStatus, $changedBy, isset($this->jsonobj->notes) ? $this->jsonobj->notes : null);
+        } catch (Exception $e) {
+            // Non-fatal: log but don't fail the request
+            error_log("Failed to log order status history: " . $e->getMessage());
+        }
+
         $this->jsonobj = $json;
         // broadcast to every device (including the kitchen terminals and the admin Fast Food Ops board).
         // curdeviceid=0 is the admin dashboard sentinel; broadcastSale() with 0 would call
@@ -446,10 +649,10 @@ class WposPosSale {
      * @param $orderid
      * @return bool|string
      */
-    private function insertTransactionRecord($status, $orderid)
+    private function insertTransactionRecord($status, $orderid, $source='pos', $externalRef=null, $orderType='dinein', $deliveryAddress=null, $platformMetadata=null, $receivedAt=null, $estimatedReadyTime=null, $priority=0)
     {
         if ($orderid==0){
-            if (($gid = $this->salesMdl->create($this->ref, json_encode($this->jsonobj), $status, $this->jsonobj->userid, $this->jsonobj->devid, $this->jsonobj->locid, $this->jsonobj->custid, $this->jsonobj->discount, $this->jsonobj->rounding, $this->jsonobj->cost, $this->jsonobj->total, $this->jsonobj->processdt))) {
+            if (($gid = $this->salesMdl->create($this->ref, json_encode($this->jsonobj), $status, $this->jsonobj->userid, $this->jsonobj->devid, $this->jsonobj->locid, $this->jsonobj->custid, $this->jsonobj->discount, $this->jsonobj->rounding, $this->jsonobj->cost, $this->jsonobj->total, $this->jsonobj->processdt, $source, $externalRef, $orderType, $deliveryAddress, $platformMetadata, $receivedAt, $estimatedReadyTime, $priority))) {
                 return $gid;
             } else {
                 return false;

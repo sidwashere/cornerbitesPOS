@@ -210,6 +210,16 @@ function routeApiCall($action, $data, $result) {
             $result = $sale->updateOrderStatus($result);
             break;
 
+        case "orders/ingest":
+            $sale = new WposPosSale($data);
+            $result = $sale->ingestOrder($result);
+            break;
+
+        case "orders/get":
+            $sale = new WposPosSale(null);
+            $result = $sale->getOrders($result, $data);
+            break;
+
         case "sales/add":
             $sale = new WposPosSale($data);
             $result = $sale->insertTransaction($result);

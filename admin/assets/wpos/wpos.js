@@ -182,6 +182,10 @@ function WPOSAdmin(){
         clearInterval(sessionTimer);
         sessionTimer = null;
     }
+    function showLoginError(message){
+        $("#login-banner-txt").text(message);
+        $("#login-banner").removeClass('alert-success').addClass('alert-danger').show();
+    }
     function showLoginDiv(message){
         if (message){
             $("#login-banner-txt").text(message);
@@ -189,6 +193,10 @@ function WPOSAdmin(){
         } else {
             $("#login-banner").hide();
         }
+        // swap the loading panel for the login form (was missing -> stuck on "Initializing")
+        $('#loadingdiv').hide();
+        $('#logindiv').show();
+        $('#loginbutton').removeAttr('disabled');
         $('#loginmodal').show();
     }
     function hideLoginDiv(){
@@ -204,15 +212,20 @@ function WPOSAdmin(){
     function performLogin(){
         WPOS.util.showLoader();
         var loginbtn = $('#loginbutton');
-        // disable login button
-        $(loginbtn).attr('disabled', 'disabled');
-        $(loginbtn).val('Proccessing');
-        // auth is currently disabled on the php side for ease of testing. This function, however will still run and is currently used to test session handling.
         // get form values
         var userfield = $("#loguser");
         var passfield = $("#logpass");
         var username = userfield.val();
         var password = passfield.val();
+        // validate input before hitting the server
+        if (!username || !password) {
+            WPOS.util.hideLoader();
+            showLoginError("Please enter both a username and a password.");
+            return;
+        }
+        // disable login button
+        $(loginbtn).attr('disabled', 'disabled');
+        $(loginbtn).val('Proccessing');
         // hash password
         password = WPOS.util.SHA256(password);
         // authenticate
@@ -230,8 +243,10 @@ function WPOSAdmin(){
 
                     WPOS.initAdmin();
                 } else {
-                    alert("You do not have permission to enter this area");
+                    showLoginError("You do not have permission to enter this area.");
                 }
+            } else {
+                showLoginError("Incorrect username or password.");
             }
             passfield.val('');
             WPOS.util.hideLoader();
@@ -569,6 +584,7 @@ function WPOSAdmin(){
             socket.on('connect_error', socketError);
             socket.on('reconnect_error', socketError);
             socket.on('error', socketError);
+            socket.on('connect', function(){ socketon = true; if (typeof WPOS.onFeedUp === 'function') WPOS.onFeedUp(); });
 
             socket.on('updates', function (data) {
                 switch (data.a) {
@@ -621,11 +637,11 @@ function WPOSAdmin(){
     };
 
     function socketError(){
-        if (socketon) // A fix for mod_proxy_wstunnel causing error on disconnect
-            alert("Update feed could not be connected, \nyou will not receive realtime updates!");
         socketon = false;
         authretry = false;
-        //socket = null;
+        // Do not show alerts for feed connectivity issues
+        // Fall back to HTTP polling when the node feed server is unavailable (shared hosting).
+        if (typeof WPOS.onFeedDown === 'function') WPOS.onFeedDown();
     }
 
     this.stopSocket = function(){

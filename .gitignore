@@ -4,3 +4,7 @@ nbproject
 library/wpos/.dbconfig.json
 docs/
 
+# Deployment build artifacts and secrets (never commit)
+dist/
+deploy/.ftpcreds
+

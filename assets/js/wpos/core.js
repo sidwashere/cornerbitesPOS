@@ -48,6 +48,27 @@ function WPOS() {
         }
     };
 
+    // Failproof: never leave the terminal stuck on the "Initializing" screen.
+    // If the login form has not been shown within 8 seconds (or initApp threw),
+    // force it open so staff can always log in.
+    this.forceShowLogin = function (reason) {
+        try {
+            if ($("#logindiv").is(":visible")) return; // already showing
+            $("#loadingdiv").hide();
+            $("#logindiv").show();
+            $('#loginbutton').removeAttr('disabled');
+            setLoadingBar(0, "");
+            $('#loginmodal').show();
+            $('body').css('overflow', 'hidden');
+            if (reason) {
+                $("#login-banner-txt").text(reason);
+                $("#login-banner").show();
+            }
+        } catch (e) {
+            console.error("forceShowLogin failed", e);
+        }
+    };
+
     function checkAppCompatibility(){
         // Check local storage: required
         if (!('localStorage' in window && window.localStorage !== null)) {
@@ -172,6 +193,10 @@ function WPOS() {
     }
 
     // AUTH
+    function showLoginError(message){
+        $("#login-banner-txt").text(message);
+        $("#login-banner").removeClass('alert-success').addClass('alert-danger').show();
+    }
     function showLogin(message, lock) {
         $("#loadingdiv").hide();
         $("#logindiv").show();
@@ -212,14 +237,20 @@ function WPOS() {
     this.userLogin = function () {
         WPOS.util.showLoader();
         var loginbtn = $('#loginbutton');
-        // disable login button
-        $(loginbtn).prop('disabled', true);
-        $(loginbtn).val('Proccessing');
         // get form values
         var userfield = $("#username");
         var passfield = $("#password");
         var username = userfield.val();
         var password = passfield.val();
+        // validate input before hitting the server
+        if (!username || !password) {
+            WPOS.util.hideLoader();
+            showLoginError("Please enter both a username and a password.");
+            return;
+        }
+        // disable login button
+        $(loginbtn).prop('disabled', true);
+        $(loginbtn).val('Proccessing');
         // hash password
         password = WPOS.util.SHA256(password);
         // authenticate
@@ -231,12 +262,18 @@ function WPOS() {
                 $("#loadingdiv").show();
                 // initiate data download/check
                 if (initialsetup) {
-                    if (isUserAdmin()) {
-                        initSetup();
-                    } else {
-                        alert("You must login as an administrator for first time setup");
-                        showLogin();
-                    }
+                    // First run on this terminal: auto-register the device so ANY user
+                    // (including staff) can start working immediately. An admin can rename
+                    // or reassign it later in Admin > Settings > Devices & Locations.
+                    autoRegisterDevice(function(ok){
+                        if (ok) {
+                            initialsetup = false;
+                            initData(true);
+                        } else {
+                            showLoginError("Could not register this terminal. Please try again or contact your administrator.");
+                            showLogin();
+                        }
+                    });
                 } else {
                     if (session_locked){
                         stopSocket();
@@ -247,6 +284,8 @@ function WPOS() {
                         initData(true);
                     }
                 }
+            } else {
+                showLoginError("Incorrect username or password.");
             }
             passfield.val('');
             $(loginbtn).val('Login');
@@ -1135,6 +1174,15 @@ function WPOS() {
     }
 
     /**
+     * Auto-register this terminal with a sensible default name so staff can log in
+     * without waiting for an admin to run the setup dialog.
+     */
+    function autoRegisterDevice(callback) {
+        var devname = "POS Terminal " + (new Date().getTime() % 1000);
+        deviceSetup("", devname, "", "Main Counter", callback);
+    }
+
+    /**
      * Returns the current devices UUID
      * @returns {String, Null} String if set, null if not
      */
@@ -1456,8 +1504,6 @@ function WPOS() {
     }
 
     function socketError(){
-        if (WPOS.isOnline())
-            setStatusBar(5, "Update Feed Offline", "The POS is running in online mode.\nThe feed server is disconnected and this terminal will not receive realtime updates.", 0);
         socketon = false;
         authretry = false;
     }
@@ -1530,8 +1576,15 @@ var toggleItemBox;
 $(function () {
     // initiate core object
     WPOS = new WPOS();
-    // initiate startup routine
-    WPOS.initApp();
+    // failproof: always reveal the login form, even if startup stalls or throws
+    setTimeout(function(){ WPOS.forceShowLogin(); }, 8000);
+    try {
+        // initiate startup routine
+        WPOS.initApp();
+    } catch (ex) {
+        console.error("POS init failed", ex);
+        WPOS.forceShowLogin("Startup error - please log in.");
+    }
 
     $("#wrapper").tabs();
 

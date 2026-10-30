@@ -11,20 +11,20 @@
     <link rel="apple-touch-icon" sizes="72x72" href="/assets/images/apple-touch-icon-72x72.png">
     <link rel="apple-touch-icon" sizes="114x114" href="/assets/images/apple-touch-icon-114x114.png">
     <!-- UI FRAMEWORK STYLES -->
-    <link type="text/css" rel="stylesheet" href="/assets/css/wpos.css"/>
-    <link rel="stylesheet" href="/assets/css/jquery-ui-1.10.3.full.min.css"/>
-    <link href="/assets/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="/assets/css/font-awesome.min.css"/>
+    <link type="text/css" rel="stylesheet" href="/assets/css/wpos.css?v=20261030"/>
+    <link rel="stylesheet" href="/assets/css/jquery-ui-1.10.3.full.min.css?v=20261030"/>
+    <link href="/assets/css/bootstrap.min.css?v=20261030" rel="stylesheet"/>
+    <link rel="stylesheet" href="/assets/css/font-awesome.min.css?v=20261030"/>
     <!--[if IE 7]>
-    <link rel="stylesheet" href="/assets/css/font-awesome-ie7.min.css"/>
+    <link rel="stylesheet" href="/assets/css/font-awesome-ie7.min.css?v=20261030"/>
     <![endif]-->
     <!-- fonts -->
-    <link rel="stylesheet" href="/assets/css/ace-fonts.css"/>
+    <link rel="stylesheet" href="/assets/css/ace-fonts.css?v=20261030"/>
     <!-- ace styles -->
-    <link rel="stylesheet" href="/assets/css/ace.min.css"/>
-    <link rel="stylesheet" href="/assets/css/ace-rtl.min.css"/>
+    <link rel="stylesheet" href="/assets/css/ace.min.css?v=20261030"/>
+    <link rel="stylesheet" href="/assets/css/ace-rtl.min.css?v=20261030"/>
     <!--[if lte IE 8]>
-    <link rel="stylesheet" href="/assets/css/ace-ie.min.css"/>
+    <link rel="stylesheet" href="/assets/css/ace-ie.min.css?v=20261030"/>
     <![endif]-->
 
     <!-- UI FRAMEWORK SCRIPTS -->
@@ -41,23 +41,23 @@
     <script type="text/javascript">
         if ("ontouchend" in document) document.write("<script src='/assets/js/jquery.mobile.custom.min.js'>" + "<" + "/script>");
     </script>
-    <script src="/assets/js/bootstrap.min.js"></script>
-    <script src="/assets/js/typeahead-bs2.min.js"></script>
-    <script src="/assets/js/jquery-ui-1.10.3.full.min.js"></script>
+    <script src="/assets/js/bootstrap.min.js?v=20261030"></script>
+    <script src="/assets/js/typeahead-bs2.min.js?v=20261030"></script>
+    <script src="/assets/js/jquery-ui-1.10.3.full.min.js?v=20261030"></script>
 
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="kitchen.js"></script>
-    <script type="text/javascript" src="/assets/js/wpos/transactions.js"></script>
-    <script type="text/javascript" src="/assets/js/wpos/print.js"></script>
-    <script type="text/javascript" src="/assets/js/wpos/utilities.js"></script>
+    <script type="text/javascript" src="kitchen.js?v=20261030"></script>
+    <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261030"></script>
+    <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261030"></script>
+    <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261030"></script>
     <!-- Websocket library -->
-    <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js"></script>
+    <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>
     <!-- web-print -->
-    <script type="text/javascript" src="/assets/libs/webprint.js"></script>
+    <script type="text/javascript" src="/assets/libs/webprint.js?v=20261030"></script>
     <!-- POS Keypad -->
-    <link type="text/css" href="/assets/libs/jquery-keypad/jquery.keypad.css" rel="stylesheet">
-    <script type="text/javascript" src="/assets/libs/jquery-keypad/jquery.plugin.min.js"></script>
-    <script type="text/javascript" src="/assets/libs/jquery-keypad/jquery.keypad.min.js"></script>
+    <link type="text/css" href="/assets/libs/jquery-keypad/jquery.keypad.css?v=20261030" rel="stylesheet">
+    <script type="text/javascript" src="/assets/libs/jquery-keypad/jquery.plugin.min.js?v=20261030"></script>
+    <script type="text/javascript" src="/assets/libs/jquery-keypad/jquery.keypad.min.js?v=20261030"></script>
 </head>
 <body style="background-color: #000000; overflow: hidden;">
 <div id="wrapper">
@@ -77,6 +77,10 @@
         <div style="padding:10px;">
             <label class="fixedlabel" style="margin-right: 5px;">Order DT:</label><span class="orderbox_orderdt"></span><br/>
             <label class="fixedlabel" style="margin-right: 5px;">Sale Ref:  </label><span class="orderbox_saleref"></span><br/>
+            <label class="fixedlabel" style="margin-right: 5px;">Customer:</label><span class="orderbox_customer"></span><br/>
+            <label class="fixedlabel" style="margin-right: 5px;">Address:</label><span class="orderbox_address"></span><br/>
+            <label class="fixedlabel" style="margin-right: 5px;">Channel:</label><span class="orderbox_channel"></span><br/>
+            <label class="fixedlabel" style="margin-right: 5px;">Notes:</label><span class="orderbox_notes"></span><br/>
         </div>
         <table class="table table-bordered" style="margin-bottom:0;">
             <thead>
@@ -247,7 +251,7 @@
             </h2>
             <div class="space-6"></div>
             <div class="space-6"></div>
-            <div id="logindiv" style="display: none; height: 240px;">
+            <div id="logindiv" style="height: 240px;">
                 <label class="block clearfix">
                     <span class="block input-icon input-icon-right">
                         <input class="form-control" id="username" name="username" type="text" placeholder="Username"/>
@@ -262,12 +266,12 @@
                 </label>
                 <div class="space-6"></div>
                 <div class="space-6"></div>
-                <button id="loginbutton" onClick="WPOS.userLogin();" class="btn btn-primary width-35" disabled>
+                <button id="loginbutton" onClick="WPOS.userLogin();" class="btn btn-primary width-35">
                     <i class="icon-key"></i>Login
                 </button>
                 <div class="space-6"></div>
             </div>
-            <div id="loadingdiv" style="height: 225px;">
+            <div id="loadingdiv" style="height: 225px; display:none;">
                 <h3 id="loadingbartxt">Initializing</h3>
                 <div id="loadingprogdiv" class="progress progress-striped active">
                     <div class="progress-bar" id="loadingprog" style="width: 100%;"></div>

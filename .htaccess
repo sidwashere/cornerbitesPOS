@@ -6,6 +6,14 @@ AddType application/x-httpd-php .appcache
   </Files>
 </IfModule>
 
+# --- Route public webhook endpoints to the API ---
+# The website (and future platforms) POST to /webhooks/<platform>;
+# forward those to api/webhooks.php?platform=<platform>.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^webhooks/([^/]+)/?$ api/webhooks.php?platform=$1 [L,QSA]
+</IfModule>
+
 
 # --- Cornerbites POS production hardening ---
 <FilesMatch "^\.">

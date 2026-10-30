@@ -1068,16 +1068,17 @@ function WPOSKitchen() {
 
     function onSocketConnect(){
         socketon = true;
+        stopPolling();
         if (WPOS.isOnline() && defaultStatus.type != 1){
             setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0);
         }
     }
 
     function socketError(){
-        if (WPOS.isOnline())
-            setStatusBar(5, "Update Feed Offline", "The POS is running in online mode.\nThe feed server is disconnected and this terminal will not receive realtime updates.", 0);
         socketon = false;
         authretry = false;
+        // Fall back to HTTP polling when the node feed server is unavailable (shared hosting).
+        startPolling();
     }
 
     this.sendAcknowledgement = function(deviceid, ref){
@@ -1104,6 +1105,80 @@ function WPOSKitchen() {
     window.onbeforeunload = function(){
         socketon = false;
     };
+
+    // --- Realtime fallback: HTTP polling when the node feed server is unavailable ---
+    // The shared host cannot run node.js, so when the websocket fails we poll
+    // api/poll.php for new/changed orders and reconcile the kitchen board.
+    var _pollTimer = null;
+    var _pollSince = Math.floor(Date.now() / 1000) - 120;
+    var _seenRefs = {};
+
+    function startPolling(){
+        if (_pollTimer) return;
+        _pollTimer = setInterval(_doPoll, 4000);
+        _doPoll();
+        setStatusBar(5, "Live feed down - polling", "The realtime feed server is unavailable; using HTTP polling instead.", 0);
+    }
+
+    function stopPolling(){
+        if (_pollTimer){ clearInterval(_pollTimer); _pollTimer = null; }
+    }
+
+    function _doPoll(){
+        fetch("api/poll.php?since=" + _pollSince, { credentials: "same-origin", cache: "no-store" })
+            .then(function (r) { return r.json(); })
+            .then(function (resp) {
+                if (resp && resp.result && resp.result.sales) {
+                    _reconcile(resp.result.sales);
+                }
+                _pollSince = Math.floor(Date.now() / 1000);
+            })
+            .catch(function () { /* ignore transient poll errors */ });
+    }
+
+    function _reconcile(sales){
+        var activeRefs = {};
+        for (var i = 0; i < sales.length; i++) {
+            var s = sales[i];
+            if (s.status === 0 || s.status === undefined) {
+                activeRefs[s.ref] = true;
+                if (!_seenRefs[s.ref]) {
+                    // Only insert if a box for this ref isn't already on the board
+                    // (guards against socket+poll overlap or duplicate polls).
+                    if ($('.orderbox_saleref').filter(function () { return $(this).text() === s.ref; }).length === 0) {
+                        WPOS.kitchen.processOrder(s);
+                    }
+                    _seenRefs[s.ref] = true;
+                    WPOS.getSalesTable()[s.ref] = s;
+                } else {
+                    var oldst = (WPOS.getSalesTable()[s.ref] && WPOS.getSalesTable()[s.ref].orderstatus) || 'queued';
+                    var newst = s.orderstatus || 'queued';
+                    if (newst !== oldst) {
+                        WPOS.getSalesTable()[s.ref] = s;
+                        _updateKitchenBadge(s.ref, newst);
+                    }
+                }
+            }
+        }
+        // Remove boards for orders no longer active (completed/cancelled elsewhere).
+        $('.orderbox').each(function () {
+            var ref = $(this).find('.orderbox_saleref').text();
+            if (ref && !activeRefs[ref]) {
+                $(this).remove();
+            }
+        });
+    }
+
+    function _updateKitchenBadge(ref, status){
+        $('.orderbox_saleref').each(function () {
+            if ($(this).text() === ref) {
+                var b = $(this).closest('.orderbox').find('.orderbox_status');
+                b.text(status);
+                b.removeClass('label-warning label-info label-success label-primary label-default')
+                 .addClass('label-' + ({'queued':'warning','preparing':'info','ready':'success','completed':'default'}[status] || 'default'));
+            }
+        });
+    }
 
     // Reset terminal
     function resetTerminalRequest(){
@@ -1179,6 +1254,19 @@ function WPOSKitchenMod(){
         var elem = $("#orderbox_template").clone().removeClass('hide').attr('id', 'order_box_'+saleobj.ref+'-'+order.id);
         elem.find('.orderbox_orderid').text(order.id);
         elem.find('.orderbox_saleref').text(saleobj.ref);
+        // Customer / address / channel / notes (external orders carry these)
+        var cust = saleobj.customer || null;
+        var custStr = '';
+        if (cust) {
+            if (cust.name) custStr += cust.name;
+            if (cust.phone) custStr += (custStr ? ' ' : '') + cust.phone;
+        }
+        elem.find('.orderbox_customer').text(custStr);
+        var addr = saleobj.delivery_address || null;
+        if (addr && typeof addr === 'object') addr = (addr.address || addr.text || JSON.stringify(addr));
+        elem.find('.orderbox_address').text(addr || '');
+        elem.find('.orderbox_channel').text(saleobj.source || '');
+        elem.find('.orderbox_notes').text(saleobj.notes || '');
         elem.find('.orderbox_orderdt').text(WPOS.util.getDateFromTimestamp(order.processdt));
         var _st = (saleobj.orderstatus || 'queued');
         var _badge = elem.find('.orderbox_status');
@@ -1365,8 +1453,25 @@ var WPOS;
 $(function () {
     // initiate core object
     WPOS = new WPOSKitchen();
-    // initiate startup routine
-    WPOS.initApp();
+    // failproof: always reveal the login form, even if startup stalls or throws
+    setTimeout(function(){
+        if (!$("#logindiv").is(":visible")) {
+            $("#loadingdiv").hide();
+            $("#logindiv").show();
+            $('#loginbutton').removeAttr('disabled');
+            $('#loginmodal').show();
+        }
+    }, 8000);
+    try {
+        // initiate startup routine
+        WPOS.initApp();
+    } catch (ex) {
+        console.error("Kitchen init failed", ex);
+        $("#loadingdiv").hide();
+        $("#logindiv").show();
+        $('#loginbutton').removeAttr('disabled');
+        $('#loginmodal').show();
+    }
 
     $("#wrapper").tabs();
 

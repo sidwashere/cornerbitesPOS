@@ -27,7 +27,7 @@
 class SalesModel extends TransactionsModel
 {
 
-    protected $_columns = ['id', 'ref', 'type', 'channel', 'data', 'userid', 'deviceid', 'locationid', 'custid', 'discount', 'total', 'status', 'processdt', 'dt'];
+    protected $_columns = ['id', 'ref', 'type', 'channel', 'data', 'userid', 'deviceid', 'locationid', 'custid', 'discount', 'total', 'status', 'processdt', 'dt', 'source', 'external_ref', 'order_type', 'delivery_address', 'platform_metadata', 'received_at', 'confirmed_at', 'ready_at', 'delivered_at', 'cancelled_at', 'cancellation_reason', 'estimated_ready_time', 'priority'];
 
     /**
      * Init DB
@@ -52,9 +52,9 @@ class SalesModel extends TransactionsModel
      * @param $processdt
      * @return bool|string Returns false on an unexpected failure, returns -1 if a unique constraint in the database fails, or the new rows id if the insert is successful
      */
-    public function create($ref, $data, $status, $userId, $deviceId, $locationId, $custId, $discount, $rounding, $cost, $total, $processdt)
+    public function create($ref, $data, $status, $userId, $deviceId, $locationId, $custId, $discount, $rounding, $cost, $total, $processdt, $source='pos', $externalRef=null, $orderType='dinein', $deliveryAddress=null, $platformMetadata=null, $receivedAt=null, $estimatedReadyTime=null, $priority=0)
     {
-        $sql = "INSERT INTO sales (ref, type, channel, data, userid, deviceid, locationid, custid, discount, rounding, cost, total, status, processdt, dt) VALUES (:ref, 'sale', 'pos', :data, :userid, :deviceid, :locationid, :custid, :discount, :rounding, :cost, :total, :status, :processdt, '".date("Y-m-d H:i:s")."')";
+        $sql = "INSERT INTO sales (ref, type, channel, data, userid, deviceid, locationid, custid, discount, rounding, cost, total, status, processdt, dt, source, external_ref, order_type, delivery_address, platform_metadata, received_at, estimated_ready_time, priority) VALUES (:ref, 'sale', 'pos', :data, :userid, :deviceid, :locationid, :custid, :discount, :rounding, :cost, :total, :status, :processdt, '".date("Y-m-d H:i:s")."', :source, :external_ref, :order_type, :delivery_address, :platform_metadata, :received_at, :estimated_ready_time, :priority)";
         $placeholders = [
             ':ref'        => $ref,
             ':data'       => $data,
@@ -67,7 +67,15 @@ class SalesModel extends TransactionsModel
             ':cost'   => $cost,
             ':total'      => $total,
             ':status'      => $status,
-            ':processdt'      => $processdt
+            ':processdt'      => $processdt,
+            ':source'         => $source,
+            ':external_ref'   => $externalRef,
+            ':order_type'     => $orderType,
+            ':delivery_address' => $deliveryAddress,
+            ':platform_metadata' => $platformMetadata,
+            ':received_at'    => $receivedAt,
+            ':estimated_ready_time' => $estimatedReadyTime,
+            ':priority'       => $priority
         ];
 
         return $this->insert($sql, $placeholders);
@@ -373,6 +381,18 @@ class SalesModel extends TransactionsModel
         $placeholders = [":ref" => $ref];
 
         return $this->delete($sql, $placeholders);
+    }
+
+
+    /**
+     * Get a sale/order by its external reference (platform order ID).
+     * @param $externalRef
+     * @return array|bool Returns false on failure or an array of records on success
+     */
+    public function getByExternalRef($externalRef){
+        $sql = 'SELECT * FROM sales WHERE external_ref = :external_ref';
+        $placeholders = [':external_ref' => $externalRef];
+        return $this->select($sql, $placeholders);
     }
 
 }

@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `sales` (
   `deviceid` int(11) NOT NULL,
   `locationid` int(11) NOT NULL,
   `custid` int(11) NULL DEFAULT NULL,
-  `discount` decimal(4,0) NOT NULL,
+  `discount` decimal(10,2) NULL DEFAULT 0.00,
   `rounding` decimal(10,2) NULL DEFAULT 0,
   `cost` decimal(12,2) NULL DEFAULT 0.00,
   `total` decimal(10,2) NOT NULL,
@@ -189,8 +189,49 @@ CREATE TABLE IF NOT EXISTS `sales` (
   `processdt` bigint(20) NOT NULL,
   `duedt` bigint(20) NOT NULL DEFAULT 0,
   `dt` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci;
+  `source` varchar(32) DEFAULT 'pos',
+  `external_ref` varchar(128) NULL DEFAULT NULL,
+  `order_type` varchar(16) DEFAULT 'dinein',
+  `delivery_address` text NULL,
+  `platform_metadata` json NULL,
+  `received_at` datetime NULL DEFAULT NULL,
+  `confirmed_at` datetime NULL DEFAULT NULL,
+  `ready_at` datetime NULL DEFAULT NULL,
+  `delivered_at` datetime NULL DEFAULT NULL,
+  `cancelled_at` datetime NULL DEFAULT NULL,
+  `cancellation_reason` varchar(255) NULL DEFAULT NULL,
+  `estimated_ready_time` datetime NULL DEFAULT NULL,
+  `priority` int(11) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  INDEX `idx_sales_external_ref` (`external_ref`),
+  INDEX `idx_sales_source` (`source`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `platform_configs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform` varchar(32) NOT NULL,
+  `api_key` varchar(255) NULL DEFAULT NULL,
+  `store_id` varchar(128) NULL DEFAULT NULL,
+  `webhook_secret` varchar(255) NULL DEFAULT NULL,
+  `enabled` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform` (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `order_status_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sale_id` int(11) NOT NULL,
+  `from_status` varchar(32) NULL DEFAULT NULL,
+  `to_status` varchar(32) NOT NULL,
+  `changed_by` varchar(64) NULL DEFAULT NULL,
+  `changed_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `notes` text NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_osh_sale_id` (`sale_id`),
+  INDEX `idx_osh_changed_at` (`changed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci;
 
 -- --------------------------------------------------------
 

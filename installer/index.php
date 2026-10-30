@@ -39,12 +39,17 @@ function checkDependencies(){
     if (!$result['app_root'] = file_exists($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'library/wpos/AutoLoader.php'))
         $result['all'] = false;
 
-    // check apache version
-    $version = str_replace("Apache/", "", apache_get_version());
-    $version = str_replace(" (Ubuntu)", "", $version);
-    if (version_compare($result['apache_version']=$version, "2.4.7")<0){
-        $result['all'] = false;
-        $result['apache'] = false;
+    // check apache version (LiteSpeed/non-Apache safe)
+    if (function_exists('apache_get_version')) {
+        $version = str_replace("Apache/", "", apache_get_version());
+        $version = str_replace(" (Ubuntu)", "", $version);
+        if (version_compare($result['apache_version'] = $version, "2.4.7") < 0) {
+            $result['all'] = false;
+            $result['apache'] = false;
+        }
+    } else {
+        // Running under LiteSpeed (or another non-Apache SAPI); treat as compatible.
+        $result['apache_version'] = "LiteSpeed";
     }
 
     // check php version
@@ -56,17 +61,24 @@ function checkDependencies(){
         $result['php'] = false;
     }
 
-    // check node installation
-	chdir($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'api/'); // node extension gets installed along with server.js
-	$nodeextensions = json_decode(shell_exec("npm ls --json")); // detect node.js existence using npm
-	if ($nodeextensions == NULL) {
-		$result['node'] = false;
-		$result['node_socketio'] = false;
-		$result['all'] = false;
-	} else {
-        if (!$result['node_socketio']=(isset($nodeextensions->dependencies->{"socket.io"}) && !$nodeextensions->dependencies->{"socket.io"}->missing))
+    // check node installation (shell_exec may be disabled on shared hosts)
+    if (function_exists('shell_exec')) {
+        chdir($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'api/'); // node extension gets installed along with server.js
+        $nodeextensions = json_decode(shell_exec("npm ls --json")); // detect node.js existence using npm
+        if ($nodeextensions == NULL) {
+            $result['node'] = false;
+            $result['node_socketio'] = false;
             $result['all'] = false;
-	}
+        } else {
+            if (!$result['node_socketio']=(isset($nodeextensions->dependencies->{"socket.io"}) && !$nodeextensions->dependencies->{"socket.io"}->missing))
+                $result['all'] = false;
+        }
+    } else {
+        // shell_exec disabled: cannot detect node; mark unavailable (non-fatal, user may ignore)
+        $result['node'] = false;
+        $result['node_socketio'] = false;
+        $result['all'] = false;
+    }
 
     // required apache modules
     $apache_mods = apache_get_modules();

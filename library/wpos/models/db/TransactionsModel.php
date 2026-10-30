@@ -70,11 +70,9 @@ class TransactionsModel extends DbConfig
         if (is_array($ref)) {
             $ref = array_map([$this->_db, 'quote'], $ref);
             $sql .= " `ref` IN (" . implode(', ', $ref) . ");";
-        } else if (is_numeric(str_replace("-", "", $ref))){
+        } else {
             $sql .= " `ref`=:ref;";
             $placeholders[":ref"] = $ref;
-        } else {
-            return false;
         }
         return $this->select($sql, $placeholders);
     }
