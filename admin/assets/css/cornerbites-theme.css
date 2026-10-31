@@ -1,26 +1,33 @@
-/* Corner Bites POS - Website-aligned theme overrides */
-/* Aligns POS admin accent colors with cornerbites.co.ke design system */
-/* Conservative overrides to avoid breaking existing contrast */
+/* Corner Bites POS - Clean theme with proper contrast */
 
-/* Sidebar - slightly darker with lime accent */
-.sidebar {
+/* Sidebar - dark theme */
+.sidebar, #sidebar {
     background: #1a1a1a !important;
-    border-right: 1px solid #333;
+}
+
+.sidebar .nav-list {
+    background: #1a1a1a !important;
+}
+
+.sidebar .nav-list > li {
+    background: #1a1a1a !important;
 }
 
 .sidebar .nav-list > li > a {
-    color: #e5e5e5;
+    color: #e5e5e5 !important;
+    background: #1a1a1a !important;
     border-bottom: 1px solid #2a2a2a;
 }
 
 .sidebar .nav-list > li > a:hover {
     background: #262626 !important;
-    color: #84cc16;
+    color: #84cc16 !important;
 }
 
-.sidebar .nav-list > li.active > a {
+.sidebar .nav-list > li.active > a,
+.sidebar .nav-list > li.open > a {
     background: #1a2e1a !important;
-    color: #84cc16;
+    color: #84cc16 !important;
     border-left: 3px solid #84cc16;
 }
 
@@ -28,46 +35,49 @@
     background: #111 !important;
 }
 
+.sidebar .nav-list > li .submenu > li {
+    background: #111 !important;
+}
+
 .sidebar .nav-list > li .submenu > li > a {
-    color: #b3b3b3;
+    color: #b3b3b3 !important;
+    background: #111 !important;
 }
 
 .sidebar .nav-list > li .submenu > li > a:hover {
-    color: #84cc16;
+    color: #84cc16 !important;
     background: #262626 !important;
 }
 
 .sidebar .nav-list > li .submenu > li.active > a {
-    color: #84cc16;
+    color: #84cc16 !important;
     background: #1a2e1a !important;
 }
 
-/* Menu text - inherit from parent */
+/* Menu text - always visible */
 .sidebar .menu-text {
-    color: inherit;
+    color: inherit !important;
 }
 
-/* Icons - lime green accent */
-.sidebar .nav-list > li > a > i {
-    color: #84cc16;
+/* Icons */
+.sidebar .nav-list > li > a > i,
+.sidebar .nav-list > li .submenu > li > a > i {
+    color: #84cc16 !important;
 }
 
-/* Navbar - dark with lime brand */
+/* Navbar */
 .navbar {
     background: #1a1a1a !important;
     border-bottom: 1px solid #333;
 }
 
-.navbar .navbar-brand {
+.navbar .navbar-brand,
+.navbar .navbar-brand small {
     color: #84cc16 !important;
     font-weight: 700;
 }
 
-.navbar .navbar-brand small {
-    color: #84cc16 !important;
-}
-
-/* Buttons - lime green accent (only primary) */
+/* Buttons */
 .btn-primary {
     background-color: #84cc16 !important;
     border-color: #65a30d !important;
@@ -80,72 +90,60 @@
     color: #0a0a0a !important;
 }
 
-/* Table header - dark with lime text */
+/* Table header */
 .table-header {
     background: #1a1a1a !important;
     color: #84cc16 !important;
 }
 
-/* Labels - keep readable */
+/* Labels */
 .label-warning { background-color: #ca8a04 !important; color: #fff !important; }
 .label-info { background-color: #0284c7 !important; color: #fff !important; }
 .label-success { background-color: #16a34a !important; color: #fff !important; }
 .label-default { background-color: #525252 !important; color: #fff !important; }
 
-/* Sidebar collapse button */
+/* Sidebar collapse */
 .sidebar-collapse {
-    background: #111;
+    background: #111 !important;
     border-top: 1px solid #333;
 }
 
 .sidebar-collapse > i {
-    color: #84cc16;
+    color: #84cc16 !important;
 }
 
-/* Active menu parent arrow */
+/* Active menu arrow */
 .nav-list > li.active > a:after {
-    border-right-color: #84cc16;
+    border-right-color: #84cc16 !important;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #84cc16;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #65a30d;
-}
-
-/* Ensure main content text is dark on light background */
+/* Main content - ensure dark text on light bg */
 .main-content {
-    color: #333;
+    color: #333 !important;
+    background: #fafaf9;
 }
 
 .main-content .page-header h1 {
-    color: #171717;
+    color: #171717 !important;
     border-bottom: 2px solid #84cc16;
     padding-bottom: 10px;
 }
 
-/* Well and alert boxes */
+/* Wells and alerts */
 .well {
-    background: #f9f9f9;
-    border: 1px solid #e5e5e5;
-    color: #333;
+    background: #f9f9f9 !important;
+    border: 1px solid #e5e5e5 !important;
+    color: #333 !important;
 }
 
 .alert-info {
-    background: #e0f2fe;
-    border: 1px solid #7dd3fc;
-    color: #0c4a6e;
+    background: #e0f2fe !important;
+    border: 1px solid #7dd3fc !important;
+    color: #0c4a6e !important;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #84cc16; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #65a30d; }
