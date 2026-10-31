@@ -685,7 +685,7 @@
 function loadDashboardOrders(){
     var tbody = $('#dashOrdersBody');
     tbody.html('<tr><td colspan="7" class="center">Loading...</td></tr>');
-    $.get('/api/poll.php?last=0', function(data){
+    $.get('/api/poll.php?last=0' + (_dashFilter === 'website' ? '&source=website' : ''), function(data){
         if (data.error) { tbody.html('<tr><td colspan="7" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
         var rows = '';
@@ -713,7 +713,7 @@ function loadDashboardOrders(){
         tbody.html(rows);
     }, 'json').fail(function(){ tbody.html('<tr><td colspan="7" class="center text-danger">Failed to load orders.</td></tr>'); });
 }
-$(document).ready(function(){ setTimeout(loadDashboardOrders, 500); });
+$(document).ready(function(){ setTimeout(loadDashboardOrders, 500); setInterval(loadDashboardOrders, 15000); });
 // --- End Dashboard Orders Overview ---
 
 </script>

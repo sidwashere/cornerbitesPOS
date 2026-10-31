@@ -84,5 +84,5 @@ function deleteWebsiteOrder(ref){
         if (r !== false) loadWebsiteOrders();
     });
 }
-$(document).ready(function(){ loadWebsiteOrders(); setInterval(loadWebsiteOrders, 10000); });
+$(document).ready(function(){ loadWebsiteOrders(); setInterval(loadWebsiteOrders, 15000); });
 </script>

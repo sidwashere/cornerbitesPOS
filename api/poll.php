@@ -23,16 +23,29 @@ if (!isset($_SESSION['userId'])) {
 }
 
 $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
+$source = isset($_GET['source']) ? $_GET['source'] : null;
+$status = isset($_GET['status']) ? $_GET['status'] : null;
 $db = new DbConfig();
 $pdo = $db->_db;
 
-$sql = "SELECT * FROM sales WHERE status = 0";
+$conditions = [];
 $params = [];
+
 if ($since > 0) {
-    $sql .= " OR (status != 0 AND dt > FROM_UNIXTIME(:since))";
+    $conditions[] = "(status = 0 OR (status != 0 AND dt > FROM_UNIXTIME(:since)))";
     $params[':since'] = $since;
+} else {
+    $conditions[] = "status = 0";
 }
-$sql .= " ORDER BY dt DESC LIMIT 200";
+
+$sql = "SELECT * FROM sales WHERE " . implode(' AND ', $conditions);
+
+if ($source) {
+    $sql .= " AND source = :source";
+    $params[':source'] = $source;
+}
+
+$sql .= " ORDER BY dt DESC LIMIT 100";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
