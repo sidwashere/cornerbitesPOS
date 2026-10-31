@@ -8,3 +8,7 @@ docs/
 dist/
 deploy/.ftpcreds
 
+
+# OpenWork local state (never commit)
+.opencode/
+assets/js/wpos/sales.js.mybroken
