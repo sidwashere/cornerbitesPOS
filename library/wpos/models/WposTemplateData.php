@@ -99,6 +99,24 @@ class WposTemplateData
 
         $this->sale_id = $data->id;
         $this->sale_ref = $data->ref;
+
+        // Generate QR code from the unique sale ref for receipt/invoice
+        $this->qrcode_url = null;
+        if (isset($data->ref) && $data->ref != '') {
+            include($_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'library/phpqrcode.php');
+            $qrDir = $_SERVER['DOCUMENT_ROOT'].$_SERVER['APP_ROOT'].'docs/qrcodes';
+            if (!is_dir($qrDir)) {
+                mkdir($qrDir, 0755, true);
+            }
+            $qrFile = $qrDir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $data->ref) . '.png';
+            if (!file_exists($qrFile)) {
+                QRcode::png($data->ref, $qrFile, QR_ECLEVEL_L, 4, 2);
+            }
+            if (file_exists($qrFile)) {
+                $this->qrcode_url = ($_SERVER['HTTPS']!==""?"https://":"http://").$_SERVER['SERVER_NAME'].$_SERVER['APP_ROOT'].'docs/qrcodes/'.basename($qrFile);
+                $this->showqrcode = true;
+            }
+        }
         $this->sale_dt = $this->Utils->getDateFromTimestamp($data->processdt, $config['general']->dateformat);
         $this->sale_items = $data->items;
         $this->sale_numitems = $data->numitems;
