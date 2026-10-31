@@ -243,7 +243,9 @@
     var cphone = (document.getElementById('cust-phone').value || '').trim();
     var caddr = (document.getElementById('cust-address').value || '').trim();
     if (!cname) cname = 'Website Order';
-    if (!caddr) caddr = 'Utawala-Kincar area';
+    // Require phone and address
+    if (!cphone || cphone.length < 9) { showToast('Please enter your phone number'); document.getElementById('cust-phone').focus(); return; }
+    if (!caddr || caddr.length < 3) { showToast('Please enter your delivery address'); document.getElementById('cust-address').focus(); return; }
     const total = cartTotal();
     const btn = document.querySelector('button[onclick="checkout()"]');
     if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
@@ -355,7 +357,33 @@
       .catch(function(e){ console.log('Menu sync skipped:', e); });
   })();
 
-  document.addEventListener('DOMContentLoaded', updateCartUI);
+  // --- Order Form Validation ---
+  // Place Order button stays grey/disabled until phone AND address are filled
+  function validateOrderForm(){
+    var phone = (document.getElementById('cust-phone').value || '').trim();
+    var addr = (document.getElementById('cust-address').value || '').trim();
+    var btn = document.getElementById('place-order-btn');
+    if (!btn) return;
+    if (phone.length >= 9 && addr.length >= 3) {
+      btn.disabled = false;
+      btn.classList.remove('bg-stone-700','text-stone-400','cursor-not-allowed');
+      btn.classList.add('bg-lime-500','hover:bg-lime-400','text-black','cursor-pointer');
+    } else {
+      btn.disabled = true;
+      btn.classList.remove('bg-lime-500','hover:bg-lime-400','text-black','cursor-pointer');
+      btn.classList.add('bg-stone-700','text-stone-400','cursor-not-allowed');
+    }
+  }
+  ['cust-phone','cust-address'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', validateOrderForm);
+  });
+  // Also validate on cart open
+  var origToggle = window.toggleCart;
+  window.toggleCart = function(){ if (origToggle) origToggle(); setTimeout(validateOrderForm, 50); };
+
+  document.addEventListener('DOMContentLoaded', function(){ updateCartUI(); validateOrderForm(); });
   updateCartUI();
+  validateOrderForm();
 </script>
 <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:\x27smooth\x27})" class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-black text-lime-400 border border-lime-400 shadow-xl flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 hover:bg-stone-900" aria-label="Back to top"><span class="material-symbols-outlined">arrow_upward</span></button><script>(function(){var b=document.getElementById("back-to-top");if(!b)return;window.addEventListener("scroll",function(){if(window.scrollY>600){b.style.opacity="1";b.style.pointerEvents="auto";}else{b.style.opacity="0";b.style.pointerEvents="none";}});})();</script>\n</body></html>
