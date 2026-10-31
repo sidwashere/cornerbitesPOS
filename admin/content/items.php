@@ -83,6 +83,12 @@
                         <td><input id="itemdesc" type="text"/></td>
                     </tr>
                     <tr>
+                        <td style="text-align: right;"><label>Image URL:&nbsp;</label></td>
+                        <td><input id="itemimage" type="text" placeholder="https://..."/><br/>
+                            <small>URL to product image (shown on website)</small>
+                        </td>
+                    </tr>
+                    <tr>
                         <td style="text-align: right;"><label>Unit Cost:&nbsp;</label></td>
                         <td><input id="itemcost" type="text" value="0"/></td>
                     </tr>
@@ -175,6 +181,12 @@
         <tr>
             <td style="text-align: right;"><label>Description:&nbsp;</label></td>
             <td><input id="newitemdesc" type="text"/></td>
+        </tr>
+        <tr>
+            <td style="text-align: right;"><label>Image URL:&nbsp;</label></td>
+            <td><input id="newitemimage" type="text" placeholder="https://..."/><br/>
+                <small>URL to product image (shown on website)</small>
+            </td>
         </tr>
         <tr>
             <td style="text-align: right;"><label>Unit Cost:&nbsp;</label></td>
@@ -409,6 +421,7 @@
         $("#itemname").val(item.name);
         $("#itemaltname").val(item.alt_name);
         $("#itemdesc").val(item.description);
+        $("#itemimage").val(item.image || "");
         $("#itemqty").val(item.qty);
         $("#itemtax").val(item.taxid);
         $("#itemcode").val(item.code);
@@ -471,6 +484,7 @@
             item.name = $("#newitemname").val();
             item.alt_name = $("#newitemaltname").val();
             item.description = $("#newitemdesc").val();
+            item.image = $("#newitemimage").val();
             item.taxid = $("#newitemtax").val();
             costval = $("#newitemcost").val();
             item.cost = (costval ? costval : 0);
@@ -493,6 +507,7 @@
             item.name = $("#itemname").val();
             item.alt_name = $("#itemaltname").val();
             item.description = $("#itemdesc").val();
+            item.image = $("#itemimage").val();
             item.taxid = $("#itemtax").val();
             costval = $("#itemcost").val();
             item.cost = (costval ? costval : 0);

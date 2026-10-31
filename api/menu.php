@@ -36,6 +36,8 @@ try {
                     'name' => $item['name'],
                     'price' => (float)$item['price'],
                     'category' => $cat['name'],
+                    'image' => isset($data['image']) ? $data['image'] : '',
+                    'description' => isset($data['description']) ? $data['description'] : '',
                 ];
             }
         }

@@ -315,11 +315,13 @@
       .then(function(r){ return r.json(); })
       .then(function(data){
         if (!data || !data.ok || !data.menu) return;
-        // Build a map of item name -> price from API
+        // Build a map of item name -> price and image from API
         var apiItems = {};
+        var apiItemImages = {};
         data.menu.forEach(function(cat){
           cat.items.forEach(function(item){
             apiItems[item.name] = item.price;
+            if (item.image) apiItemImages[item.name] = item.image;
           });
         });
         // Find all elements with onclick containing addToCart
