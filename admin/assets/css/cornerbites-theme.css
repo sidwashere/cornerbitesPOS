@@ -1,71 +1,61 @@
 /* Corner Bites POS - Website-aligned theme overrides */
-/* Aligns POS admin with cornerbites.co.ke design system */
+/* Aligns POS admin accent colors with cornerbites.co.ke design system */
+/* Conservative overrides to avoid breaking existing contrast */
 
-/* Sidebar - dark theme matching website */
+/* Sidebar - slightly darker with lime accent */
 .sidebar {
-    background: #0a0a0a !important;
-    border-right: 1px solid #262626;
+    background: #1a1a1a !important;
+    border-right: 1px solid #333;
 }
 
 .sidebar .nav-list > li > a {
-    color: #e2e8f0;
-    border-bottom: 1px solid #1a1a1a;
+    color: #e5e5e5;
+    border-bottom: 1px solid #2a2a2a;
 }
 
 .sidebar .nav-list > li > a:hover {
-    background: #141414 !important;
+    background: #262626 !important;
     color: #84cc16;
 }
 
 .sidebar .nav-list > li.active > a {
-    background: #141a0d !important;
+    background: #1a2e1a !important;
     color: #84cc16;
     border-left: 3px solid #84cc16;
 }
 
 .sidebar .nav-list > li .submenu {
-    background: #0e0e0e !important;
+    background: #111 !important;
 }
 
 .sidebar .nav-list > li .submenu > li > a {
-    color: #a3a3a3;
+    color: #b3b3b3;
 }
 
 .sidebar .nav-list > li .submenu > li > a:hover {
     color: #84cc16;
-    background: #141414 !important;
+    background: #262626 !important;
 }
 
 .sidebar .nav-list > li .submenu > li.active > a {
     color: #84cc16;
-    background: #141a0d !important;
+    background: #1a2e1a !important;
 }
 
-/* Menu text */
+/* Menu text - inherit from parent */
 .sidebar .menu-text {
     color: inherit;
 }
 
-/* Icons */
-.sidebar .icon-dashboard,
-.sidebar .icon-eye-open,
-.sidebar .icon-fire,
-.sidebar .icon-list-alt,
-.sidebar .icon-bar-chart,
-.sidebar .icon-shopping-cart,
-.sidebar .icon-dollar,
-.sidebar .icon-male,
-.sidebar .icon-tag,
-.sidebar .icon-edit,
-.sidebar .icon-file-alt,
-.sidebar .icon-globe {
+/* Icons - lime green accent */
+.sidebar .nav-list > li > a > i {
     color: #84cc16;
 }
 
-/* Navbar */
+/* Navbar - dark with lime brand */
 .navbar {
-    background: #0a0a0a !important;
-    border-bottom: 1px solid #262626;
+    background: #1a1a1a !important;
+    border-bottom: 1px solid #333;
 }
 
 .navbar .navbar-brand {
@@ -73,83 +63,89 @@
     font-weight: 700;
 }
 
-/* Buttons - lime green accent */
+.navbar .navbar-brand small {
+    color: #84cc16 !important;
+}
+
+/* Buttons - lime green accent (only primary) */
 .btn-primary {
-    background: #84cc16 !important;
+    background-color: #84cc16 !important;
     border-color: #65a30d !important;
     color: #0a0a0a !important;
 }
 
-.btn-primary:hover {
-    background: #65a30d !important;
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #65a30d !important;
     border-color: #4d7c0f !important;
+    color: #0a0a0a !important;
 }
 
-.btn-success {
-    background: #20bd5a !important;
-    border-color: #16a34a !important;
-}
-
-/* Page header */
-.page-header h1 {
-    color: #171717;
-    border-bottom: 2px solid #84cc16;
-    padding-bottom: 10px;
-}
-
-/* Table header */
+/* Table header - dark with lime text */
 .table-header {
-    background: #171717 !important;
+    background: #1a1a1a !important;
     color: #84cc16 !important;
 }
 
-/* Labels */
-.label-warning { background: #ca8a04 !important; }
-.label-info { background: #0284c7 !important; }
-.label-success { background: #16a34a !important; }
-.label-default { background: #525252 !important; }
-
-/* Breadcrumbs */
-.breadcrumb {
-    background: #f5f5f5;
-    border-bottom: 1px solid #e5e5e5;
-}
-
-/* Main content area */
-.main-content {
-    background: #fafaf9;
-}
+/* Labels - keep readable */
+.label-warning { background-color: #ca8a04 !important; color: #fff !important; }
+.label-info { background-color: #0284c7 !important; color: #fff !important; }
+.label-success { background-color: #16a34a !important; color: #fff !important; }
+.label-default { background-color: #525252 !important; color: #fff !important; }
 
 /* Sidebar collapse button */
 .sidebar-collapse {
-    background: #141414;
-    border-top: 1px solid #262626;
+    background: #111;
+    border-top: 1px solid #333;
 }
 
 .sidebar-collapse > i {
     color: #84cc16;
 }
 
-/* Active menu parent */
+/* Active menu parent arrow */
 .nav-list > li.active > a:after {
     border-right-color: #84cc16;
 }
 
-/* Scrollbar styling for webkit */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4d5b3f;
+    background: #84cc16;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #84cc16;
+    background: #65a30d;
+}
+
+/* Ensure main content text is dark on light background */
+.main-content {
+    color: #333;
+}
+
+.main-content .page-header h1 {
+    color: #171717;
+    border-bottom: 2px solid #84cc16;
+    padding-bottom: 10px;
+}
+
+/* Well and alert boxes */
+.well {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    color: #333;
+}
+
+.alert-info {
+    background: #e0f2fe;
+    border: 1px solid #7dd3fc;
+    color: #0c4a6e;
 }
