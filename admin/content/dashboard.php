@@ -20,7 +20,6 @@
         </ul>
         <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 8px 12px; font-weight: bold;">
             <i class="icon-list"></i> <span id="dashOrderTabTitle">Recent Orders (All Sources)</span>
-            <button class="btn btn-xs btn-primary pull-right" onclick="loadDashboardOrders();" style="margin-top: -2px;"><i class="icon-refresh"></i> Refresh</button>
         </div>
         <table class="table table-striped table-bordered table-hover" style="width:100%; margin-bottom: 0;">
             <thead>
@@ -32,10 +31,11 @@
                     <th>Total</th>
                     <th>Status</th>
                     <th>Time</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="dashOrdersBody">
-                <tr><td colspan="7" class="center">Loading orders...</td></tr>
+                <tr><td colspan="8" class="center">Loading orders...</td></tr>
             </tbody>
         </table>
     </div>

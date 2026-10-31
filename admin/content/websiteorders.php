@@ -59,10 +59,11 @@ function loadWebsiteOrders(){
                 + '<td>'+s.total+'/=</td>'
                 + '<td><span class="label label-'+statusClass+'">'+s.orderstatus+'</span></td>'
                 + '<td>'+s.received_at+'</td>'
-                + '<td>'
+                + '<td style="white-space:nowrap;">'
                 + '<button class="btn btn-xs btn-info" onclick="updateWebsiteOrderStatus(\''+s.ref+'\',\'preparing\')">Preparing</button> '
                 + '<button class="btn btn-xs btn-success" onclick="updateWebsiteOrderStatus(\''+s.ref+'\',\'ready\')">Ready</button> '
-                + '<button class="btn btn-xs btn-default" onclick="updateWebsiteOrderStatus(\''+s.ref+'\',\'completed\')">Done</button>'
+                + '<button class="btn btn-xs btn-default" onclick="updateWebsiteOrderStatus(\''+s.ref+'\',\'completed\')">Done</button> '
+                + '<button class="btn btn-xs btn-danger" onclick="deleteWebsiteOrder(\''+s.ref+'\')" title="Delete"><i class="icon-trash"></i></button>'
                 + '</td>'
                 + '</tr>';
         });
@@ -73,6 +74,12 @@ function loadWebsiteOrders(){
 function updateWebsiteOrderStatus(ref, status){
     WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref: ref, orderstatus: status}), function(r){
         if (r) loadWebsiteOrders();
+    });
+}
+function deleteWebsiteOrder(ref){
+    if (!confirm('Delete this order permanently?')) return;
+    WPOS.sendJsonData("orders/remove", JSON.stringify({ref: ref}), function(r){
+        if (r !== false) loadWebsiteOrders();
     });
 }
 $(document).ready(function(){ loadWebsiteOrders(); setInterval(loadWebsiteOrders, 10000); });
