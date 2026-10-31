@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<title>Cornerbites POS - Administration</title>
+		<title>Corner Bites POS - Administration</title>
         <meta name="copyright" content="Copyright (c) 2026 Cornerbites <info@cornerbites.co.ke>" />
         <meta name="description" content="overview &amp; stats" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -52,7 +52,8 @@
         <link rel="stylesheet" href="/assets/libs/datatables/datatables.min.css?v=20261030" />
 
         <link rel="stylesheet" href="assets/css/wposadmin.css?v=20261030" />
-	</head>
+	    <link rel="stylesheet" href="assets/css/cornerbites-theme.css" />
+</head>
 
 	<body>
 		<div class="navbar navbar-default" id="navbar">
@@ -64,8 +65,8 @@
 				<div class="pull-left">
 					<a class="navbar-brand" style="padding: 5px;">
 						<small>
-							<img style="width:35px;" src="/assets/images/icon.png"/>
-							WPOS Administration
+						<img style="width:35px;" src="/assets/images/icon.png"/>
+						Corner Bites POS
 						</small>
 					</a><!-- /.brand -->
 				</div><!-- /.navbar-header -->
@@ -194,9 +195,39 @@
                                 </li>
 
                             </ul>
+                        <li id="menuparentwebsite" class="privmenuitem">
+                            <a class="dropdown-toggle">
+                                <i class="icon-globe"></i>
+                                <span class="menu-text"> Website </span>
+
+                                <b class="arrow icon-angle-down"></b>
+                            </a>
+
+                            <ul class="submenu">
+                                <li id="menuwebsiteorders" class="privmenuitem">
+                                    <a href="#!websiteorders">
+                                        <i class="icon-double-angle-right"></i>
+                                        Website Orders
+                                    </a>
+                                </li>
+
+                                <li id="menuwebsitesync" class="privmenuitem">
+                                    <a href="#!websitesync">
+                                        <i class="icon-double-angle-right"></i>
+                                        Menu Sync
+                                    </a>
+                                </li>
+
+                                <li id="menuwebsiteconfig" class="privmenuitem">
+                                    <a href="#!websiteconfig">
+                                        <i class="icon-double-angle-right"></i>
+                                        Website Settings
+                                    </a>
+                                </li>
+
+                            </ul>
                         </li>
 
-                        <li id="menusettings" class="privmenuitem">
                             <a class="dropdown-toggle">
                                 <i class="icon-edit"></i>
                                 <span class="menu-text"> Settings </span>
