@@ -152,8 +152,13 @@
     <h3 class="font-display-lg text-lg font-black text-lime-400 flex items-center gap-2"><span class="material-symbols-outlined">shopping_bag</span> Your Order</h3>
     <button onclick="toggleCart()" class="text-white text-2xl leading-none">&times;</button>
   </div>
-  <div id="cart-items" class="flex-1 overflow-y-auto p-4"></div>
-  <div class="p-4 border-t border-lime-500/30 space-y-3">
+   <div id="cart-items" class="flex-1 overflow-y-auto p-4"></div>
+   <div class="p-4 border-t border-lime-500/30 space-y-2">
+     <input id="cust-name" type="text" placeholder="Your name" class="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-white text-sm placeholder-stone-500 focus:outline-none focus:border-lime-400" />
+     <input id="cust-phone" type="tel" placeholder="Phone number" class="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-white text-sm placeholder-stone-500 focus:outline-none focus:border-lime-400" />
+     <input id="cust-address" type="text" placeholder="Delivery address" class="w-full px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-white text-sm placeholder-stone-500 focus:outline-none focus:border-lime-400" />
+   </div>
+   <div class="p-4 border-t border-lime-500/30 space-y-3">
     <div class="flex items-center justify-between text-white font-bold">
       <span>Total</span><span id="cart-total" class="text-lime-400 text-xl">0/=</span>
     </div>
@@ -234,9 +239,14 @@
 
   function checkout(){
     if (cart.length === 0){ showToast('Your cart is empty'); return; }
+    var cname = (document.getElementById('cust-name').value || '').trim();
+    var cphone = (document.getElementById('cust-phone').value || '').trim();
+    var caddr = (document.getElementById('cust-address').value || '').trim();
+    if (!cname) cname = 'Website Order';
+    if (!caddr) caddr = 'Utawala-Kincar area';
     const lines = cart.map(i => encodeURIComponent(i.qty + 'x ' + i.name + ' - ' + (i.price*i.qty) + '/=')).join('%0A');
     const total = cartTotal();
-    const msg = 'Hello Corner Bites, I would like to order:%0A' + lines + '%0A%0ATotal: ' + total + '/=%0A%0APayment: Lipa na M-Pesa / Cash on Delivery%0ADelivery: Utawala-Kincar area';
+    const msg = 'Hello Corner Bites, I would like to order:%0A' + lines + '%0A%0AName: ' + encodeURIComponent(cname) + '%0APhone: ' + encodeURIComponent(cphone) + '%0ADelivery: ' + encodeURIComponent(caddr) + '%0A%0ATotal: ' + total + '/=%0A%0APayment: Lipa na M-Pesa / Cash on Delivery';
     // Push the order to the POS (kitchen + admin) in the background so it appears live.
     try {
       fetch('https://pos.cornerbites.co.ke/webhooks/website', {
@@ -247,8 +257,8 @@
           source: 'website',
           external_ref: 'WEB-' + Date.now(),
           order_type: 'delivery',
-          delivery_address: 'Utawala-Kincar area',
-          customer: { name: 'Website Order', phone: '' },
+          delivery_address: caddr,
+          customer: { name: cname, phone: cphone },
           items: cart.map(function(i){ return { name: i.name, qty: i.qty, price: i.price }; })
         })
       }).catch(function(){});
