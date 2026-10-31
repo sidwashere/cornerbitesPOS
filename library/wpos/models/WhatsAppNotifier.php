@@ -192,6 +192,7 @@ class WhatsAppNotifier {
             }
         }
         if (isset($saleObj->order_type)) $lines[] = "Type: " . $saleObj->order_type;
+        if (isset($saleObj->table_number) && $saleObj->table_number) $lines[] = "Table: " . $saleObj->table_number;
 
         // Customer
         if (isset($saleObj->customer) && is_object($saleObj->customer)) {
@@ -204,6 +205,9 @@ class WhatsAppNotifier {
         }
         if (isset($saleObj->delivery_address) && $saleObj->delivery_address) {
             $lines[] = "Address: " . (is_string($saleObj->delivery_address) ? $saleObj->delivery_address : json_encode($saleObj->delivery_address));
+        }
+        if (isset($saleObj->table_number) && $saleObj->table_number) {
+            $lines[] = "Table: " . $saleObj->table_number;
         }
 
         // Items

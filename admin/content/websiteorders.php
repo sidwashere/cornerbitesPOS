@@ -21,6 +21,7 @@
     <th>Customer</th>
     <th>Phone</th>
     <th>Address</th>
+    <th>Table</th>
     <th>Items</th>
     <th>Total</th>
     <th>Status</th>
@@ -29,7 +30,7 @@
 </tr>
 </thead>
 <tbody id="websiteordersbody">
-    <tr><td colspan="10" class="center">Loading...</td></tr>
+    <tr><td colspan="11" class="center">Loading...</td></tr>
 </tbody>
 </table>
 
@@ -39,9 +40,9 @@
 <script>
 function loadWebsiteOrders(){
     var tbody = $('#websiteordersbody');
-    tbody.html('<tr><td colspan="10" class="center">Loading...</td></tr>');
+    tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
     $.get('/api/poll.php?last=0', function(data){
-        if (data.error) { tbody.html('<tr><td colspan="10" class="center text-danger">'+data.error+'</td></tr>'); return; }
+        if (data.error) { tbody.html('<tr><td colspan="11" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
         var rows = '';
         sales.forEach(function(s){
@@ -55,6 +56,7 @@ function loadWebsiteOrders(){
                 + '<td>'+(s.customer ? s.customer.name : '-')+'</td>'
                 + '<td>'+(s.customer ? s.customer.phone : '-')+'</td>'
                 + '<td>'+(s.delivery_address || '-')+'</td>'
+                + '<td>'+(s.table_number ? 'Table ' + s.table_number : '-')+'</td>'
                 + '<td>'+items+'</td>'
                 + '<td>'+s.total+'/=</td>'
                 + '<td><span class="label label-'+statusClass+'">'+s.orderstatus+'</span></td>'
@@ -67,9 +69,9 @@ function loadWebsiteOrders(){
                 + '</td>'
                 + '</tr>';
         });
-        if (!rows) rows = '<tr><td colspan="10" class="center">No website orders yet.</td></tr>';
+        if (!rows) rows = '<tr><td colspan="11" class="center">No website orders yet.</td></tr>';
         tbody.html(rows);
-    }, 'json').fail(function(){ tbody.html('<tr><td colspan="10" class="center text-danger">Failed to load orders.</td></tr>'); });
+    }, 'json').fail(function(){ tbody.html('<tr><td colspan="11" class="center text-danger">Failed to load orders.</td></tr>'); });
 }
 function updateWebsiteOrderStatus(ref, status){
     WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref: ref, orderstatus: status}), function(r){

@@ -17,6 +17,9 @@ class OrderNormalizer {
                 $out->order_type = self::pick($data, ['order_type', 'orderType'], 'pickup');
                 $out->customer = self::pick($data, ['customer'], null);
                 $out->delivery_address = self::pick($data, ['delivery_address', 'deliveryAddress'], null);
+                if (isset($data->table_number) && $data->table_number) {
+                    $out->table_number = (int)$data->table_number;
+                }
                 $out->notes = self::pick($data, ['special_instructions', 'notes', 'instructions'], null);
                 $out->priority = (int)self::pick($data, ['priority'], 0);
                 $rawItems = self::pick($data, ['items'], []);

@@ -242,10 +242,15 @@
     var cname = (document.getElementById('cust-name').value || '').trim();
     var cphone = (document.getElementById('cust-phone').value || '').trim();
     var caddr = (document.getElementById('cust-address').value || '').trim();
-    if (!cname) cname = 'Website Order';
-    // Require phone and address
-    if (!cphone || cphone.length < 9) { showToast('Please enter your phone number'); document.getElementById('cust-phone').focus(); return; }
-    if (!caddr || caddr.length < 3) { showToast('Please enter your delivery address'); document.getElementById('cust-address').focus(); return; }
+    if (!cname) cname = isDineIn ? ('Table ' + tableNumber + ' Guest') : 'Website Order';
+    // For dine-in, address is not required
+    if (!isDineIn) {
+      if (!cphone || cphone.length < 9) { showToast('Please enter your phone number'); document.getElementById('cust-phone').focus(); return; }
+      if (!caddr || caddr.length < 3) { showToast('Please enter your delivery address'); document.getElementById('cust-address').focus(); return; }
+    } else {
+      if (!cphone) cphone = '';
+      if (!caddr) caddr = 'Dine-in - Table ' + tableNumber;
+    }
     const total = cartTotal();
     const btn = document.querySelector('button[onclick="checkout()"]');
     if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
@@ -296,7 +301,7 @@
       + '<div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'
       + '<span class="material-symbols-outlined" style="font-size:32px;color:#16a34a;">check_circle</span></div>'
       + '<h2 style="font-size:22px;font-weight:800;margin:0 0 8px;color:#171717;">Order Received!</h2>'
-      + '<p style="color:#525252;font-size:14px;margin:0 0 16px;">Thank you, <strong>' + name + '</strong>. We have received your order and will contact you shortly for follow-up and delivery.</p>'
+      + '<p style="color:#525252;font-size:14px;margin:0 0 16px;">Thank you, <strong>' + name + '</strong>. ' + (isDineIn ? 'Your order for Table ' + tableNumber + ' has been received. We will bring it to your table shortly.' : 'We have received your order and will contact you shortly for follow-up and delivery.') + '</p>'
       + '<div style="background:#f5f5f5;border-radius:8px;padding:12px;margin:0 0 16px;text-align:left;font-size:13px;">'
       + '<div><strong>Order Ref:</strong> ' + (ref || 'WEB-' + Date.now()) + '</div>'
       + '<div><strong>Total:</strong> ' + total + '/=</div>'
@@ -309,6 +314,23 @@
     overlay.style.display = 'flex';
   }
 
+
+  // --- Table QR Code Detection ---
+  // If ?table=N is in the URL, this is a dine-in order from that table
+  var urlParams = new URLSearchParams(window.location.search);
+  var tableNumber = urlParams.get('table');
+  var isDineIn = !!tableNumber;
+  if (isDineIn) {
+    // Show table banner
+    var banner = document.createElement('div');
+    banner.id = 'table-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(90deg,#84cc16,#65a30d);color:#0a0a0a;padding:8px 16px;text-align:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    banner.innerHTML = '<span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px;">table_restaurant</span> Dine-In &bull; Table ' + tableNumber + ' &bull; Order from your phone';
+    document.body.prepend(banner);
+    // Adjust header position
+    var header = document.querySelector('header');
+    if (header) header.style.top = '36px';
+  }
 
   // --- Dynamic Menu Sync from POS ---
   // Fetches menu from POS API and syncs prices/visibility. No manual sync needed.
@@ -364,7 +386,7 @@
     var addr = (document.getElementById('cust-address').value || '').trim();
     var btn = document.getElementById('place-order-btn');
     if (!btn) return;
-    if (phone.length >= 9 && addr.length >= 3) {
+    if (isDineIn || (phone.length >= 9 && addr.length >= 3)) {
       btn.disabled = false;
       btn.classList.remove('bg-stone-700','text-stone-400','cursor-not-allowed');
       btn.classList.add('bg-lime-500','hover:bg-lime-400','text-black','cursor-pointer');

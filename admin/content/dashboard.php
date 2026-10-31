@@ -695,6 +695,7 @@ function loadDashboardOrders(){
             var items = '';
             for (var k in s.items) { items += s.items[k].qty + 'x ' + s.items[k].name; if (k < Object.keys(s.items).length - 1) items += ', '; }
             if (items.length > 40) items = items.substring(0, 40) + '...';
+            if (s.table_number) items = '[T' + s.table_number + '] ' + items;
             var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default'}[s.orderstatus] || 'default';
             var srcColor = sourceColors[s.source] || 'default';
             var srcLabel = sourceLabels[s.source] || s.source;

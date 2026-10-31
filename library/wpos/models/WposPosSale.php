@@ -197,6 +197,7 @@ class WposPosSale {
         $externalRef = isset($this->jsonobj->external_ref) ? $this->jsonobj->external_ref : null;
         $orderType = isset($this->jsonobj->order_type) ? $this->jsonobj->order_type : 'pickup';
         $deliveryAddress = isset($this->jsonobj->delivery_address) ? $this->jsonobj->delivery_address : null;
+        $tableNumber = isset($this->jsonobj->table_number) ? (int)$this->jsonobj->table_number : null;
         $platformMetadata = isset($this->jsonobj->platform_metadata) ? json_encode($this->jsonobj->platform_metadata) : null;
         $priority = isset($this->jsonobj->priority) ? (int)$this->jsonobj->priority : 0;
 
@@ -224,6 +225,9 @@ class WposPosSale {
         $this->jsonobj->orderstatus = 'queued';
         $this->jsonobj->source = $source;
         $this->jsonobj->order_type = $orderType;
+        if ($tableNumber !== null) {
+            $this->jsonobj->table_number = $tableNumber;
+        }
         $this->jsonobj->received_at = date("Y-m-d H:i:s");
         $this->jsonobj->dt = date("Y-m-d H:i:s");
         // Defaults for POS-specific fields (external orders have no POS user/device)
