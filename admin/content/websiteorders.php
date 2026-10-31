@@ -41,7 +41,7 @@
 function loadWebsiteOrders(){
     var tbody = $('#websiteordersbody');
     tbody.html('<tr><td colspan="10" class="center">Loading...</td></tr>');
-    $.get('api/poll.php?last=0', function(data){
+    $.get('/api/poll.php?last=0', function(data){
         if (data.error) { tbody.html('<tr><td colspan="10" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
         var rows = '';

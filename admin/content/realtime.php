@@ -645,7 +645,7 @@ WPOS.onFeedUp = function () {
 };
 
 function _feedPollOnce() {
-    fetch("api/poll.php?since=" + _feedPollSince, { credentials: "same-origin", cache: "no-store" })
+    fetch("/api/poll.php?since=" + _feedPollSince, { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (resp) {
             if (resp && resp.result && resp.result.sales) {
