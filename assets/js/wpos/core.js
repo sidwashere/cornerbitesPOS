@@ -135,14 +135,9 @@ function WPOS() {
         if (getDeviceUUID() == null) {
             // First-run: no device registered yet. Auto-register a default device/location
             // so staff can log in immediately; admins can rename/reassign later in Admin.
-            initialsetup = true;
+            setDeviceUUID();
+            initialsetup = false;
             online = true;
-            // pre-fill the setup dialog defaults
-            $("#newposdevice").val("POS Terminal 1");
-            $("#newposlocation").val("Main Counter");
-            // show a friendly hint instead of a blocking alert
-            $("#login-banner-txt").text("First run: log in as admin, then click 'Setup Device' to register this terminal.");
-            $("#login-banner").show();
             return false;
         }
         return true;
@@ -262,18 +257,8 @@ function WPOS() {
                 $("#loadingdiv").show();
                 // initiate data download/check
                 if (initialsetup) {
-                    // First run on this terminal: auto-register the device so ANY user
-                    // (including staff) can start working immediately. An admin can rename
-                    // or reassign it later in Admin > Settings > Devices & Locations.
-                    autoRegisterDevice(function(ok){
-                        if (ok) {
-                            initialsetup = false;
-                            initData(true);
-                        } else {
-                            showLoginError("Could not register this terminal. Please try again or contact your administrator.");
-                            showLogin();
-                        }
-                    });
+                    initialsetup = false;
+                    initData(true);
                 } else {
                     if (session_locked){
                         stopSocket();
