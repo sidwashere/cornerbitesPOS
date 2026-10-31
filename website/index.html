@@ -162,8 +162,8 @@
     <div class="flex items-center justify-between text-white font-bold">
       <span>Total</span><span id="cart-total" class="text-lime-400 text-xl">0/=</span>
     </div>
-    <button onclick="checkout()" class="w-full py-3 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-all">
-      <span class="material-symbols-outlined">chat</span> Checkout via WhatsApp
+    <button onclick="checkout()" class="w-full py-3 rounded-full bg-lime-500 hover:bg-lime-400 text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-all">
+<span class="material-symbols-outlined">shopping_cart</span> Place Order
     </button>
     <button onclick="clearCart()" class="w-full py-2 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs transition-all">Clear Cart</button>
   </div>
@@ -244,26 +244,67 @@
     var caddr = (document.getElementById('cust-address').value || '').trim();
     if (!cname) cname = 'Website Order';
     if (!caddr) caddr = 'Utawala-Kincar area';
-    const lines = cart.map(i => encodeURIComponent(i.qty + 'x ' + i.name + ' - ' + (i.price*i.qty) + '/=')).join('%0A');
     const total = cartTotal();
-    const msg = 'Hello Corner Bites, I would like to order:%0A' + lines + '%0A%0AName: ' + encodeURIComponent(cname) + '%0APhone: ' + encodeURIComponent(cphone) + '%0ADelivery: ' + encodeURIComponent(caddr) + '%0A%0ATotal: ' + total + '/=%0A%0APayment: Lipa na M-Pesa / Cash on Delivery';
-    // Push the order to the POS (kitchen + admin) in the background so it appears live.
-    try {
-      fetch('https://pos.cornerbites.co.ke/webhooks/website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-        body: JSON.stringify({
-          source: 'website',
-          external_ref: 'WEB-' + Date.now(),
-          order_type: 'delivery',
-          delivery_address: caddr,
-          customer: { name: cname, phone: cphone },
-          items: cart.map(function(i){ return { name: i.name, qty: i.qty, price: i.price }; })
-        })
-      }).catch(function(){});
-    } catch(e) {}
-    window.open('https://wa.me/254185112315?text=' + msg, '_blank');
+    const btn = document.querySelector('button[onclick="checkout()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
+
+    // Push the order to the POS (kitchen + admin) — WhatsApp notification is sent
+    // automatically by the POS in the background. Customer never sees WhatsApp.
+    fetch('https://pos.cornerbites.co.ke/webhooks/website', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'website',
+        external_ref: 'WEB-' + Date.now(),
+        order_type: 'delivery',
+        delivery_address: caddr,
+        customer: { name: cname, phone: cphone },
+        items: cart.map(function(i){ return { name: i.name, qty: i.qty, price: i.price }; })
+      })
+    }).then(function(res){ return res.json(); }).then(function(data){
+      if (data && data.errorCode === 'OK') {
+        // Success — show confirmation, clear cart
+        showOrderConfirmation(cname, cphone, caddr, total, data.data && data.data.ref);
+        cart = [];
+        saveCart();
+        updateCartUI();
+        // Reset customer fields
+        document.getElementById('cust-name').value = '';
+        document.getElementById('cust-phone').value = '';
+        document.getElementById('cust-address').value = '';
+      } else {
+        showToast('Order failed: ' + (data && data.error ? data.error : 'Unknown error'));
+      }
+    }).catch(function(err){
+      showToast('Network error. Please try again or call 0185112315.');
+    }).finally(function(){
+      if (btn) { btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">shopping_cart</span> Place Order'; }
+    });
+  }
+
+  function showOrderConfirmation(name, phone, address, total, ref){
+    var overlay = document.getElementById('order-confirm-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'order-confirm-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">'
+      + '<div style="width:64px;height:64px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'
+      + '<span class="material-symbols-outlined" style="font-size:32px;color:#16a34a;">check_circle</span></div>'
+      + '<h2 style="font-size:22px;font-weight:800;margin:0 0 8px;color:#171717;">Order Received!</h2>'
+      + '<p style="color:#525252;font-size:14px;margin:0 0 16px;">Thank you, <strong>' + name + '</strong>. We have received your order and will contact you shortly for follow-up and delivery.</p>'
+      + '<div style="background:#f5f5f5;border-radius:8px;padding:12px;margin:0 0 16px;text-align:left;font-size:13px;">'
+      + '<div><strong>Order Ref:</strong> ' + (ref || 'WEB-' + Date.now()) + '</div>'
+      + '<div><strong>Total:</strong> ' + total + '/=</div>'
+      + '<div><strong>Delivery:</strong> ' + address + '</div>'
+      + '<div><strong>Phone:</strong> ' + (phone || 'N/A') + '</div>'
+      + '</div>'
+      + '<p style="color:#737373;font-size:12px;margin:0 0 16px;">Our team will reach out via phone/WhatsApp to confirm your order and arrange delivery.</p>'
+      + '<button onclick="document.getElementById(\'order-confirm-overlay\').remove();" style="background:#84cc16;color:#0a0a0a;border:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">Done</button>'
+      + '</div>';
+    overlay.style.display = 'flex';
   }
 
   document.addEventListener('DOMContentLoaded', updateCartUI);
