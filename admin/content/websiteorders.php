@@ -3,7 +3,6 @@
     <h1 style="margin-right: 20px; display: inline-block;">
         Website Orders
     </h1>
-    <button class="btn btn-primary btn-sm pull-right" onclick="loadWebsiteOrders();"><i class="icon-refresh align-top bigger-125"></i> Refresh</button>
 </div><!-- /.page-header -->
 
 <div class="row">
@@ -76,5 +75,5 @@ function updateWebsiteOrderStatus(ref, status){
         if (r) loadWebsiteOrders();
     });
 }
-$(document).ready(function(){ loadWebsiteOrders(); });
+$(document).ready(function(){ loadWebsiteOrders(); setInterval(loadWebsiteOrders, 10000); });
 </script>

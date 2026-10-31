@@ -426,6 +426,15 @@ class WposPosSale {
         }
 
         $this->jsonobj = $json;
+
+        // Send WhatsApp notification for status change (especially when ready)
+        try {
+            $notifier = new WhatsAppNotifier();
+            $notifier->enqueueStatusChange($json, $fromStatus, $toStatus);
+        } catch (Exception $e) {
+            error_log("Failed to enqueue WhatsApp status notification: " . $e->getMessage());
+        }
+
         // broadcast to every device (including the kitchen terminals and the admin Fast Food Ops board).
         // curdeviceid=0 is the admin dashboard sentinel; broadcastSale() with 0 would call
         // getLocationDeviceIds(0) which fails, so force the "all" path by setting saledevice handling:
