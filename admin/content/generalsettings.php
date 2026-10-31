@@ -70,6 +70,13 @@
                             <option value="Rp">Rp Rupiah</option>
                             <option value="kr">kr Krone/Kroon/Krona</option>
                             <option value="Kč">Kč Koruna</option>
+                            <option value="KSh">KSh Kenyan Shilling</option>
+                            <option value="TSh">TSh Tanzanian Shilling</option>
+                            <option value="USh">USh Ugandan Shilling</option>
+                            <option value="RWF">RWF Rwandan Franc</option>
+                            <option value="BIF">BIF Burundian Franc</option>
+                            <option value="ETB">ETB Ethiopian Birr</option>
+                            <option value="SOS">SOS Somali Shilling</option>
                         </select>
                         </div>
                     </div>
@@ -146,8 +153,8 @@
                     </div>
                     <div class="space-4"></div>
                     <div class="form-group">
-                        <div class="col-sm-5"><label>Eftpos:</label></div>
-                        <div class="col-sm-5"><input type="text" id="altlabel_eftpos" /></div>
+                        <div class="col-sm-5"><label>MPESA:</label></div>
+                        <div class="col-sm-5"><input type="text" id="altlabel_mpesa" /></div>
                     </div>
                     <div class="space-4"></div>
                     <div class="form-group">
