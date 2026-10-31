@@ -10,6 +10,32 @@
 </div><!-- /.page-header -->
     <div class="row">
     <div class="col-xs-12">
+<!-- ALL ORDERS OVERVIEW -->
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-xs-12">
+        <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 8px 12px; font-weight: bold;">
+            <i class="icon-list"></i> Recent Orders (All Sources)
+            <button class="btn btn-xs btn-primary pull-right" onclick="loadDashboardOrders();" style="margin-top: -2px;"><i class="icon-refresh"></i> Refresh</button>
+        </div>
+        <table class="table table-striped table-bordered table-hover" style="width:100%; margin-bottom: 0;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Source</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="dashOrdersBody">
+                <tr><td colspan="7" class="center">Loading orders...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- END ALL ORDERS OVERVIEW -->
 <div class="row">
     <div class="space-6"></div>
 
@@ -649,5 +675,39 @@
         // hide loader
         WPOS.util.hideLoader();
     });
+
+// --- Dashboard Orders Overview ---
+function loadDashboardOrders(){
+    var tbody = $('#dashOrdersBody');
+    tbody.html('<tr><td colspan="7" class="center">Loading...</td></tr>');
+    $.get('api/poll.php?last=0', function(data){
+        if (data.error) { tbody.html('<tr><td colspan="7" class="center text-danger">'+data.error+'</td></tr>'); return; }
+        var sales = (data.result && data.result.sales) ? data.result.sales : [];
+        var rows = '';
+        var sourceColors = {website:'success', glovo:'warning', ubereats:'info', phone:'default'};
+        var sourceLabels = {website:'Website', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone'};
+        sales.slice(0, 20).forEach(function(s){
+            var items = '';
+            for (var k in s.items) { items += s.items[k].qty + 'x ' + s.items[k].name; if (k < Object.keys(s.items).length - 1) items += ', '; }
+            if (items.length > 40) items = items.substring(0, 40) + '...';
+            var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default'}[s.orderstatus] || 'default';
+            var srcColor = sourceColors[s.source] || 'default';
+            var srcLabel = sourceLabels[s.source] || s.source;
+            rows += '<tr>'
+                + '<td>'+s.id+'</td>'
+                + '<td><span class="label label-'+srcColor+'">'+srcLabel+'</span></td>'
+                + '<td>'+(s.customer ? s.customer.name : '-')+'</td>'
+                + '<td style="font-size:12px;">'+items+'</td>'
+                + '<td>'+s.total+'/=</td>'
+                + '<td><span class="label label-'+statusClass+'">'+s.orderstatus+'</span></td>'
+                + '<td style="font-size:12px;">'+s.received_at+'</td>'
+                + '</tr>';
+        });
+        if (!rows) rows = '<tr><td colspan="7" class="center">No orders yet.</td></tr>';
+        tbody.html(rows);
+    }, 'json').fail(function(){ tbody.html('<tr><td colspan="7" class="center text-danger">Failed to load orders.</td></tr>'); });
+}
+$(document).ready(function(){ setTimeout(loadDashboardOrders, 500); });
+// --- End Dashboard Orders Overview ---
 
 </script>
