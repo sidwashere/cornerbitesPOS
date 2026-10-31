@@ -13,8 +13,13 @@
 <!-- ALL ORDERS OVERVIEW -->
 <div class="row" style="margin-bottom: 20px;">
     <div class="col-xs-12">
+        <ul class="nav nav-tabs" style="margin-bottom: 0;">
+            <li class="active"><a href="#dashAllOrders" data-toggle="tab" onclick="loadDashboardOrders('all');"><i class="icon-list"></i> All Orders</a></li>
+            <li><a href="#dashKitchenOrders" data-toggle="tab" onclick="loadDashboardOrders('kitchen');"><i class="icon-fire"></i> Kitchen Orders</a></li>
+            <li><a href="#dashWebsiteOrders" data-toggle="tab" onclick="loadDashboardOrders('website');"><i class="icon-globe"></i> Website Orders</a></li>
+        </ul>
         <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 8px 12px; font-weight: bold;">
-            <i class="icon-list"></i> Recent Orders (All Sources)
+            <i class="icon-list"></i> <span id="dashOrderTabTitle">Recent Orders (All Sources)</span>
             <button class="btn btn-xs btn-primary pull-right" onclick="loadDashboardOrders();" style="margin-top: -2px;"><i class="icon-refresh"></i> Refresh</button>
         </div>
         <table class="table table-striped table-bordered table-hover" style="width:100%; margin-bottom: 0;">
