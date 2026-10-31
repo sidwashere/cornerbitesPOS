@@ -307,6 +307,52 @@
     overlay.style.display = 'flex';
   }
 
+
+  // --- Dynamic Menu Sync from POS ---
+  // Fetches menu from POS API and syncs prices/visibility. No manual sync needed.
+  (function syncMenuFromPOS(){
+    fetch('https://pos.cornerbites.co.ke/api/menu.php', {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (!data || !data.ok || !data.menu) return;
+        // Build a map of item name -> price from API
+        var apiItems = {};
+        data.menu.forEach(function(cat){
+          cat.items.forEach(function(item){
+            apiItems[item.name] = item.price;
+          });
+        });
+        // Find all elements with onclick containing addToCart
+        var allEls = document.querySelectorAll('[onclick*="addToCart"]');
+        allEls.forEach(function(el){
+          var onclick = el.getAttribute('onclick') || '';
+          var match = onclick.match(/addToCart\('([^']+)',\s*([\d.]+)\)/);
+          if (!match) return;
+          var itemName = match[1];
+          var card = el.closest('[class*="rounded"]') || el.parentElement;
+          // Walk up to find the card container
+          while (card && card !== document.body && !card.querySelector('[class*="font-bold"]')) {
+            card = card.parentElement;
+          }
+          if (!apiItems.hasOwnProperty(itemName)) {
+            // Item not in API (disabled/deleted) - hide it
+            if (card) card.style.display = 'none';
+            el.style.display = 'none';
+          } else {
+            // Update price from API
+            var newPrice = apiItems[itemName];
+            el.setAttribute('onclick', "addToCart('" + itemName.replace(/'/g, "\'") + "', " + newPrice + ")");
+            // Update displayed price text
+            var priceText = el.querySelector('span:last-child') || el;
+            if (priceText && priceText.textContent.indexOf('/') !== -1) {
+              priceText.textContent = priceText.textContent.replace(/\d+\/=\s*$/, newPrice + '/=');
+            }
+          }
+        });
+      })
+      .catch(function(e){ console.log('Menu sync skipped:', e); });
+  })();
+
   document.addEventListener('DOMContentLoaded', updateCartUI);
   updateCartUI();
 </script>
