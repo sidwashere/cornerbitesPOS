@@ -143,20 +143,17 @@ function WPOSAdmin(){
         WPOS.util.showLoader();
         getLoginStatus(function(user){
             if (user!=false){
-                if (user.isadmin==1 || (user.sections!=null && user.sections.access!='no')){
+                // Allow any authenticated user (including staff) to enter the admin area.
+                // Staff accounts are enabled by default and use the default location/register.
+                curuser = user;
 
-                    curuser = user;
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
+                    }
+                });
 
-                    $.ajaxSetup({
-                        beforeSend: function(xhr, settings) {
-                            xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
-                        }
-                    });
-
-                    WPOS.initAdmin();
-                } else {
-                    alert("You do not have permission to enter this area");
-                }
+                WPOS.initAdmin();
             }
             $('#loadingdiv').hide();
             $('#logindiv').show();
@@ -231,20 +228,17 @@ function WPOSAdmin(){
         // authenticate
         WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: password}), function(user){
             if (user!==false){
-                if (user.isadmin==1 || (user.sections!=null && user.sections.access!='no')){
+                // Allow any authenticated user (including staff) to enter the admin area.
+                // Staff accounts are enabled by default and use the default location/register.
+                curuser = user;
 
-                    curuser = user;
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
+                    }
+                });
 
-                    $.ajaxSetup({
-                        beforeSend: function(xhr, settings) {
-                            xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
-                        }
-                    });
-
-                    WPOS.initAdmin();
-                } else {
-                    showLoginError("You do not have permission to enter this area.");
-                }
+                WPOS.initAdmin();
             } else {
                 showLoginError("Incorrect username or password.");
             }
