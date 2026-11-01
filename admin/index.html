@@ -323,13 +323,13 @@
                         </label>
                         <label class="block clearfix">
                     <span class="block input-icon input-icon-right">
-                        <input class="form-control" id="logpass" onkeypress="if(event.keyCode == 13){WPOS.login();}" type="password"  placeholder="Password"/>
+                        <input class="form-control" id="logpass" onkeypress="if(event.keyCode == 13){if(window.WPOS&&typeof WPOS.login==='function'){WPOS.login();}else{alert('Application not ready yet. Please refresh the page.');}}" type="password"  placeholder="Password"/>
                         <i class="icon-lock" style="margin-right: 1px;"></i>
                     </span>
                         </label>
                         <div class="space-6"></div>
                         <div class="space-6"></div>
-                        <button id="loginbutton" onClick="WPOS.login();" class="btn btn-primary width-35">
+                        <button id="loginbutton" onClick="if(window.WPOS&&typeof WPOS.login==='function'){WPOS.login();}else{alert('Application not ready yet. Please refresh the page.');}" class="btn btn-primary width-35">
                             <i class="icon-key"></i>Login
                         </button>
                         <div class="space-6"></div>

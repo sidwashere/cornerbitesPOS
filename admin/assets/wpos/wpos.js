@@ -203,8 +203,15 @@ function WPOSAdmin(){
         $("#loginbutton").removeAttr('disabled', 'disabled');
     }
     this.login = function () {
-        WPOS.util.showLoader();
-        performLogin();
+        try {
+            WPOS.util.showLoader();
+            performLogin();
+        } catch (e) {
+            console.error("Login error:", e);
+            alert("Login failed to start: " + (e && e.message ? e.message : e));
+            WPOS.util.hideLoader();
+            $("#loginbutton").removeAttr('disabled').val('Login');
+        }
     };
     function performLogin(){
         WPOS.util.showLoader();
@@ -212,36 +219,62 @@ function WPOSAdmin(){
         // get form values
         var userfield = $("#loguser");
         var passfield = $("#logpass");
-        var username = userfield.val();
-        var password = passfield.val();
+        var username = (userfield.val() || "").trim();
+        var password = passfield.val() || "";
         // validate input before hitting the server
         if (!username || !password) {
             WPOS.util.hideLoader();
             showLoginError("Please enter both a username and a password.");
+            alert("Please enter both a username and a password.");
+            $(loginbtn).removeAttr('disabled').val('Login');
             return;
         }
         // disable login button
         $(loginbtn).attr('disabled', 'disabled');
         $(loginbtn).val('Proccessing');
         // hash password
-        password = WPOS.util.SHA256(password);
+        var hashed;
+        try {
+            hashed = WPOS.util.SHA256(password);
+        } catch (e) {
+            console.error("SHA256 error:", e);
+            showLoginError("Could not process password.");
+            alert("Could not process password: " + (e && e.message ? e.message : e));
+            $(loginbtn).removeAttr('disabled').val('Login');
+            WPOS.util.hideLoader();
+            return;
+        }
         // authenticate
-        WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: password}), function(user){
-            if (user!==false){
-                // Allow any authenticated user (including staff) to enter the admin area.
-                // Staff accounts are enabled by default and use the default location/register.
-                curuser = user;
+        WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: hashed}), function(user){
+            try {
+                if (user !== false && user !== null && user !== undefined) {
+                    // Allow any authenticated user (including staff) to enter the admin area.
+                    curuser = user;
 
-                $.ajaxSetup({
-                    beforeSend: function(xhr, settings) {
-                        xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
-                    }
-                });
+                    $.ajaxSetup({
+                        beforeSend: function(xhr, settings) {
+                            xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
+                        }
+                    });
 
-                WPOS.initAdmin();
-            } else {
-                showLoginError("Incorrect username or password.");
+                    WPOS.initAdmin();
+                } else {
+                    showLoginError("Incorrect username or password.");
+                    alert("Login failed: incorrect username or password.");
+                }
+            } catch (e) {
+                console.error("Login callback error:", e);
+                showLoginError("Login error: " + (e && e.message ? e.message : e));
+                alert("Login error: " + (e && e.message ? e.message : e));
             }
+            passfield.val('');
+            WPOS.util.hideLoader();
+            $(loginbtn).val('Login');
+            $(loginbtn).removeAttr('disabled', 'disabled');
+        }, function(err){
+            console.error("Login request error:", err);
+            showLoginError("Network/server error: " + err);
+            alert("Login request failed: " + err);
             passfield.val('');
             WPOS.util.hideLoader();
             $(loginbtn).val('Login');
