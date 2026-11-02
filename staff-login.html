@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corner Bites — Staff Login</title>
+<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+<style>
+  body{background:#0a0a0a;color:#eee;font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+  .box{background:#171717;border:1px solid #333;border-radius:12px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  .box h1{color:#84cc16;margin:0 0 6px;font-size:22px;text-align:center}
+  .box p.sub{color:#999;text-align:center;margin:0 0 18px;font-size:13px}
+  label{display:block;margin:12px 0 6px;font-size:13px;color:#ccc}
+  input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #333;background:#0f0f0f;color:#fff;outline:none;box-sizing:border-box}
+  input:focus{border-color:#84cc16}
+  button{width:100%;margin-top:18px;padding:11px;border-radius:8px;border:none;background:#84cc16;color:#0a0a0a;font-weight:800;font-size:15px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  #msg{display:none;margin-top:14px;padding:10px 12px;border-radius:8px;font-size:13px}
+  #msg.err{background:#3a0f0f;color:#ffb4b4;border:1px solid #7a2a2a}
+  #msg.ok{background:#0f2a0f;color:#b4ffb4;border:1px solid #2a7a2a}
+  small{display:block;text-align:center;margin-top:12px;color:#777;font-size:11px}
+  a{color:#84cc16}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>Corner Bites POS</h1>
+  <p class="sub">Staff Login — Orders & Sales</p>
+  <div id="msg"></div>
+  <label>Username</label>
+  <input id="u" type="text" placeholder="staff" autocomplete="username" autofocus>
+  <label>Password</label>
+  <input id="p" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.keyCode===13)doLogin()">
+  <button id="btn" onclick="doLogin()">Login to POS</button>
+  <small>staff / staff<br><a href="/">Back to POS</a> · <a href="/admin/">Admin login</a></small>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script>
+function showMsg(t, ok){
+  var m=document.getElementById('msg');
+  m.textContent=t; m.className = ok ? 'ok' : 'err'; m.style.display='block';
+}
+function doLogin(){
+  var u=(document.getElementById('u').value||'').trim();
+  var p=document.getElementById('p').value||'';
+  var btn=document.getElementById('btn');
+  if(!u||!p){ showMsg('Please enter both a username and a password.'); return; }
+  btn.disabled=true; btn.textContent='Logging in...'; showMsg('Logging in as '+u+'...', true);
+  var h;
+  try{ h=CryptoJS.SHA256(p).toString(); } catch(e){ showMsg('Could not hash password: '+e.message); btn.disabled=false; btn.textContent='Login to POS'; return; }
+  fetch('/api/auth', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'data='+encodeURIComponent(JSON.stringify({username:u, password:h})),
+    credentials:'same-origin'
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if(j.error==='OK' && j.data){
+      showMsg('Welcome '+j.data.username+' — opening POS...', true);
+      setTimeout(function(){ location.href='/'; }, 700);
+    } else {
+      var msg=(j && (j.error||j.warning)) || 'Incorrect username or password.';
+      if(j.errorCode==='authdenied' || j.error==='Access Denied!') msg='Incorrect username or password.';
+      showMsg(msg);
+      document.getElementById('p').value='';
+      btn.disabled=false; btn.textContent='Login to POS';
+    }
+  }).catch(function(e){
+    showMsg('Network error: '+(e.message||e));
+    btn.disabled=false; btn.textContent='Login to POS';
+  });
+}
+</script>
+</body>
+</html>
