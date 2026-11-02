@@ -686,9 +686,9 @@ var _dashFilter = 'all';
 function loadDashboardOrders(filter){
     if (filter) _dashFilter = filter;
     var tbody = $('#dashOrdersBody');
-    tbody.html('<tr><td colspan="7" class="center">Loading...</td></tr>');
+    tbody.html('<tr><td colspan="8" class="center">Loading...</td></tr>');
     $.get('/api/poll.php?last=0' + (_dashFilter === 'website' ? '&source=website' : ''), function(data){
-        if (data.error) { tbody.html('<tr><td colspan="7" class="center text-danger">'+data.error+'</td></tr>'); return; }
+        if (data.error) { tbody.html('<tr><td colspan="8" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
         if (_dashFilter === 'kitchen') sales = sales.filter(function(s){ return s.source !== 'website'; });
         var rows = '';
@@ -710,11 +710,28 @@ function loadDashboardOrders(filter){
                 + '<td>'+s.total+'/=</td>'
                 + '<td><span class="label label-'+statusClass+'">'+s.orderstatus+'</span></td>'
                 + '<td style="font-size:12px;">'+s.received_at+'</td>'
+                + '<td style="white-space:nowrap;">'
+                + '<button class="btn btn-xs btn-info" onclick="updateDashboardOrderStatus(\''+s.ref+'\',\'preparing\')" title="Mark preparing"><i class="icon-fire"></i></button> '
+                + '<button class="btn btn-xs btn-success" onclick="updateDashboardOrderStatus(\''+s.ref+'\',\'ready\')" title="Mark ready"><i class="icon-ok"></i></button> '
+                + '<button class="btn btn-xs btn-default" onclick="updateDashboardOrderStatus(\''+s.ref+'\',\'completed\')" title="Mark completed"><i class="icon-check"></i></button> '
+                + '<button class="btn btn-xs btn-danger" onclick="deleteDashboardOrder(\''+s.ref+'\')" title="Delete"><i class="icon-trash"></i></button>'
+                + '</td>'
                 + '</tr>';
         });
-        if (!rows) rows = '<tr><td colspan="7" class="center">No orders yet.</td></tr>';
+        if (!rows) rows = '<tr><td colspan="8" class="center">No orders yet.</td></tr>';
         tbody.html(rows);
-    }, 'json').fail(function(){ tbody.html('<tr><td colspan="7" class="center text-danger">Failed to load orders.</td></tr>'); });
+    }, 'json').fail(function(){ tbody.html('<tr><td colspan="8" class="center text-danger">Failed to load orders.</td></tr>'); });
+}
+function updateDashboardOrderStatus(ref, status){
+    WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref: ref, orderstatus: status}), function(r){
+        if (r) loadDashboardOrders(_dashFilter);
+    });
+}
+function deleteDashboardOrder(ref){
+    if (!confirm('Delete this order permanently?')) return;
+    WPOS.sendJsonData("orders/remove", JSON.stringify({ref: ref}), function(r){
+        if (r !== false) loadDashboardOrders(_dashFilter);
+    });
 }
 $(document).ready(function(){ setTimeout(loadDashboardOrders, 500); setInterval(loadDashboardOrders, 15000); });
 // --- End Dashboard Orders Overview ---
