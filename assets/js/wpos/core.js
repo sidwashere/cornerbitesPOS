@@ -105,6 +105,11 @@ function WPOS() {
     };
     // Check for device UUID & present Login, initial setup is triggered if the device UUID is not present
     this.initLogin = function(){
+        // Staff POS uses the simple patch login — never show the old modal
+        if (window.location.pathname !== '/staff-login.html') {
+            window.location.href = '/staff-login.html';
+            return false;
+        }
         showLogin();
         if (getDeviceUUID() == null) {
             // The device has not been setup yet; User will have to login as an admin to setup the device.
