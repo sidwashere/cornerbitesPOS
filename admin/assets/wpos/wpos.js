@@ -229,75 +229,57 @@ function WPOSAdmin(){
         }
     };
     function performLogin(){
-        WPOS.util.showLoader();
         var loginbtn = $('#loginbutton');
-        // get form values
-        var userfield = $("#loguser");
-        var passfield = $("#logpass");
-        var username = (userfield.val() || "").trim();
-        var password = passfield.val() || "";
-        // validate input before hitting the server
+        var username = ($("#loguser").val() || "").trim();
+        var password = $("#logpass").val() || "";
         if (!username || !password) {
-            WPOS.util.hideLoader();
             showLoginError("Please enter both a username and a password.");
             alert("Please enter both a username and a password.");
             $(loginbtn).removeAttr('disabled').val('Login');
+            WPOS.util.hideLoader();
             return;
         }
-        // disable login button
-        $(loginbtn).attr('disabled', 'disabled');
-        $(loginbtn).val('Proccessing');
-        // hash password
+        $(loginbtn).prop('disabled', true).val('Logging in...');
+        showLoginError("Logging in as " + username + "...");
+        $("#login-banner").removeClass('alert-danger').addClass('alert-info').show();
         var hashed;
         try {
-            hashed = WPOS.util.SHA256(password);
+            if (window.CryptoJS && CryptoJS.SHA256) hashed = CryptoJS.SHA256(password).toString();
+            else hashed = WPOS.util.SHA256(password);
         } catch (e) {
-            console.error("SHA256 error:", e);
-            showLoginError("Could not process password.");
-            alert("Could not process password: " + (e && e.message ? e.message : e));
+            showLoginError("Could not hash password: " + (e.message||e));
+            alert("Could not hash password: " + (e.message||e));
             $(loginbtn).removeAttr('disabled').val('Login');
             WPOS.util.hideLoader();
             return;
         }
-        // authenticate
-        WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: hashed}), function(user){
-            try {
-                if (user !== false && user !== null && user !== undefined) {
-                    if (user.isadmin==1 || (user.sections!=null && user.sections.access!='no')){
-                        curuser = user;
-
-                        $.ajaxSetup({
-                            beforeSend: function(xhr, settings) {
-                                xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
-                            }
-                        });
-
-                        WPOS.initAdmin();
-                    } else {
-                        showLoginError("You do not have permission to enter this area.");
-                        alert("You do not have permission to enter this area.");
-                    }
-                } else {
-                    showLoginError("Incorrect username or password.");
-                    alert("Login failed: incorrect username or password.");
-                }
-            } catch (e) {
-                console.error("Login callback error:", e);
-                showLoginError("Login error: " + (e && e.message ? e.message : e));
-                alert("Login error: " + (e && e.message ? e.message : e));
+        // Simple, reliable POST — show every error visibly
+        fetch('/api/auth', {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+            body: 'data=' + encodeURIComponent(JSON.stringify({username: username, password: hashed})),
+            credentials: 'same-origin'
+        }).then(function(r){ return r.json(); }).then(function(j){
+            if (j && j.error === 'OK' && j.data) {
+                curuser = j.data;
+                $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader("anti-csrf-token", curuser.csrf_token||""); }});
+                showLoginError("Welcome " + curuser.username + " — loading...");
+                $("#login-banner").removeClass('alert-danger').addClass('alert-success').show();
+                WPOS.initAdmin();
+            } else {
+                var msg = (j && (j.error||j.warning)) || 'Incorrect username or password.';
+                showLoginError(msg);
+                alert(msg);
             }
-            passfield.val('');
+            $("#logpass").val('');
+            $(loginbtn).removeAttr('disabled').val('Login');
             WPOS.util.hideLoader();
-            $(loginbtn).val('Login');
-            $(loginbtn).removeAttr('disabled', 'disabled');
-        }, function(err){
-            console.error("Login request error:", err);
-            showLoginError("Network/server error: " + err);
-            alert("Login request failed: " + err);
-            passfield.val('');
+        }).catch(function(e){
+            showLoginError("Network error: " + (e.message||e));
+            alert("Network error: " + (e.message||e) + "\n\nTry the simple login: /admin/login.html");
+            $("#logpass").val('');
+            $(loginbtn).removeAttr('disabled').val('Login');
             WPOS.util.hideLoader();
-            $(loginbtn).val('Login');
-            $(loginbtn).removeAttr('disabled', 'disabled');
         });
     }
     this.logout = function () {
