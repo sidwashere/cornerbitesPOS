@@ -47,6 +47,18 @@ $(function(){
     if (false){ // demo/alpha host checks disabled for Cornerbites
         $("#logindiv").append('<button class="btn btn-primary btn-sm" onclick="$(\'#loguser\').val(\'admin\');$(\'#logpass\').val(\'admin\'); WPOS.login();">Demo Login</button>');
     }
+    // Auto-login via URL param for testing: ?autologin=staff or ?autologin=admin
+    var m = window.location.search.match(/[?&]autologin=([^&]+)/);
+    if (m) {
+        var u = decodeURIComponent(m[1]);
+        setTimeout(function(){
+            if (u === 'staff' || u === 'admin') {
+                $("#loguser").val(u);
+                $("#logpass").val(u);
+                if (window.WPOS && typeof WPOS.login === 'function') WPOS.login();
+            }
+        }, 800);
+    }
 });
 function WPOSAdmin(){
     // AJAX PAGE LOADER FUNCTIONS
