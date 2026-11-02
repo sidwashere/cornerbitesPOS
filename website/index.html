@@ -255,8 +255,9 @@
     const btn = document.querySelector('button[onclick="checkout()"]');
     if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
 
-    // Push the order to the POS (kitchen + admin) — WhatsApp notification is sent
-    // automatically by the POS in the background. Customer never sees WhatsApp.
+    // Push the order to the POS (kitchen + admin) — order is ingested as usual.
+    // After success, a WhatsApp chat opens with a pre-filled order message so the
+    // customer sends it directly to the business WhatsApp.
     fetch('https://pos.cornerbites.co.ke/webhooks/website', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -270,8 +271,18 @@
       })
     }).then(function(res){ return res.json(); }).then(function(data){
       if (data && data.errorCode === 'OK') {
+        // Build WhatsApp message with order details BEFORE clearing cart
+        var waRef = (data.data && data.data.ref) ? data.data.ref : ('WEB-' + Date.now());
+        var waMsg = '🛒 NEW ORDER\n';
+        waMsg += 'Ref: ' + waRef + '\n';
+        waMsg += 'Customer: ' + cname + '\n';
+        if (cphone) waMsg += 'Phone: ' + cphone + '\n';
+        if (!isDineIn && caddr) waMsg += 'Address: ' + caddr + '\n';
+        waMsg += 'Items:\n';
+        cart.forEach(function(i){ waMsg += '  ' + i.qty + 'x ' + i.name + ' - KES ' + (i.price * i.qty) + '\n'; });
+        waMsg += 'Total: KES ' + total + '\n';
         // Success — show confirmation, clear cart
-        showOrderConfirmation(cname, cphone, caddr, total, data.data && data.data.ref);
+        showOrderConfirmation(cname, cphone, caddr, total, waRef);
         cart = [];
         saveCart();
         updateCartUI();
@@ -279,6 +290,9 @@
         document.getElementById('cust-name').value = '';
         document.getElementById('cust-phone').value = '';
         document.getElementById('cust-address').value = '';
+        // Open WhatsApp chat with pre-filled order message so customer sends it directly
+        var waUrl = 'https://wa.me/254185112315?text=' + encodeURIComponent(waMsg);
+        window.open(waUrl, '_blank');
       } else {
         showToast('Order failed: ' + (data && data.error ? data.error : 'Unknown error'));
       }

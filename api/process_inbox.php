@@ -40,11 +40,6 @@ foreach ($rows as $row) {
         } else {
             $inbox->mark($row['id'], 'done', null);
             $processed++;
-            try {
-                (new WhatsAppNotifier())->enqueueOrder($result['data'], $row['channel']);
-            } catch (Exception $wex) {
-                error_log("WhatsApp enqueue failed (non-fatal): " . $wex->getMessage());
-            }
         }
     } catch (Exception $ex) {
         $inbox->mark($row['id'], 'failed', $ex->getMessage());

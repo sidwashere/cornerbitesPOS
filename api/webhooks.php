@@ -115,14 +115,10 @@ try {
         returnResult($result);
     }
 
-    // Success: mark inbox done and enqueue a WhatsApp notification (decoupled).
+    // Success: mark inbox done. (WhatsApp notification is no longer enqueued here —
+    // the customer now initiates a direct WhatsApp chat from the website with the
+    // order details; the POS still receives the order via this webhook as usual.)
     $inbox->mark($inboxId, 'done', null);
-    try {
-        $notifier = new WhatsAppNotifier();
-        $notifier->enqueueOrder($result['data'], $platform);
-    } catch (Exception $wex) {
-        error_log("WhatsApp enqueue failed (non-fatal): " . $wex->getMessage());
-    }
 
     http_response_code(200);
     returnResult($result);

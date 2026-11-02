@@ -20,13 +20,15 @@
 </div>
 
 <div class="well">
-    <h4>WhatsApp Notifications</h4>
-    <p>Configure WhatsApp notifications in <code>docs/whatsapp.json</code> on the server.</p>
-    <p>Provider: CallMeBot (free). Get your API key at <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank">callmebot.com</a></p>
+    <h4>WhatsApp Orders</h4>
+    <p>WhatsApp orders are now handled via direct chat from the website.
+       No server-side notification queue is needed.</p>
+    <p>Customers initiate a WhatsApp chat with the business number after placing
+       an order, with a pre-filled order message. The order is still pushed to
+       the POS via the webhook as usual.</p>
     <table class="table table-bordered">
-        <tr><td><strong>Config File</strong></td><td>/docs/whatsapp.json</td></tr>
-        <tr><td><strong>Status</strong></td><td><span class="label label-warning">Disabled (needs setup)</span></td></tr>
-        <tr><td><strong>Processor</strong></td><td>api/process_whatsapp.php (cron every 2 min)</td></tr>
+        <tr><td><strong>Business WhatsApp</strong></td><td>Configured in Website Content &rarr; General Settings</td></tr>
+        <tr><td><strong>Status</strong></td><td><span class="label label-success">Active (direct chat)</span></td></tr>
     </table>
 </div>
 
