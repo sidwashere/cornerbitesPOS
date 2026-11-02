@@ -682,12 +682,15 @@
     });
 
 // --- Dashboard Orders Overview ---
-function loadDashboardOrders(){
+var _dashFilter = 'all';
+function loadDashboardOrders(filter){
+    if (filter) _dashFilter = filter;
     var tbody = $('#dashOrdersBody');
     tbody.html('<tr><td colspan="7" class="center">Loading...</td></tr>');
     $.get('/api/poll.php?last=0' + (_dashFilter === 'website' ? '&source=website' : ''), function(data){
         if (data.error) { tbody.html('<tr><td colspan="7" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
+        if (_dashFilter === 'kitchen') sales = sales.filter(function(s){ return s.source !== 'website'; });
         var rows = '';
         var sourceColors = {website:'success', glovo:'warning', ubereats:'info', phone:'default'};
         var sourceLabels = {website:'Website', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone'};
