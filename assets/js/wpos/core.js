@@ -162,6 +162,11 @@ function WPOS() {
 
     // AUTH
     function showLogin(message, lock) {
+        // Staff POS now uses the simple patch login — bypass the old modal entirely
+        if (window.location.pathname !== '/staff-login.html') {
+            window.location.href = '/staff-login.html';
+            return;
+        }
         $("#loadingdiv").hide();
         $("#logindiv").show();
         $('#loginbutton').removeAttr('disabled', 'disabled');
