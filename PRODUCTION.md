@@ -29,7 +29,7 @@
 - `.htaccess` blocks dotfiles and credential/config files.
 - The installer is disabled unless `install.enabled` exists.
 - Default seed credentials are `admin`/`admin` — change on first login.
-- The `staff` account is enabled by default (staff/staff); change the password in Settings -> Staff & Admins if needed.
+- The `staff` account is disabled by the headless installer; re-enable only if needed.
 
 ## Local dev
 - `./run-local.sh` starts MySQL + PHP (`php -S`) + the feed server.

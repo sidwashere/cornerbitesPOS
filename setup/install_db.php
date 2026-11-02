@@ -27,10 +27,9 @@ try {
     $sql = file_get_contents($root . '/library/installer/schemas/install.sql');
     $pdo->exec($sql);
     echo "Schema installed.\n";
-    // Keep the staff account enabled by default so staff can log in immediately
-    // (staff/staff) and serve customers without an admin first enabling it.
-    $pdo->exec("UPDATE `auth` SET `disabled`=0, `password`='1562206543da764123c21bd524674f0a8aaf49c8a89744c97352fe677f7e4006' WHERE `id`=2");
-    echo "Staff account enabled (staff/staff).\n";
+    // default admin:admin, disable the staff user (same as the GUI installer does)
+    $pdo->exec("UPDATE `auth` SET `disabled`=1 WHERE `id`=2");
+    echo "Staff account disabled (admin/admin remains).\n";
 }
 
 // seed the version setting the app expects (config table stores json in `data`)

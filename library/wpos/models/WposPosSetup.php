@@ -55,41 +55,10 @@ class WposPosSetup
             $result['error'] = "DB Error fetching your device settings";
             return $result;
         } else if ($deviceInfo === null) {
-            // Auto-register a default device/location/register on first use so that
-            // staff (and any user) can log in and serve customers immediately,
-            // without an administrator having to run the device setup dialog.
-            $locId = $this->addNewLocation("Main Counter");
-            if ($locId === false) {
-                $result['data'] = "removed";
-                $result['warning'] = "This device has been removed from the system, please contact your Administrator";
-                return $result;
-            }
-            $deviceData = new stdClass();
-            $deviceData->name = "POS Terminal";
-            $deviceData->locationid = $locId;
-            $deviceData->type = "general_register";
-            $deviceData->ordertype = "printer";
-            $deviceData->orderdisplay = 1;
-            $deviceData->kitchenid = 0;
-            $deviceData->barid = 0;
-            $devId = $this->devMdl->create($deviceData);
-            if ($devId === false) {
-                $result['data'] = "removed";
-                $result['warning'] = "This device has been removed from the system, please contact your Administrator";
-                return $result;
-            }
-            if (!$this->addNewUuid($this->data->uuid, $devId)) {
-                $result['data'] = "removed";
-                $result['warning'] = "This device has been removed from the system, please contact your Administrator";
-                return $result;
-            }
-            // re-fetch the freshly created device record
-            $deviceInfo = $this->devMdl->getUuidInfo($this->data->uuid);
-            if ($deviceInfo === null || $deviceInfo === false) {
-                $result['data'] = "removed";
-                $result['warning'] = "This device has been removed from the system, please contact your Administrator";
-                return $result;
-            }
+            // device removed or not found
+            $result['data'] = "removed";
+            $result['warning'] = "This device has been removed from the system, please contact your Administrator";
+            return $result;
         }
         if ($deviceInfo['disabled'] == 1){ // check if device is disabled
             $result['data'] = "disabled";
