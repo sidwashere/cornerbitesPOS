@@ -1,19 +1,24 @@
-# Cornerbites cPanel FTP credentials for deploy/upload.sh
+# Cornerbites live deploy FTP credentials for deploy/push.sh
 # Copy this file to .ftpcreds and fill in real values. NEVER commit .ftpcreds.
 #
 #   cp deploy/.ftpcreds.example deploy/.ftpcreds
+#
+# Accounts are created in cPanel (das125.truehost.cloud, the rayofhope account)
+# under FTP Accounts, or via the API2 Ftp/addftp endpoint.
+#
+# CRITICAL - the two sites are served from DIFFERENT trees in this account:
+#   pos.cornerbites.co.ke -> /home/mllbontz/home/mllbontz/pos.cornerbites.co.ke (nested legacy path!)
+#   cornerbites.co.ke     -> /home/mllbontz/cornerbites.co.ke
+# The cbpos account MUST be scoped to the nested path (home/mllbontz/pos.cornerbites.co.ke),
+# NOT to /home/mllbontz/pos.cornerbites.co.ke (that tree is stale and unserved).
 
-# FTP server hostname (from cPanel > FTP Accounts, or the shared-IP hostname)
 FTP_HOST="ftp.cornerbites.co.ke"
-
-# FTP username (e.g. deployer@rayofhopewomen.org, or your cPanel user)
-FTP_USER="deployer@rayofhopewomen.org"
-
-# FTP password
-FTP_PASS="CHANGE_ME"
-
-# FTP port (21 = plain FTP, 22 = SFTP is NOT supported by this script)
 FTP_PORT="21"
 
-# Remote directory to drop the zips (cPanel home = ".")
-REMOTE_DIR="."
+# POS subdomain (pos.cornerbites.co.ke) - scoped to the REAL (nested) doc root
+POS_USER="cbpos@pos.cornerbites.co.ke"
+POS_PASS="CHANGE_ME"
+
+# Website (cornerbites.co.ke) - scoped to the website doc root
+WEB_USER="cbweb@cornerbites.co.ke"
+WEB_PASS="CHANGE_ME"
