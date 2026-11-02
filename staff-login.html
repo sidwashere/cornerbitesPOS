@@ -56,6 +56,7 @@ function doLogin(){
   }).then(function(r){ return r.json(); }).then(function(j){
     if(j.error==='OK' && j.data){
       showMsg('Welcome '+j.data.username+' — opening POS...', true);
+      try{ localStorage.setItem('wpos_devuuid','483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad'); }catch(e){}
       setTimeout(function(){ location.href='/'; }, 700);
     } else {
       var msg=(j && (j.error||j.warning)) || 'Incorrect username or password.';
