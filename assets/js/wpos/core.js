@@ -459,6 +459,14 @@ function WPOS() {
             WPOS.initPlugins();
             populateDeviceInfo();
             setTimeout(hideLogin, 500);
+            // Open the product grid so staff can click items immediately
+            setTimeout(function(){
+                ibox.css('width', '450px');
+                iboxopen = true;
+                if (WPOS.items && WPOS.items.generateItemGridCategories) {
+                    WPOS.items.generateItemGridCategories();
+                }
+            }, 800);
         }
     }
 
@@ -1581,17 +1589,19 @@ $(function () {
             $(this).css("maxWidth", "370px");
         }
     });
-    // item box
+    // item box — always open so staff can see and click products
     var ibox = $("#ibox");
     var iboxhandle = $("#iboxhandle");
-    var iboxopen = false;
+    var iboxopen = true;
+    // open the item box on load
+    ibox.css('width', '450px');
     toggleItemBox = function(show){
         if (show){
             iboxopen = true;
-            ibox.animate({width:"100%"}, 500);
+            ibox.animate({width:"450px"}, 300);
         } else {
             iboxopen = false;
-            ibox.animate({width:"0"}, 500);
+            ibox.animate({width:"0"}, 300);
         }
     };
     var isDragging = false;
@@ -1642,10 +1652,10 @@ $(function () {
             }
         }
     }
-    // close on click outside item box
-    $('html').on("click", function() {
-        if (iboxopen) toggleItemBox(false); // hide if currently visible
-    });
+    // close on click outside item box — disabled so product grid stays visible
+    // $('html').on("click", function() {
+    //     if (iboxopen) toggleItemBox(false); // hide if currently visible
+    // });
     ibox.on("click", function(event){
         event.stopPropagation();
     });
