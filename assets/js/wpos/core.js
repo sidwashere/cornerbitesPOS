@@ -119,18 +119,37 @@ function WPOS() {
         try { localStorage.setItem('wpos_devuuid', DEV_UUID); } catch(e){}
         // If already logged in (session valid), just init data
         if (currentuser != null) { initData(true); return; }
-        authenticate('staff', STAFF_HASH, function(ok){
-            if (ok) {
+        // Direct simple auth via fetch (bypasses jQuery AJAX setup issues)
+        fetch('/api/auth', {
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'data='+encodeURIComponent(JSON.stringify({username:'staff', password:STAFF_HASH, getsessiontokens:true})),
+            credentials:'same-origin'
+        }).then(function(r){ return r.json(); }).then(function(j){
+            if (j && j.error === 'OK' && j.data) {
+                setCurrentUser(j.data);
+                updateAuthTable(j.data);
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader("anti-csrf-token", (currentuser ? currentuser.csrf_token : ""));
+                    }
+                });
                 hideLogin();
                 initData(true);
+                // Ensure product grid renders
+                setTimeout(function(){
+                    $("#ibox").css('width', '450px');
+                    if (WPOS.items && WPOS.items.generateItemGridCategories) {
+                        WPOS.items.generateItemGridCategories();
+                    }
+                }, 1000);
             } else {
-                // fallback: try session renew, else show a simple retry banner
-                if (sessionRenew && sessionRenew()) { hideLogin(); initData(true); }
-                else {
-                    $("#login-banner-txt").text("Could not auto-login. Check connection and refresh.");
-                    $("#login-banner").show();
-                }
+                $("#login-banner-txt").text("Auto-login failed: " + ((j && j.error) || 'unknown') + ". Refresh to retry.");
+                $("#login-banner").show();
             }
+        }).catch(function(e){
+            $("#login-banner-txt").text("Network error: " + (e.message||e) + ". Refresh to retry.");
+            $("#login-banner").show();
         });
     }
     // Plugin initiation functions
@@ -461,8 +480,7 @@ function WPOS() {
             setTimeout(hideLogin, 500);
             // Open the product grid so staff can click items immediately
             setTimeout(function(){
-                ibox.css('width', '450px');
-                iboxopen = true;
+                $("#ibox").css('width', '450px');
                 if (WPOS.items && WPOS.items.generateItemGridCategories) {
                     WPOS.items.generateItemGridCategories();
                 }
