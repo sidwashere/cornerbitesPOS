@@ -395,7 +395,7 @@ function WPOS() {
                 setStatusBar(4, "Updating device settings...", statusmsg, 0);
                 fetchConfigTable(function(data){
                     if (data===false){
-                        showLogin();
+                        showInitError();
                         return;
                     }
                     loadOnlineData(2, loginloader);
@@ -408,7 +408,7 @@ function WPOS() {
                 setStatusBar(4, "Updating stored items...", statusmsg, 0);
                 fetchItemsTable(function(data){
                     if (data===false){
-                        showLogin();
+                        showInitError();
                         return;
                     }
                     loadOnlineData(3, loginloader);
@@ -421,7 +421,7 @@ function WPOS() {
                 setStatusBar(4, "Updating customers...", statusmsg, 0);
                 fetchCustTable(function(data){
                     if (data===false){
-                        showLogin();
+                        showInitError();
                         return;
                     }
                     loadOnlineData(4, loginloader);
@@ -434,7 +434,7 @@ function WPOS() {
                 setStatusBar(4, "Updating sales...", statusmsg, 0);
                 fetchSalesTable(function(data){
                     if (data===false){
-                        showLogin();
+                        showInitError();
                         return;
                     }
                     // start websocket connection
@@ -910,19 +910,27 @@ function WPOS() {
      * Fetch device settings from the server using UUID
      * @return boolean
      */
+    var initErrorMessage = null;
     function fetchConfigTable(callback) {
         var data = {};
         data.uuid = getDeviceUUID();
         return WPOS.sendJsonDataAsync("config/get", JSON.stringify(data), function(data){
             if (data) {
-                //console.log(data);
                 if (data=="removed" || data=="disabled"){ // return false if dev is disabled
                     if (data=="removed")
                         removeDeviceUUID();
-                    if (callback){
-                        callback(false);
-                        return;
-                    }
+                    // Try to (re)register this terminal so the till can come online.
+                    selfRegisterDevice(function(registered){
+                        if (registered) {
+                            fetchConfigTable(callback); // retry with the new registration
+                        } else {
+                            initErrorMessage = (data=="disabled")
+                                ? "This terminal has been disabled by the administrator."
+                                : "This terminal's device registration was removed. Ask an administrator to re-register this device (UUID: "+getDeviceUUID()+").";
+                            if (callback) callback(false);
+                        }
+                    });
+                    return;
                 } else {
                     configtable = data;
                     localStorage.setItem("wpos_config", JSON.stringify(data));
@@ -932,6 +940,22 @@ function WPOS() {
             if (callback)
                 callback(data);
         });
+    }
+
+    // Best-effort device (re)registration against the existing "general register" device (id 1).
+    // Requires permission; staff accounts are normally denied, in which case an admin must register it.
+    function selfRegisterDevice(callback) {
+        WPOS.sendJsonDataAsync("devices/setup", JSON.stringify({uuid: getDeviceUUID(), deviceid: 1}), function(res){
+            callback(res !== false && res != null && res.deviceid != null);
+        });
+    }
+
+    function showInitError(){
+        $("#loadingbartxt").text("Could not start the POS");
+        if (!$("#login-banner").is(":visible")) {
+            $("#login-banner-txt").text(initErrorMessage || "The POS could not finish starting. Refresh to retry, or contact your administrator.");
+            $("#login-banner").show();
+        }
     }
 
     function loadConfigTable() {
