@@ -146,15 +146,15 @@ body {
     padding-right: 0 !important;
 }
 #ibox {
-    position: absolute;
+    position: fixed !important;
     right: 0;
-    top:0;
-    bottom: 0;
-    width: 450px;
+    top: 50px;
+    bottom: 40px;
+    width: 450px !important;
     max-width: 450px;
-    margin-bottom: 38px;
+    z-index: 100;
     overflow: visible !important;
-    overflow-x: visible !important; /* Needed for when overflow is overridden */
+    overflow-x: visible !important;
 }
 #iboxhandle {
     position: absolute;
