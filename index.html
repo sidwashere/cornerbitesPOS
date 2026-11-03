@@ -44,7 +44,7 @@
     <script src="/assets/js/jquery.mustache.js?v=20261030"></script>
 
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261109"></script>
+    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261110"></script>
     <script type="text/javascript" src="/assets/js/wpos/sales.js?v=3"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261030"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261030"></script>
@@ -65,7 +65,15 @@
 </head>
 <body style="overflow: hidden;">
 <div id="wrapper">
-<ul class="navbar overflow-hidden">
+<div id="ibox" class="widget-body" style="position:fixed;right:0;top:50px;bottom:40px;width:450px;max-width:450px;z-index:9999;overflow:visible;background:#fff;">
+    <div id="iboxhandle" class="header-color-blue"><i class="icon-chevron-left white"></i></div>
+    <div id="iboxitem_contain">
+        <div class="row">
+        <div id="iboxitems">
+        </div>
+        </div>
+    </div>
+</div><ul class="navbar overflow-hidden">
     <li onclick="setItemListPadding();"><a href="#tabs-1">Till</a></li>
     <li onclick="WPOS.trans.setupTransactionView();"><a href="#tabs-2">Sales</a></li>
     <li onclick="WPOS.reports.populateOverview();"><a href="#tabs-3">Reports</a></li>
@@ -193,15 +201,6 @@
              </div>
          </div>
      </div>
-</div>
-<div id="ibox" class="widget-body">
-    <div id="iboxhandle" class="header-color-blue"><i class="icon-chevron-left white"></i></div>
-    <div id="iboxitem_contain">
-        <div class="row">
-        <div id="iboxitems">
-        </div>
-        </div>
-    </div>
 </div>
 <div id="tabs-2">
     <div id="remtransearch">
