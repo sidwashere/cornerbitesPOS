@@ -469,15 +469,18 @@ function WPOS() {
         if (loginloader){
             setLoadingBar(100, "Massaging the data...");
             $("title").text("Cornerbites POS - Your POS in the cloud");
-            WPOS.initPlugins();
-            populateDeviceInfo();
+            // Non-critical plugins (print/scan) must never block the till from coming up.
+            try { WPOS.initPlugins(); } catch(e){ console.error("initPlugins failed:", e); }
+            try { populateDeviceInfo(); } catch(e){ console.error("populateDeviceInfo failed:", e); }
+            // Always reveal the till and populate the product grid, even if a plugin above threw.
             setTimeout(hideLogin, 500);
-            // Open the product grid so staff can click items immediately
             setTimeout(function(){
                 $("#ibox").css('width', '450px');
-                if (WPOS.items && WPOS.items.generateItemGridCategories) {
-                    WPOS.items.generateItemGridCategories();
-                }
+                try {
+                    if (WPOS.items && WPOS.items.generateItemGridCategories) {
+                        WPOS.items.generateItemGridCategories();
+                    }
+                } catch(e){ console.error("generateItemGridCategories failed:", e); }
             }, 800);
         }
     }
