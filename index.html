@@ -64,7 +64,6 @@
 
 </head>
 <body style="overflow: hidden;">
-<div id="wrapper">
 <div id="ibox" class="widget-body" style="position:fixed;right:0;top:50px;bottom:40px;width:450px;max-width:450px;z-index:9999;overflow:visible;background:#fff;">
     <div id="iboxhandle" class="header-color-blue"><i class="icon-chevron-left white"></i></div>
     <div id="iboxitem_contain">
@@ -73,7 +72,9 @@
         </div>
         </div>
     </div>
-</div><ul class="navbar overflow-hidden">
+</div>
+<div id="wrapper">
+<ul class="navbar overflow-hidden">
     <li onclick="setItemListPadding();"><a href="#tabs-1">Till</a></li>
     <li onclick="WPOS.trans.setupTransactionView();"><a href="#tabs-2">Sales</a></li>
     <li onclick="WPOS.reports.populateOverview();"><a href="#tabs-3">Reports</a></li>
