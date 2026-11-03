@@ -32,15 +32,9 @@ function WPOS() {
         // check browser features, returns false if the browser does not support required features
         if (!checkAppCompatibility())
             return false;
-        // check online status to determine start & load procedure.
-        if (checkOnlineStatus()) {
-            WPOS.checkCacheUpdate(); // check if application cache is updating or already updated
-        } else {
-            // check approppriate offline records exist
-            if (switchToOffline()) {
-                WPOS.initLogin();
-            }
-        }
+        // Skip appcache logic — go straight to login
+        WPOS.initLogin();
+        return true;
     };
 
     function checkAppCompatibility(){
