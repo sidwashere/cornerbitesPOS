@@ -103,23 +103,36 @@ function WPOS() {
                 location.reload(true);
             }
     };
-    // Check for device UUID & present Login, initial setup is triggered if the device UUID is not present
+    // PASSWORDLESS STAFF POS — auto-login, no login screen ever
     this.initLogin = function(){
-        // Staff POS uses the simple patch login — never show the old modal
-        if (window.location.pathname !== '/staff-login.html') {
-            window.location.href = '/staff-login.html';
-            return false;
-        }
-        showLogin();
+        // Always ensure device UUID exists (fixed terminal)
         if (getDeviceUUID() == null) {
-            // The device has not been setup yet; User will have to login as an admin to setup the device.
-            alert("The device has not been setup yet, please login as an administrator to setup the device.");
-            initialsetup = true;
-            online = true;
-            return false;
+            setDeviceUUID();
         }
+        // Auto-authenticate as staff (passwordless) and go straight to the till
+        autoStaffLogin();
         return true;
     };
+    function autoStaffLogin(){
+        var STAFF_HASH = '1562206543da764123c21bd524674f0a8aaf49c8a89744c97352fe677f7e4006';
+        var DEV_UUID = '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad';
+        try { localStorage.setItem('wpos_devuuid', DEV_UUID); } catch(e){}
+        // If already logged in (session valid), just init data
+        if (currentuser != null) { initData(true); return; }
+        authenticate('staff', STAFF_HASH, function(ok){
+            if (ok) {
+                hideLogin();
+                initData(true);
+            } else {
+                // fallback: try session renew, else show a simple retry banner
+                if (sessionRenew && sessionRenew()) { hideLogin(); initData(true); }
+                else {
+                    $("#login-banner-txt").text("Could not auto-login. Check connection and refresh.");
+                    $("#login-banner").show();
+                }
+            }
+        });
+    }
     // Plugin initiation functions
     this.initPlugins = function(){
         // load keypad if set
@@ -165,93 +178,27 @@ function WPOS() {
         });
     }
 
-    // AUTH
+    // AUTH — login screen removed; POS auto-logs in as staff
     function showLogin(message, lock) {
-        // Staff POS now uses the simple patch login — bypass the old modal entirely
-        if (window.location.pathname !== '/staff-login.html') {
-            window.location.href = '/staff-login.html';
-            return;
-        }
-        $("#loadingdiv").hide();
-        $("#logindiv").show();
-        $('#loginbutton').removeAttr('disabled', 'disabled');
-        setLoadingBar(0, "");
-        $('body').css('overflow', 'hidden');
-
-        if (message){
-            $("#login-banner-txt").text(message);
-            $("#login-banner").show();
-        } else {
-            $("#login-banner").hide();
-        }
-        var modal = $('#loginmodal');
-        if (lock){
-            // session is being locked. set opacity
-            modal.css('background-color', "rgba(0,0,0,0.75)");
-        } else {
-            modal.css('background-color', "#000");
-        }
-        modal.show();
+        // Never show a login screen — auto-login instead
+        autoStaffLogin();
     }
 
     function hideLogin(){
         $('#loginmodal').hide();
         $('#loadingdiv').hide();
-        $('#logindiv').show();
         $('body').css('overflow', 'auto');
     }
 
     var session_locked = false;
     this.lockSession = function(){
-        $("#username").val(currentuser.username);
-        showLogin("The session is locked, login to continue.", true);
-        session_locked = true;
+        // No lock screen — just re-auto-login
+        autoStaffLogin();
     };
 
     this.userLogin = function () {
-        WPOS.util.showLoader();
-        var loginbtn = $('#loginbutton');
-        // disable login button
-        $(loginbtn).prop('disabled', true);
-        $(loginbtn).val('Proccessing');
-        // get form values
-        var userfield = $("#username");
-        var passfield = $("#password");
-        var username = userfield.val();
-        var password = passfield.val();
-        // hash password
-        password = WPOS.util.SHA256(password);
-        // authenticate
-        authenticate(username, password, function(result){
-            if (result === true) {
-                userfield.val('');
-                passfield.val('');
-                $("#logindiv").hide();
-                $("#loadingdiv").show();
-                // initiate data download/check
-                if (initialsetup) {
-                    if (isUserAdmin()) {
-                        initSetup();
-                    } else {
-                        alert("You must login as an administrator for first time setup");
-                        showLogin();
-                    }
-                } else {
-                    if (session_locked){
-                        stopSocket();
-                        startSocket();
-                        session_locked = false;
-                        hideLogin();
-                    } else {
-                        initData(true);
-                    }
-                }
-            }
-            passfield.val('');
-            $(loginbtn).val('Login');
-            $(loginbtn).prop('disabled', false);
-            WPOS.util.hideLoader();
-        });
+        // Login screen removed — auto-login as staff
+        autoStaffLogin();
     };
 
     this.logout = function () {
