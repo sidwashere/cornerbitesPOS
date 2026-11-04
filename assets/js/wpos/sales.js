@@ -595,7 +595,7 @@ function WPOSSales() {
      *
      */
     this.updateSalesTotal = function () {
-        document.title = "updateSalesTotal called at " + new Date().getTime();
+        try { $("#subtotal").text("CALLING..."); } catch(e) {}
         try {
         var total = 0.00;
         var tempprice = 0.00;
