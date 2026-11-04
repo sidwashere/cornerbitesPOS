@@ -1270,6 +1270,22 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
+        try { if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal(); } catch(e){}
+        try { if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums(); } catch(e){}
+        if ($("#paymentstable").children('tr').length == 0) {
+            try {
+                var amt = 0;
+                try {
+                    if (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) amt = curgrandtotal;
+                    else if (typeof curtotal !== 'undefined' && curtotal > 0) amt = curtotal;
+                    else if (typeof cursubtotal !== 'undefined' && cursubtotal > 0) amt = cursubtotal;
+                } catch(e){}
+                if (!amt || isNaN(amt)) amt = 0;
+                var amts = amt.toFixed ? amt.toFixed(2) : amt;
+                if (typeof addPaymentRow === 'function') addPaymentRow('mpesa', amts, amts, null);
+                if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+            } catch(e){}
+        }
         var salesobj = getSaleObject();
         var sales_json = JSON.stringify(salesobj);
         if (sales_json.length > 16384) return alert('Too Many Items'); // depends on database field size for sales.data
@@ -1277,21 +1293,21 @@ function WPOSSales() {
         // check for sale reference, indicating an exiting order and set it's reference onto the new data
         var cursale = null;
         if (curref!==null){
-            //alert("Processing using orders existing reference: "+curref);
+            try {
             cursale = WPOS.trans.getTransactionRecord(curref);
             salesobj.ref = curref;
             delete salesobj.isorder;
-            removeSalesRecord(curref);
+            try { removeSalesRecord(curref); } catch(e){}
+            } catch(e){}
         }
         // add to offline table temporarily
-        addOfflineSale(salesobj, "sales/add");
-        lasttransref = salesobj.ref; // set for recall function use
-        if (WPOS.isOnline()) {
-            WPOS.setStatusBar(2, "Uploading Record...");
-            WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ WPOS.sales.postSaleUpload(data, salesobj.ref); });
+        try { addOfflineSale(salesobj, "sales/add"); } catch(e){}
+        try { lasttransref = salesobj.ref; } catch(e){}
+        if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
+            try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
+            try { WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref); } catch(e){} }); } catch(e) {}
         } else {
-            // update status
-            WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)");
+            try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }
         var recemailed = $("#emailreceipt").is(":checked");
         // close the payment dialog and clear form (clears current ref aswell)
