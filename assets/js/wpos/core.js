@@ -1540,6 +1540,7 @@ $(function () {
     }
     // initiate startup routine
     try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
+    setTimeout(function(){ $("body").append("<div id=dbg6>WPOS.orders: "+(WPOS.orders? "defined":"undefined")+"</div>"); }, 2000);
 
     try { $("#wrapper").tabs(); } catch(e) {}
 
