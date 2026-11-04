@@ -36,11 +36,11 @@ $pdo->exec("INSERT INTO `locations` (`id`, `name`, `disabled`) VALUES (1, 'utawa
 echo "Re-seeded location\n";
 
 // Re-seed device
-$pdo->exec("INSERT INTO `devices` (`id`, `name`, `locationid`, `type`, `disabled`, `uuid`) VALUES (1, 'general register', 1, 'pos', 0, '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad')");
+$pdo->exec("INSERT INTO `devices` (`id`, `name`, `locationid`, `data`, `disabled`) VALUES (1, 'general register', 1, '{"uuid":"483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad"}', 0)");
 echo "Re-seeded device\n";
 
 // Re-seed device_map
-$pdo->exec("INSERT INTO `device_map` (`deviceid`, `locationid`) VALUES (1, 1)");
+$pdo->exec("INSERT INTO `device_map` (`deviceid`, `uuid`, `ip`, `useragent`, `dt`) VALUES (1, '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad', '127.0.0.1', 'POS', NOW())");
 echo "Re-seeded device_map\n";
 
 echo "DONE - All data reset except products and pricing\n";
