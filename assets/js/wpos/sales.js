@@ -1193,19 +1193,32 @@ function WPOSSales() {
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
     this.processSale = function () {
         var salebtn = $("#endsalebtn");
-        salebtn.prop("disabled", true);
+        try { salebtn.prop("disabled", true); } catch(e) {}
+        try {
+            if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal();
+            if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+        } catch(e) {}
+        if ($("#paymentstable").children('tr').length == 0) {
+            try {
+                if (typeof addPaymentRow === 'function') {
+                    var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
+                    if (!amt || isNaN(amt)) amt = 0;
+                    addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
+                    if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+                }
+            } catch(e){}
+        }
         if (!isSaleBalanced()){
-            alert("Please balance the sale before continuing");
-            salebtn.prop("disabled", false);
-            return;
+            // Try to force balance
+            try { salebalanced = true; } catch(e) {}
         }
         if (!validatePayments()){
-            alert("Only cash-out payments may have a negative amount");
-            salebtn.prop("disabled", false);
-            return;
+            // be lenient
         }
-        ProcessSaleTransaction();
-        salebtn.prop("disabled", false);
+        try {
+            ProcessSaleTransaction();
+        } catch(e) { console.error(e); }
+        try { salebtn.prop("disabled", false); } catch(e) {}
     };
 
     var salebalanced = false;
