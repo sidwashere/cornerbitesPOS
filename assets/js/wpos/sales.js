@@ -908,11 +908,8 @@ function WPOSSales() {
             if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal();
             if (typeof WPOS.sales.updateDiscount === 'function') WPOS.sales.updateDiscount();
             if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
-        } catch(e) { console.error(e); }
-        var hasItems = false;
-        try { hasItems = getNumSalesItems() > 0; } catch(e) { try { hasItems = $("#itemtable").children('.item_row').length > 0; } catch(e2){} }
-        try { if (!hasItems) { $("#itemtable").children('.item_row').addClass('valid'); hasItems = true; } } catch(e) {}
-        // Try multiple approaches to open payment dialog
+        } catch(e) {}
+        try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
         try {
             var inteftbtn = $("#eftpospaybtn");
             if (WPOS.hasOwnProperty('eftpos') && WPOS.eftpos.isEnabledAndReady()){
@@ -923,22 +920,20 @@ function WPOSSales() {
             if ($("#paymentstable").children('tr').length == 0) {
                 try {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
-                    addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
+                    addPaymentRow('mpesa', (amt.toFixed?amt.toFixed(2):amt), (amt.toFixed?amt.toFixed(2):amt), null);
                     if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
                 } catch(e){}
             }
-            // Try jQuery UI dialog
-            try { if ($("#paymentsdiv").hasClass('ui-dialog-content')) { $("#paymentsdiv").dialog('open'); } else { $("#paymentsdiv").removeClass('hide').show(); } } catch(e) { try { $("#paymentsdiv").show(); } catch(e2){} }
+            var pd = $("#paymentsdiv");
+            try {
+                if (!pd.hasClass('ui-dialog-content')) {
+                    pd.dialog({ width: 'auto', modal: true, resizable: false });
+                }
+            } catch(e) {}
+            try { pd.dialog('open'); } catch(e) { try { pd.removeClass('hide').show().css('display','block'); } catch(e2){} }
             try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
             return true;
-        } catch(e) {
-            console.error("process error", e);
-        }
-        if (hasItems) {
-            try { $("#paymentsdiv").show(); } catch(e){}
-            return true;
-        }
-        alert("Please add some valid items to the sale before proceeding!");
+        } catch(e) {}
         return false;
     };
 
