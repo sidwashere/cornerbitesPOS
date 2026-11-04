@@ -134,3 +134,84 @@ function WPOSOrders(){
         $("#order_box_" + ref + '-' + orderid).detach().prependTo(orderhistcontain);
     };
 }
+
+    this.loadOnlineOrders = function(){
+        var tbody = $("#onlineordersbody");
+        if (tbody.length == 0) return;
+        tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
+        $.get('/api/poll.php?last=0', function(data){
+            if (data.error) { tbody.html('<tr><td colspan="11" class="center text-danger">'+data.error+'</td></tr>'); return; }
+            var sales = (data.result && data.result.sales) ? data.result.sales : [];
+            var rows = '';
+            sales.forEach(function(s){
+                if (s.source && s.source !== 'website' && s.source !== 'online' && s.source !== 'web') {
+                    // still show if it's an order not from POS? maybe show all non-POS orders? or filter to website
+                    // show website/online orders
+                }
+                var isOnline = (s.source == 'website' || s.source == 'online' || s.source == 'web' || (s.external_ref && s.external_ref !== ''));
+                if (!isOnline && s.source != 'website') {
+                    // also include if it has orderstatus and not a completed POS sale? be inclusive for online orders
+                }
+                var items = '';
+                if (s.items) {
+                    for (var k in s.items) { items += (s.items[k].qty||1) + 'x ' + (s.items[k].name||'') + '<br>'; }
+                }
+                var status = s.orderstatus || (s.status==1?'completed':(s.status==0?'queued':'unknown'));
+                var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default','received':'warning'}[status] || 'default';
+                var custName = s.customer ? (s.customer.name || s.customer.first_name || '') : '-';
+                var custPhone = s.customer ? (s.customer.phone || s.customer.telephone || '') : '-';
+                var payMethod = s.payment_method || 'mpesa till';
+                rows += '<tr>'
+                    + '<td>'+(s.id||'-')+'</td>'
+                    + '<td>'+(s.ref||'')+'<br/>'+(s.external_ref||'')+'</td>'
+                    + '<td>'+(s.source||'pos')+'</td>'
+                    + '<td>'+custName+'</td>'
+                    + '<td>'+custPhone+'</td>'
+                    + '<td>'+items+'</td>'
+                    + '<td>'+(s.total||0)+'/=</td>'
+                    + '<td>'+payMethod+'</td>'
+                    + '<td><span class="label label-'+statusClass+'">'+status+'</span></td>'
+                    + '<td>'+(s.received_at||s.dt||s.processdt||'')+'</td>'
+                    + '<td style="white-space:nowrap;">'
+                    + '<button class="btn btn-xs btn-info" onclick="WPOS.orders.updateOnlineStatus(\''+s.ref+'\',\'preparing\')">Preparing</button> '
+                    + '<button class="btn btn-xs btn-success" onclick="WPOS.orders.updateOnlineStatus(\''+s.ref+'\',\'ready\')">Ready</button> '
+                    + '<button class="btn btn-xs btn-primary" onclick="WPOS.orders.markOnlineComplete(\''+s.ref+'\')">Complete & Move to Sales</button> '
+                    + '<button class="btn btn-xs btn-default" onclick="WPOS.trans.showTransactionInfo(\''+s.ref+'\'); $(\'#wrapper\').tabs(\'option\',\'active\',1);">View</button> '
+                    + '<button class="btn btn-xs btn-danger" onclick="WPOS.orders.removeOnlineOrder(\''+s.ref+'\')" title="Delete"><i class="icon-trash"></i></button>'
+                    + '</td>'
+                    + '</tr>';
+            });
+            if (!rows) rows = '<tr><td colspan="11" class="center">No online orders yet.</td></tr>';
+            tbody.html(rows);
+        }, 'json').fail(function(){ tbody.html('<tr><td colspan="11" class="center text-danger">Failed to load orders.</td></tr>'); });
+    };
+
+    this.updateOnlineStatus = function(ref, status){
+        if (typeof WPOS !== 'undefined' && WPOS.sendJsonData){
+            WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref: ref, orderstatus: status}), function(r){
+                if (r !== false) { if(WPOS.orders.loadOnlineOrders) WPOS.orders.loadOnlineOrders(); }
+            });
+        }
+    };
+
+    this.removeOnlineOrder = function(ref){
+        if (!confirm('Delete this order?')) return;
+        if (typeof WPOS !== 'undefined' && WPOS.sendJsonData){
+            WPOS.sendJsonData("orders/remove", JSON.stringify({ref: ref}), function(r){
+                if (r !== false) { if(WPOS.orders.loadOnlineOrders) WPOS.orders.loadOnlineOrders(); }
+            });
+        }
+    };
+
+    this.markOnlineComplete = function(ref){
+        if (typeof WPOS !== 'undefined' && WPOS.sendJsonData){
+            // Mark as completed status
+            WPOS.sendJsonData("orders/updatestatus", JSON.stringify({ref: ref, orderstatus: 'completed', status: 1}), function(r){
+                // Also try to ensure it appears in sales as completed
+                if (WPOS.orders.loadOnlineOrders) WPOS.orders.loadOnlineOrders();
+                if (WPOS.trans && WPOS.trans.setupTransactionView) { WPOS.trans.setupTransactionView(); }
+                alert('Order marked as completed. It should appear in Sales tab.');
+                $('#wrapper').tabs('option', 'active', 1);
+            });
+        }
+    };

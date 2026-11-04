@@ -62,18 +62,20 @@ function WPOSTransactions() {
         {
             "bProcessing": true,
             "aaData": tableData,
-            "aaSorting": [[ 5, "desc" ]],
+            "aaSorting": [[ 6, "desc" ]],
             "aoColumns": [
                 { "sType": "string", "mData":function(data, type, val){ return getOfflineStatusHtml(data.ref) + (data.hasOwnProperty('id') ? "<br/>" + data.id : '');} },
-                { "sType": "numeric", "mData":function(data, type, val){ return '<a class="reflabel" title="'+data.ref+'" href="">'+data.ref.split("-")[2]+'</a>'; } },
+                { "sType": "numeric", "mData":function(data, type, val){ var r=data.ref||''; try{ return '<a class="reflabel" title="'+r+'" href="">'+r.split("-").pop()+'</a>'; }catch(e){return r;} } },
+                { "sType": "string", "mData":function(data, type, val){ return data.source || data.channel || 'pos'; } },
                 { "sType": "string", "mData":function(data, type, val){ return getDeviceLocationText(data.devid, data.locid); } },
                 { "sType": "numeric", "mData":"numitems" },
                 { "sType": "currency", "mData":function(data,type,val){return WPOS.util.currencyFormat(data["total"]);} },
-                { "sType": "timestamp", "mData":function(data, type, val){return datatableTimestampRender(type, data.processdt, WPOS.util.getDateFromTimestamp);} },
+                { "sType": "timestamp", "mData":function(data, type, val){return datatableTimestampRender(type, data.processdt || data.dt, WPOS.util.getDateFromTimestamp);} },
                 { "sType": "html", "mData":function(data,type,val){return getStatusHtml(getTransactionStatus(data.ref));} },
                 { "sType": "html", mData:function(data,type,val){ return "<button class='btn btn-sm btn-primary' onclick='WPOS.trans.showTransactionInfo("+"\""+data.ref+"\""+")'>View</button>"; }, "bSortable": false }
             ],
             "columns": [
+                {},
                 {},
                 {},
                 {},

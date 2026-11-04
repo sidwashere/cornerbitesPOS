@@ -78,6 +78,7 @@
 <ul class="navbar overflow-hidden">
     <li onclick="setItemListPadding();"><a href="#tabs-1">Till</a></li>
     <li onclick="WPOS.trans.setupTransactionView();"><a href="#tabs-2">Sales</a></li>
+    <li onclick="if(WPOS.orders && WPOS.orders.loadOnlineOrders){WPOS.orders.loadOnlineOrders();}"><a href="#tabs-5">Online Sales</a></li>
     <li onclick="WPOS.reports.populateOverview();"><a href="#tabs-3">Reports</a></li>
     <li><a href="#tabs-4">Settings</a></li>
     <button onClick="WPOS.logout();" style="float:right; height: 45px; padding: 6px 8px;" class="btn logout_btn"><i class="glyphicon glyphicon-log-out"></i>Logout</button>
@@ -216,6 +217,7 @@
         <tr>
             <th data-priority="1">GID</th>
             <th data-priority="7">Ref</th>
+            <th data-priority="9">Source</th>
             <th data-priority="6">Device / Location</th>
             <th data-priority="8">#Items</th>
             <th data-priority="5">Total</th>
@@ -225,6 +227,34 @@
         </tr>
         </thead>
         <tbody>
+        </tbody>
+    </table>
+</div>
+<div id="tabs-5">
+    <div class="table-header">
+        Online Sales / Website Orders
+    </div>
+    <div style="margin:10px 0;">
+        <button class="btn btn-sm btn-primary" onclick="if(WPOS.orders){WPOS.orders.loadOnlineOrders();}">Refresh</button>
+    </div>
+    <table id="onlineorderstable" style="text-align: left; width:100%;" class="table table-striped table-bordered table-hover">
+        <thead class="table-header">
+        <tr>
+            <th>ID</th>
+            <th>Ref/External</th>
+            <th>Source</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th>Received</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="onlineordersbody">
+        <tr><td colspan="11" class="center">Loading...</td></tr>
         </tbody>
     </table>
 </div>
