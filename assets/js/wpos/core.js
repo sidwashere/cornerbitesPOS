@@ -49,7 +49,7 @@ function WPOS() {
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
         WPOS.initLogin();
-    };};
+    };
     // PASSWORDLESS STAFF POS — auto-login, no login screen ever
     this.initLogin = function(){
         // Always ensure device UUID exists (fixed terminal)
