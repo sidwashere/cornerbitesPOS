@@ -258,7 +258,7 @@
     // Push the order to the POS (kitchen + admin) — order is ingested as usual.
     // After success, a WhatsApp chat opens with a pre-filled order message so the
     // customer sends it directly to the business WhatsApp.
-    fetch('https://pos.cornerbites.co.ke/webhooks/website', {
+    fetch('https://pos.cornerbites.co.ke/api/webhooks.php?platform=website', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
