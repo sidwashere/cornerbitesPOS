@@ -920,21 +920,27 @@ function WPOSSales() {
             if ($("#paymentstable").children('tr').length == 0) {
                 try {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
+                    if (!amt || isNaN(amt)) amt = 0;
                     addPaymentRow('mpesa', (amt.toFixed?amt.toFixed(2):amt), (amt.toFixed?amt.toFixed(2):amt), null);
                     if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
                 } catch(e){}
             }
             var pd = $("#paymentsdiv");
             try {
-                if (!pd.hasClass('ui-dialog-content')) {
-                    pd.dialog({ width: 'auto', modal: true, resizable: false });
+                if (typeof pd.dialog === 'function') {
+                    if (!pd.hasClass('ui-dialog-content')) {
+                        try { pd.dialog({ maxWidth: 380, width: 'auto', modal: true, autoOpen: false }); } catch(e){}
+                    }
+                    pd.dialog('open');
+                } else {
+                    pd.removeClass('hide').show().css({'display':'block','z-index':9999});
                 }
-            } catch(e) {}
-            try { pd.dialog('open'); } catch(e) { try { pd.removeClass('hide').show().css('display','block'); } catch(e2){} }
+            } catch(e) { try { $("#paymentsdiv").removeClass('hide').show().css('display','block'); } catch(e2){} }
             try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
             return true;
         } catch(e) {}
-        return false;
+        try { $("#paymentsdiv").show(); } catch(e){}
+        return true;
     };
 
     this.addAdditionalPayment = function(){
