@@ -1291,17 +1291,20 @@ function WPOSSales() {
         try {
             // Try direct API call as fallback
             var salesobj = null;
-            try { salesobj = getSaleObject(); } catch(e) {}
+            try { salesobj = getSaleObject(); try { alert('gotso'); } catch(e){} } catch(e) { try { alert('getsoerr:'+e); } catch(e2){} }
             if (salesobj && typeof WPOS.sendJsonDataAsync === 'function') {
                 try {
+                    alert('calling api');
                     WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ 
+                        try { alert('cb:'+data); } catch(e){}
                         try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref); } catch(e){} 
                         try { alert('done'); } catch(e) {}
                     });
                     try { clearSalesForm(); } catch(e) {}
                     return true;
-                } catch(e) {}
+                } catch(e) { try { alert('apierr:'+e); } catch(e2){} }
             }
+            try { alert('try pst'); } catch(e) {}
             ProcessSaleTransaction();
             return true;
         } catch(e) { try { alert('derr:'+e); } catch(e2){} }
