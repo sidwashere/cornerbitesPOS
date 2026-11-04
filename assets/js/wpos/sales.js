@@ -911,33 +911,23 @@ function WPOSSales() {
         } catch(e) {}
         try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
         try {
-            var inteftbtn = $("#eftpospaybtn");
-            if (WPOS.hasOwnProperty('eftpos') && WPOS.eftpos.isEnabledAndReady()){
-                try { inteftbtn.show(); inteftbtn.text(WPOS.util.capFirstLetter(WPOS.eftpos.getType())+' Eftpos'); } catch(e){}
-            } else {
-                try { inteftbtn.hide(); } catch(e){}
-            }
             if ($("#paymentstable").children('tr').length == 0) {
                 try {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
-                    addPaymentRow('mpesa', (amt.toFixed?amt.toFixed(2):amt), (amt.toFixed?amt.toFixed(2):amt), null);
+                    if (typeof addPaymentRow === 'function') {
+                        addPaymentRow('mpesa', (amt.toFixed?amt.toFixed(2):amt), (amt.toFixed?amt.toFixed(2):amt), null);
+                    }
                     if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
                 } catch(e){}
             }
-            var pd = $("#paymentsdiv");
+            // Try to process directly as fallback
             try {
-                if (typeof pd.dialog === 'function') {
-                    if (!pd.hasClass('ui-dialog-content')) {
-                        try { pd.dialog({ maxWidth: 380, width: 'auto', modal: true, autoOpen: false }); } catch(e){}
-                    }
-                    pd.dialog('open');
-                } else {
-                    pd.removeClass('hide').show().css({'display':'block','z-index':9999});
+                if (typeof WPOS.sales.processSale === 'function') {
+                    WPOS.sales.processSale();
+                    return true;
                 }
-            } catch(e) { try { $("#paymentsdiv").removeClass('hide').show().css('display','block'); } catch(e2){} }
-            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
-            return true;
+            } catch(e){}
         } catch(e) {}
         try { $("#paymentsdiv").show(); } catch(e){}
         return true;
