@@ -45,7 +45,7 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=37"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=38"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261118"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261030"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261030"></script>
@@ -188,7 +188,7 @@
                 <div id="regkey-container" class="pull-right">
                         <div id="regkey-inner">
                         <div id="registerkeydiv">
-                            <button class="regbtn btn btn-success" onClick="WPOS.sales.showPaymentDialog();">Process
+                            <button class="regbtn btn btn-success" onClick="try{WPOS.sales.directProcess();}catch(e){try{WPOS.sales.processSale();}catch(e2){}}">Process
                             </button>
                             <button class="regbtn btn btn-danger" onClick="WPOS.sales.userAbortSale();">Abort</button>
                             <button class="regbtn btn" onclick="WPOS.print.openCashDraw();">Till</button>

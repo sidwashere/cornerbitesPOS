@@ -1250,6 +1250,35 @@ function WPOSSales() {
         } catch(e) { try { alert('err:'+e); } catch(e2){} }
         return false;
     };
+    this.directProcess = function() {
+        try { alert('direct'); } catch(e) {}
+        try {
+            if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
+            if (typeof this.updateDiscount === 'function') this.updateDiscount();
+            if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+        } catch(e) {}
+        try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
+        try {
+            if ($("#paymentstable").children('tr').length == 0) {
+                var amt = 0;
+                try {
+                    if (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) amt = curgrandtotal;
+                    else if (typeof curtotal !== 'undefined' && curtotal > 0) amt = curtotal;
+                    else if (typeof cursubtotal !== 'undefined' && cursubtotal > 0) amt = cursubtotal;
+                } catch(e) {}
+                if (!amt || isNaN(amt)) amt = 0;
+                var amts = amt.toFixed ? amt.toFixed(2) : amt;
+                if (typeof addPaymentRow === 'function') addPaymentRow('mpesa', amts, amts, null);
+                if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+            }
+        } catch(e) {}
+        try { salebalanced = true; } catch(e) {}
+        try {
+            ProcessSaleTransaction();
+            return true;
+        } catch(e) { try { alert('derr:'+e); } catch(e2){} }
+        return false;
+    };
 
 
     var salebalanced = false;
