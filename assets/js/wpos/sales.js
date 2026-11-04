@@ -247,7 +247,15 @@ function WPOSItems() {
             }
         }
         $("#codeinput").val('');
-        WPOS.sales.updateSalesTotal();
+        try {
+            if (WPOS.sales && typeof WPOS.sales.updateSalesTotal === 'function') {
+                WPOS.sales.updateSalesTotal();
+            } else {
+                alert("WPOS.sales not available");
+            }
+        } catch(e) {
+            alert("updateSalesTotal error: " + e.message);
+        }
     }
 
     function isItemAdded(itemid, addqty){
