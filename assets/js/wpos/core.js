@@ -1522,11 +1522,23 @@ function WPOS() {
 var toggleItemBox;
 $(function () {
     // initiate core object
-    WPOS = new WPOS();
+    try {
+        WPOS = new WPOS();
+    } catch(e) {
+        console.error('Failed to init WPOS:', e);
+        // Try again after a short delay
+        setTimeout(function(){
+            try {
+                WPOS = new WPOS();
+                if (WPOS && WPOS.initApp) WPOS.initApp();
+            } catch(e2) { console.error('Retry failed:', e2); }
+        }, 500);
+        return;
+    }
     // initiate startup routine
-    WPOS.initApp();
+    try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
 
-    $("#wrapper").tabs();
+    try { $("#wrapper").tabs(); } catch(e) {}
 
     $("#paymentsdiv").dialog({
         maxWidth : 380,
