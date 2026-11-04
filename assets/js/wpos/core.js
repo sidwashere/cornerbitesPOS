@@ -43,14 +43,59 @@ function WPOS() {
             alert("Your browser does not support localStorage required to run the POS terminal.");
             return false;
         }
-        // Application cache is deprecated and not required; skip check
+        // Check application cache: not required to run
+        if (window.applicationCache == null){
+            alert("Your browser does not support applicationCache and will not be able to function offline.");
+        }
         return true;
     }
 
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
-        // Application cache is deprecated; go straight to login
-        WPOS.initLogin();
+            if (window.applicationCache == null){
+                console.log("Application cache not supported.");
+                WPOS.initLogin();
+                return;
+            }
+            var appCache = window.applicationCache;
+            // check if cache exists, if the app is loaded for the first time, we don't need to wait for an update
+            if (appCache.status == appCache.UNCACHED){
+                console.log("Application cache not yet loaded.");
+                WPOS.initLogin();
+                return;
+            }
+            // For chrome, the UNCACHED status is never seen, instead listen for the cached event, cache has finished loading the first time
+            appCache.addEventListener('cached', function(e) {
+                console.log("Cache loaded for the first time, no need for reload.");
+                WPOS.initLogin();
+            });
+            // wait for update to finish: check after applying event listener aswell, we may have missed the event.
+            appCache.addEventListener('updateready', function(e) {
+                console.log("Appcache update finished, reloading...");
+                setLoadingBar(100, "Loading...");
+                appCache.swapCache();
+                location.reload(true);
+            });
+            appCache.addEventListener('noupdate', function(e) {
+                console.log("No appcache update found");
+                WPOS.initLogin();
+            });
+            appCache.addEventListener('progress', function(e) {
+                var loaded = parseInt((100/ e.total)*e.loaded);
+                cacheloaded = isNaN(loaded)?(cacheloaded+1):loaded;
+                //console.log(cacheloaded);
+                setLoadingBar(cacheloaded, "Updating application...");
+            });
+            appCache.addEventListener('downloading', function(e) {
+                console.log("Updating appcache");
+                setLoadingBar(1, "Updating application...");
+            });
+            if (appCache.status == appCache.UPDATEREADY){
+                console.log("Appcache update finished, reloading...");
+                setLoadingBar(100, "Loading...");
+                appCache.swapCache();
+                location.reload(true);
+            }
     };
     // PASSWORDLESS STAFF POS — auto-login, no login screen ever
     this.initLogin = function(){
@@ -351,7 +396,10 @@ function WPOS() {
                 setLoadingBar(10, "Getting device settings...");
                 setStatusBar(4, "Updating device settings...", statusmsg, 0);
                 fetchConfigTable(function(data){
-                    try { if (data===false) loadConfigTable(); } catch(e){}
+                    if (data===false){
+                        showInitError();
+                        return;
+                    }
                     loadOnlineData(2, loginloader);
                 });
                 break;
@@ -374,7 +422,10 @@ function WPOS() {
                 setLoadingBar(60, "Getting customer accounts...");
                 setStatusBar(4, "Updating customers...", statusmsg, 0);
                 fetchCustTable(function(data){
-                    try { if (data===false) loadCustTable(); } catch(e){}
+                    if (data===false){
+                        showInitError();
+                        return;
+                    }
                     loadOnlineData(4, loginloader);
                 });
                 break;
@@ -384,9 +435,13 @@ function WPOS() {
                 setLoadingBar(80, "Getting recent sales...");
                 setStatusBar(4, "Updating sales...", statusmsg, 0);
                 fetchSalesTable(function(data){
-                    try { if (data===false) loadSalesTable(); } catch(e){}
-                    try { startSocket(); } catch(e){}
-                    try { setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0); } catch(e){}
+                    if (data===false){
+                        showInitError();
+                        return;
+                    }
+                    // start websocket connection
+                    startSocket();
+                    setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0);
                     initDataSuccess(loginloader);
                     var offline_num = WPOS.sales.getOfflineSalesNum();
                     if (offline_num>0){
@@ -414,28 +469,21 @@ function WPOS() {
 
     function initDataSuccess(loginloader){
         if (loginloader){
-            try { setLoadingBar(100, "Massaging the data..."); } catch(e){}
-            try { $("title").text("Cornerbites POS - Your POS in the cloud"); } catch(e){}
+            setLoadingBar(100, "Massaging the data...");
+            $("title").text("Cornerbites POS - Your POS in the cloud");
             // Non-critical plugins (print/scan) must never block the till from coming up.
             try { WPOS.initPlugins(); } catch(e){ console.error("initPlugins failed:", e); }
             try { populateDeviceInfo(); } catch(e){ console.error("populateDeviceInfo failed:", e); }
             // Always reveal the till and populate the product grid, even if a plugin above threw.
-            try { setTimeout(hideLogin, 200); } catch(e){ try { hideLogin(); } catch(e){} }
+            setTimeout(hideLogin, 500);
             setTimeout(function(){
-                try { $("#ibox").css('width', '450px'); } catch(e){}
+                $("#ibox").css('width', '450px');
                 try {
                     if (WPOS.items && WPOS.items.generateItemGridCategories) {
                         WPOS.items.generateItemGridCategories();
                     }
                 } catch(e){ console.error("generateItemGridCategories failed:", e); }
-                try { $("#wrapper").tabs('option', 'active', 0); } catch(e){}
-            }, 400);
-        } else {
-            try {
-                setTimeout(function(){
-                    try { if (WPOS.items && WPOS.items.generateItemGridCategories) WPOS.items.generateItemGridCategories(); } catch(e){}
-                }, 200);
-            } catch(e){}
+            }, 800);
         }
     }
 
@@ -780,12 +828,11 @@ function WPOS() {
     this.getJsonDataAsync = function (action, callback) {
         // send request to server
         try {
-            var sep = action.indexOf('?') >= 0 ? '&' : '?';
             $.ajax({
-                url     : "/api/"+action + sep + '_t=' + Date.now(),
+                url     : "/api/"+action,
                 type    : "GET",
                 dataType: "json",
-                timeout : 8000,
+                timeout : 10000,
                 cache   : false,
                 success : function(json){
                     var errCode = json.errorCode;
@@ -1127,20 +1174,13 @@ function WPOS() {
     };
 
     function fetchSalesTable(callback) {
-        return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: (configtable && configtable.deviceid) ? configtable.deviceid : 0}), function(data){
+        return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: configtable.deviceid}), function(data){
             if (data) {
                 salestable = data;
-                try { localStorage.setItem("wpos_csales", JSON.stringify(data)); } catch(e){}
-                if (callback) callback(data);
-                return;
+                localStorage.setItem("wpos_csales", JSON.stringify(data));
             }
-            try {
-                if (loadSalesTable()) {
-                    if (callback) callback(salestable);
-                    return;
-                }
-            } catch(e){}
-            if (callback) callback(false);
+            if (callback)
+                callback(data);
         });
     }
 
@@ -1204,19 +1244,12 @@ function WPOS() {
         return WPOS.getJsonDataAsync("items/get", function(data){
             if (data) {
                 itemtable = data;
-                try { localStorage.setItem("wpos_items", JSON.stringify(data)); } catch(e){}
-                try { generateItemIndex(); } catch(e){}
-                try { if (WPOS.items && typeof WPOS.items.generateItemGridCategories === 'function') WPOS.items.generateItemGridCategories(); } catch(e){}
-                if (callback) callback(data);
-                return;
+                localStorage.setItem("wpos_items", JSON.stringify(data));
+                generateItemIndex();
+                WPOS.items.generateItemGridCategories();
             }
-            try {
-                if (loadItemsTable()) {
-                    if (callback) callback(itemtable);
-                    return;
-                }
-            } catch(e){}
-            if (callback) callback(false);
+            if (callback)
+                callback(data);
         });
     }
 
@@ -1507,7 +1540,7 @@ $(function () {
     // initiate startup routine
     try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
 
-
+    try { $("#wrapper").tabs(); } catch(e) {}
 
     $("#paymentsdiv").dialog({
         maxWidth : 380,
