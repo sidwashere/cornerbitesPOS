@@ -360,29 +360,40 @@ function WPOS() {
                 break;
 
             case 2:
-                // get stored items
+                // get stored items and customers in parallel for speed
                 setLoadingBar(30, "Getting stored items...");
                 setStatusBar(4, "Updating stored items...", statusmsg, 0);
-                fetchItemsTable(function(data){
-                    if (data===false){
-                        showInitError();
-                        return;
+                var itemsDone = false, custDone = false;
+                var itemsOk = false, custOk = false;
+                function checkBoth(){
+                    if (itemsDone && custDone) {
+                        if (itemsOk === false && custOk === false) {
+                            // try to proceed with cache if available
+                            loadOnlineData(4, loginloader);
+                            return;
+                        }
+                        loadOnlineData(4, loginloader);
                     }
-                    loadOnlineData(3, loginloader);
+                }
+                fetchItemsTable(function(data){
+                    itemsDone = true;
+                    itemsOk = (data !== false && data != null);
+                    try { if (data === false) loadItemsTable(); } catch(e){}
+                    setLoadingBar(50, "Getting stored items...");
+                    checkBoth();
+                });
+                fetchCustTable(function(data){
+                    custDone = true;
+                    custOk = (data !== false && data != null);
+                    try { if (data === false) loadCustTable(); } catch(e){}
+                    setLoadingBar(60, "Getting customer accounts...");
+                    checkBoth();
                 });
                 break;
 
             case 3:
-                // get customers
-                setLoadingBar(60, "Getting customer accounts...");
-                setStatusBar(4, "Updating customers...", statusmsg, 0);
-                fetchCustTable(function(data){
-                    if (data===false){
-                        showInitError();
-                        return;
-                    }
-                    loadOnlineData(4, loginloader);
-                });
+                // kept for compatibility, now handled in parallel
+                loadOnlineData(4, loginloader);
                 break;
 
             case 4:
@@ -390,13 +401,15 @@ function WPOS() {
                 setLoadingBar(80, "Getting recent sales...");
                 setStatusBar(4, "Updating sales...", statusmsg, 0);
                 fetchSalesTable(function(data){
-                    if (data===false){
-                        showInitError();
-                        return;
-                    }
+                    try { if (data === false) loadSalesTable(); } catch(e){}
                     // start websocket connection
                     startSocket();
                     setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0);
+                    try {
+                        setInterval(function(){
+                            try { fetchItemsTable(function(){}); fetchSalesTable(function(){}); } catch(e){}
+                        }, 45000);
+                    } catch(e){}
                     initDataSuccess(loginloader);
                     var offline_num = WPOS.sales.getOfflineSalesNum();
                     if (offline_num>0){
@@ -783,11 +796,12 @@ function WPOS() {
     this.getJsonDataAsync = function (action, callback) {
         // send request to server
         try {
+            var sep = action.indexOf('?') >= 0 ? '&' : '?';
             $.ajax({
-                url     : "/api/"+action,
+                url     : "/api/"+action + sep + '_t=' + Date.now(),
                 type    : "GET",
                 dataType: "json",
-                timeout : 10000,
+                timeout : 8000,
                 cache   : false,
                 success : function(json){
                     var errCode = json.errorCode;
@@ -1129,13 +1143,21 @@ function WPOS() {
     };
 
     function fetchSalesTable(callback) {
-        return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: configtable.deviceid}), function(data){
+        return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: (configtable && configtable.deviceid) ? configtable.deviceid : 0}), function(data){
             if (data) {
                 salestable = data;
                 localStorage.setItem("wpos_csales", JSON.stringify(data));
+                if (callback) callback(data);
+                return;
             }
+            try {
+                if (loadSalesTable()) {
+                    if (callback) callback(salestable);
+                    return;
+                }
+            } catch(e){}
             if (callback)
-                callback(data);
+                callback(false);
         });
     }
 
@@ -1194,6 +1216,26 @@ function WPOS() {
         return categoryindex;
     };
 
+    this.refreshItems = function(callback){
+        try {
+            return fetchItemsTable(callback);
+        } catch(e){
+            if (callback) callback(false);
+        }
+    };
+
+    this.refreshAll = function(callback){
+        try {
+            var done = 0;
+            function check(){ done++; if (done >= 3 && callback) callback(true); }
+            fetchConfigTable(function(){ check(); });
+            fetchItemsTable(function(){ check(); });
+            fetchCustTable(function(){ check(); });
+        } catch(e){
+            if (callback) callback(false);
+        }
+    };
+
     // fetches from server
     function fetchItemsTable(callback) {
         return WPOS.getJsonDataAsync("items/get", function(data){
@@ -1201,10 +1243,22 @@ function WPOS() {
                 itemtable = data;
                 localStorage.setItem("wpos_items", JSON.stringify(data));
                 generateItemIndex();
-                WPOS.items.generateItemGridCategories();
+                if (WPOS.items && typeof WPOS.items.generateItemGridCategories === 'function') {
+                    WPOS.items.generateItemGridCategories();
+                }
+                if (callback)
+                    callback(data);
+                return;
             }
+            // Fallback to cached data if available
+            try {
+                if (loadItemsTable()) {
+                    if (callback) callback(itemtable);
+                    return;
+                }
+            } catch(e){}
             if (callback)
-                callback(data);
+                callback(false);
         });
     }
 
@@ -1278,9 +1332,17 @@ function WPOS() {
                 custtable = data;
                 localStorage.setItem("wpos_customers", JSON.stringify(data));
                 generateCustomerIndex();
+                if (callback) callback(data);
+                return;
             }
+            try {
+                if (loadCustTable()) {
+                    if (callback) callback(custtable);
+                    return;
+                }
+            } catch(e){}
             if (callback)
-                callback(data);
+                callback(false);
         });
     }
 
