@@ -173,6 +173,7 @@ function WPOSItems() {
      * @param data
      */
     function addItemRow(qty, name, unit, taxid, sitemid, data) {
+        try {
         sitemid = (sitemid>0?sitemid:0);
         var disable = (sitemid>0); // disable fields that are filled by the stored item
         var disableprice = false;
@@ -200,7 +201,8 @@ function WPOSItems() {
         }
         $('#items_contain').scrollTop(1E10);
         // reinitialize keypad & field listeners
-        WPOS.initKeypad();
+        try { WPOS.initKeypad(); } catch(e) {}
+        } catch(e) { console.error("addItemRow error:", e); }
     }
     this.addItemRow = function(qty, name, unit, taxid, sitemid, data){
         addItemRow(qty, name, unit, taxid, sitemid, data)
@@ -233,22 +235,33 @@ function WPOSItems() {
      * @param {Object} item
      */
     function addItem(item) {
+        try {
         // Item cost may be null if we're adding stored items that were created in a previous version, explicitly set the cost in this case.
+        if (!item || !item.hasOwnProperty) { console.error("addItem: invalid item", item); return; }
         if (!item.hasOwnProperty('cost')) item.cost = 0.00;
+        if (item.price === undefined || item.price === null) item.price = "";
         // TODO: remove last row from table if its invalid?
         // check if a priced item is already present in the sale and if so increment it's qty
         if (item.price==""){
             // insert item into table
-            addItemRow(1, item.name, item.price, item.taxid, item.id, {desc:item.description, cost:item.cost, unit_original:item.price, alt_name:item.alt_name});
+            addItemRow(1, item.name, item.price, item.taxid, item.id, {desc:item.description || "", cost:item.cost, unit_original:item.price, alt_name:item.alt_name || ""});
         } else {
             if (!isItemAdded(item.id, true)){
                 // insert item into table
-                addItemRow(1, item.name, item.price, item.taxid, item.id, {desc:item.description, cost:item.cost, unit_original:item.price, alt_name:item.alt_name});
+                addItemRow(1, item.name, item.price, item.taxid, item.id, {desc:item.description || "", cost:item.cost, unit_original:item.price, alt_name:item.alt_name || ""});
             }
         }
         $("#codeinput").val('');
-        if (WPOS.sales && typeof WPOS.sales.updateSalesTotal === 'function') {
-            WPOS.sales.updateSalesTotal();
+        } catch(e) {
+            console.error("addItem error:", e);
+        }
+        // Always try to update totals
+        try {
+            if (WPOS && WPOS.sales && typeof WPOS.sales.updateSalesTotal === 'function') {
+                WPOS.sales.updateSalesTotal();
+            }
+        } catch(e) {
+            console.error("updateSalesTotal error:", e);
         }
     }
 
@@ -801,6 +814,7 @@ function WPOSSales() {
     }
 
     function validateSalesItems(){
+        try {
         var qty,name, unit, mod, tempprice, tempcost;
         var numinvalid = 0;
         var allow_negative = false;
@@ -856,6 +870,7 @@ function WPOSSales() {
         } else {
             $("#invaliditemnotice").hide();
         }
+        } catch(e) { console.error("validateSalesItems error:", e); }
     }
 
     this.showPaymentDialog = function () {
