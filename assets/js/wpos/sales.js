@@ -67,7 +67,6 @@ function WPOSItems() {
      * @param {Number} id
      */
     this.addItemFromId = function (id) {
-        alert("addItemFromId called with id=" + id);
         var item = WPOS.getItemsTable()[id];
         if (item === null || item === undefined) {
             alert("Item not found");
@@ -248,21 +247,8 @@ function WPOSItems() {
             }
         }
         $("#codeinput").val('');
-        alert("addItem called, WPOS exists: " + (typeof WPOS !== 'undefined') + ", WPOS.sales exists: " + (WPOS && !!WPOS.sales));
-        try {
-            if (typeof WPOS === 'undefined') {
-                alert("WPOS is undefined!");
-            } else if (!WPOS.sales) {
-                alert("WPOS.sales is undefined!");
-            } else if (typeof WPOS.sales.updateSalesTotal !== 'function') {
-                alert("updateSalesTotal is not a function: " + typeof WPOS.sales.updateSalesTotal);
-            } else {
-                alert("About to call updateSalesTotal");
-                WPOS.sales.updateSalesTotal();
-                alert("updateSalesTotal returned");
-            }
-        } catch(e) {
-            alert("Error in addItem: " + e.message);
+        if (WPOS.sales && typeof WPOS.sales.updateSalesTotal === 'function') {
+            WPOS.sales.updateSalesTotal();
         }
     }
 
@@ -609,8 +595,6 @@ function WPOSSales() {
      *
      */
     this.updateSalesTotal = function () {
-        alert("updateSalesTotal called");
-        try { $("#subtotal").text("CALLING..."); } catch(e) {}
         try {
         var total = 0.00;
         var tempprice = 0.00;
