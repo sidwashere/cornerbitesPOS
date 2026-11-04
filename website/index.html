@@ -264,7 +264,8 @@
       body: JSON.stringify({
         source: 'website',
         external_ref: 'WEB-' + Date.now(),
-        order_type: 'delivery',
+        order_type: isDineIn ? 'dinein' : 'delivery',
+        table_number: isDineIn ? parseInt(tableNumber) : null,
         delivery_address: caddr,
         customer: { name: cname, phone: cphone },
         items: cart.map(function(i){ return { name: i.name, qty: i.qty, price: i.price }; })
