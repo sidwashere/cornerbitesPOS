@@ -13,7 +13,7 @@
     <h4>Website Integration</h4>
     <table class="table table-bordered">
         <tr><td><strong>Website URL</strong></td><td>https://cornerbites.co.ke/</td></tr>
-        <tr><td><strong>POS Webhook URL</strong></td><td>https://pos.cornerbites.co.ke/webhooks/website</td></tr>
+        <tr><td><strong>POS Webhook URL</strong></td><td>https://pos.cornerbites.co.ke/api/webhooks.php?platform=website</td></tr>
         <tr><td><strong>Webhook Method</strong></td><td>POST (JSON)</td></tr>
         <tr><td><strong>CORS Origin</strong></td><td>cornerbites.co.ke, www.cornerbites.co.ke</td></tr>
     </table>
