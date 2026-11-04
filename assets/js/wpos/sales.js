@@ -132,9 +132,13 @@ function WPOSItems() {
     this.generateItemGridCategories = function(){
         var iboxitems = $("#iboxitems");
         iboxitems.html('<div class="iboxitem" onclick="WPOS.sales.generateQuickItemsGrid();"><h5>Quick Items</h5><h6>(Favorites)</h6></div>');
-        iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid(-1);"><h5>All Categories</h5><h6>('+Object.keys(WPOS.getItemsTable()).length+' items)</h6></div>');
-        var catindex = WPOS.getCategoryIndex();
-        var categories = WPOS.getConfigTable().item_categories;
+        var itemtable = {};
+        try { itemtable = WPOS.getItemsTable() || {}; } catch(e) {}
+        iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid(-1);"><h5>All Categories</h5><h6>('+Object.keys(itemtable).length+' items)</h6></div>');
+        var catindex = {};
+        try { catindex = WPOS.getCategoryIndex() || {}; } catch(e) {}
+        var categories = {};
+        try { categories = WPOS.getConfigTable().item_categories || {}; } catch(e) {}
         //console.log(catindex);
         for (var i in categories){
             iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid('+i+');">' +
