@@ -156,7 +156,7 @@ body {
     overflow: visible !important;
     overflow-x: visible !important;
 }
-#iboxhandle {
+#iboxhandle { display: none !important;
     position: absolute;
     width: 30px;
     height: 45px;
