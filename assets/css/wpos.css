@@ -357,3 +357,16 @@ body, #wrapper {
         padding-right: 0 !important;
     }
 }
+
+/* Move action buttons to avoid sidebar overlap */
+#tabs-1 .regbtn, .regbtn {
+    margin-right: 5px;
+}
+button[onclick*="WPOS.sales.showPaymentDialog"], button[onclick*="userAbortSale"], button[onclick*="openCashDraw"], button[onclick*="recallLastTransaction"] {
+    position: relative;
+    right: 460px !important;
+}
+
+#regkey-container {
+    margin-right: 470px !important;
+}
