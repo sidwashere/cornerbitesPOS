@@ -21,6 +21,16 @@
  */
 var datatable;
 function WPOSTransactions() {
+    var self = this;
+    try {
+        setInterval(function(){
+            try {
+                if ($("#wrapper").tabs('option','active') == 1) {
+                    if (self.setupTransactionView) self.setupTransactionView();
+                }
+            } catch(e){}
+        }, 15000);
+    } catch(e){}
 
     var transdialog = $("#transactiondiv");
 
@@ -36,13 +46,12 @@ function WPOSTransactions() {
         try {
             if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
                 WPOS.sendJsonDataAsync("sales/get", JSON.stringify({}), function(data){
-                    if (data) {
-                        if (typeof WPOS.updateSalesTableFromData === 'function') {
-                            WPOS.updateSalesTableFromData(data);
-                        } else if (typeof WPOS.getSalesTable === 'function') {
-                            // merge into existing
+                    if (data && data.data) {
+                        if (typeof WPOS.setSalesTable === 'function') {
+                            WPOS.setSalesTable(data.data);
                         }
                         loadLocalTransactions();
+                        try { if (datatable && datatable.api) datatable.api().fnDraw(false); } catch(e2){}
                     }
                 });
             }

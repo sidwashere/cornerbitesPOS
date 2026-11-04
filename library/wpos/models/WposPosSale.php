@@ -399,6 +399,7 @@ class WposPosSale {
 
         // Set timestamp for the new status
         $now = date("Y-m-d H:i:s");
+        $newDbStatus = null;
         switch ($toStatus) {
             case 'preparing':
                 $json->preparing_at = $now;
@@ -408,15 +409,23 @@ class WposPosSale {
                 break;
             case 'completed':
                 $json->completed_at = $now;
+                $newDbStatus = 1; // Move to completed sale
                 break;
             case 'cancelled':
                 $json->cancelled_at = $now;
                 break;
         }
 
-        if ($this->salesMdl->edit($sale['id'], null, json_encode($json))===false){
-            $result["error"] = "Could not update order status: ".$this->salesMdl->errorInfo;
-            return $result;
+        if ($newDbStatus !== null) {
+            if ($this->salesMdl->edit($sale['id'], null, json_encode($json), $newDbStatus)===false){
+                $result["error"] = "Could not update order status: ".$this->salesMdl->errorInfo;
+                return $result;
+            }
+        } else {
+            if ($this->salesMdl->edit($sale['id'], null, json_encode($json))===false){
+                $result["error"] = "Could not update order status: ".$this->salesMdl->errorInfo;
+                return $result;
+            }
         }
 
         // Log status change to history

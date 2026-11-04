@@ -814,6 +814,13 @@ function WPOSSales() {
             } else {
                 inteftbtn.hide();
             }
+            // Default to Mpesa till if no payments added
+            try {
+                if ($("#paymentstable").children('tr').length == 0) {
+                    addPaymentRow('mpesa', curgrandtotal.toFixed(2), curgrandtotal.toFixed(2), null);
+                    WPOS.sales.updatePaymentSums();
+                }
+            } catch(e){}
             $("#paymentsdiv").dialog('open');
             $("#endsalebtn").prop("disabled", false); // make sure the damn button is active, dunno why but when the page reloads it seems to keep its state.
         } else {
