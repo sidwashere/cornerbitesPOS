@@ -622,7 +622,6 @@ function WPOSSales() {
         if (isNaN(curtotal)) curtotal = 0;
         $("#subtotal").text(WPOS.util.currencyFormat(cursubtotal.toFixed(2)));
         $("#totaltax").text(WPOS.util.currencyFormat(curtaxtotal.toFixed(2)));
-        alert("DEBUG: subtotal=" + cursubtotal + " tax=" + curtaxtotal + " total=" + curtotal + " valid_rows=" + $("#itemtable").children('.valid').length);
         this.updateDiscount();
         } catch(e) {
             console.error("updateSalesTotal error:", e);
