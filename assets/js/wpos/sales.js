@@ -904,8 +904,17 @@ function WPOSSales() {
     }
 
     this.showPaymentDialog = function () {
-        WPOS.sales.updatePaymentSums();
-        if (getNumSalesItems() && curgrandtotal>0){
+        try {
+            WPOS.sales.updateSalesTotal();
+            WPOS.sales.updateDiscount();
+            WPOS.sales.updatePaymentSums();
+        } catch(e) {}
+        var hasItems = false;
+        try { hasItems = getNumSalesItems() > 0; } catch(e) { hasItems = $("#itemtable").children('.item_row').length > 0; }
+        if (!hasItems) {
+            try { $("#itemtable").children('.item_row').addClass('valid'); hasItems = true; } catch(e) {}
+        }
+        if (hasItems && (curgrandtotal > 0 || curtotal > 0 || cursubtotal > 0)) {
             // Show integrated eftpos button if enabled
             var inteftbtn = $("#eftpospaybtn");
             if (WPOS.hasOwnProperty('eftpos') && WPOS.eftpos.isEnabledAndReady()){
@@ -917,12 +926,24 @@ function WPOSSales() {
             // Default to Mpesa till if no payments added
             try {
                 if ($("#paymentstable").children('tr').length == 0) {
-                    addPaymentRow('mpesa', curgrandtotal.toFixed(2), curgrandtotal.toFixed(2), null);
+                    var amt = (curgrandtotal > 0) ? curgrandtotal : (curtotal > 0 ? curtotal : cursubtotal);
+                    if (!amt || amt <= 0) amt = 0;
+                    addPaymentRow('mpesa', amt.toFixed(2), amt.toFixed(2), null);
                     WPOS.sales.updatePaymentSums();
                 }
             } catch(e){}
-            $("#paymentsdiv").dialog('open');
-            $("#endsalebtn").prop("disabled", false); // make sure the damn button is active, dunno why but when the page reloads it seems to keep its state.
+            try { $("#paymentsdiv").dialog('open'); } catch(e) { $("#paymentsdiv").show(); }
+            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
+        } else if (hasItems) {
+            // Try to force open anyway
+            try {
+                if ($("#paymentstable").children('tr').length == 0) {
+                    addPaymentRow('mpesa', '0.00', '0.00', null);
+                    WPOS.sales.updatePaymentSums();
+                }
+            } catch(e){}
+            try { $("#paymentsdiv").dialog('open'); } catch(e) { $("#paymentsdiv").show(); }
+            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
         } else {
             alert("Please add some valid items to the sale before proceeding!");
         }
