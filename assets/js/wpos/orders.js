@@ -140,52 +140,15 @@ function WPOSOrders(){
 }
 
     this.loadOnlineOrders = function(){
-        try { alert("loadOnlineOrders called"); } catch(e){}
         var tbody = $("#onlineordersbody");
-        if (tbody.length == 0) return;
-        tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
-        if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
-            WPOS.sendJsonDataAsync("orders/get", JSON.stringify({limit: 100}), function(data){
-                if (!data) { tbody.html('<tr><td colspan="11" class="center text-danger">no data</td></tr>'); return; }
-                if (data === false) { tbody.html('<tr><td colspan="11" class="center text-danger">request failed</td></tr>'); return; }
-                var sales = Array.isArray(data) ? data : (data && data.data ? data.data : []);
-                var rows = '';
-                (Array.isArray(sales)?sales:Object.values(sales||{})).forEach(function(s){
-                    var items = '';
-                    if (s.items) {
-                        for (var k in s.items) { items += (s.items[k].qty||1) + 'x ' + (s.items[k].name||'') + '<br>'; }
-                    }
-                    var status = s.orderstatus || (s.status==1?'completed':(s.status==0?'queued':'unknown'));
-                    var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default','received':'warning'}[status] || 'default';
-                    var custName = s.customer ? (s.customer.name || s.customer.first_name || '') : '-';
-                    var custPhone = s.customer ? (s.customer.phone || s.customer.telephone || '') : '-';
-                    var payMethod = s.payment_method || 'mpesa till';
-                    rows += '<tr>'
-                        + '<td>'+(s.id||'-')+'</td>'
-                        + '<td>'+(s.ref||'')+'<br/>'+(s.external_ref||'')+'</td>'
-                        + '<td>'+(s.source||'pos')+'</td>'
-                        + '<td>'+custName+'</td>'
-                        + '<td>'+custPhone+'</td>'
-                        + '<td>'+items+'</td>'
-                        + '<td>'+(s.total||0)+'/=</td>'
-                        + '<td>'+payMethod+'</td>'
-                        + '<td><span class="label label-'+statusClass+'">'+status+'</span></td>'
-                        + '<td>'+(s.received_at||s.dt||s.processdt||'')+'</td>'
-                        + '<td style="white-space:nowrap;">'
-                        + '<button class="btn btn-xs btn-info" onclick="WPOS.orders.updateOnlineStatus(\''+s.ref+'\',\'preparing\')">Preparing</button> '
-                        + '<button class="btn btn-xs btn-success" onclick="WPOS.orders.updateOnlineStatus(\''+s.ref+'\',\'ready\')">Ready</button> '
-                        + '<button class="btn btn-xs btn-primary" onclick="WPOS.orders.markOnlineComplete(\''+s.ref+'\')">Complete & Move to Sales</button> '
-                        + '<button class="btn btn-xs btn-default" onclick="WPOS.trans.showTransactionInfo(\''+s.ref+'\'); $(\'#wrapper\').tabs(\'option\',\'active\',1);">View</button> '
-                        + '<button class="btn btn-xs btn-danger" onclick="WPOS.orders.removeOnlineOrder(\''+s.ref+'\')" title="Delete"><i class="icon-trash"></i></button>'
-                        + '</td>'
-                        + '</tr>';
-                });
-                if (!rows) rows = '<tr><td colspan="11" class="center">No online orders yet.</td></tr>';
-                tbody.html(rows);
-            });
-        } else {
-            tbody.html('<tr><td colspan="11" class="center text-danger">WPOS not ready</td></tr>');
-        }
+        if (tbody.length == 0) { $("body").append("<div id=dbg>NO TBODY</div>"); return; }
+        tbody.html('<tr><td colspan="11" class="center">DEBUG: function called, tbody found</td></tr>');
+        if (typeof WPOS === 'undefined') { tbody.html('<tr><td colspan="11" class="center">WPOS undefined</td></tr>'); return; }
+        if (!WPOS.orders) { tbody.html('<tr><td colspan="11" class="center">WPOS.orders undefined</td></tr>'); return; }
+        tbody.html('<tr><td colspan="11" class="center">WPOS.orders exists, calling API...</td></tr>');
+        WPOS.sendJsonDataAsync("orders/get", JSON.stringify({limit: 5}), function(data){
+            tbody.html('<tr><td colspan="11" class="center">CALLBACK FIRED, data type: '+(typeof data)+', isArray: '+Array.isArray(data)+'</td></tr>');
+        });
     };
 
     this.updateOnlineStatus = function(ref, status){
