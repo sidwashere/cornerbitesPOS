@@ -1647,14 +1647,14 @@ $(function () {
     var iboxhandle = $("#iboxhandle");
     var iboxopen = true;
     // open the item box on load
-    ibox.css('width', '450px');
+    ibox.addClass('ibox-open').show();
     toggleItemBox = function(show){
         if (show){
             iboxopen = true;
-            ibox.animate({width:"450px"}, 300);
+            ibox.addClass('ibox-open').css('width','450px').show();
         } else {
             iboxopen = false;
-            ibox.animate({width:"0"}, 300);
+            ibox.removeClass('ibox-open').hide();
         }
     };
     var isDragging = false;

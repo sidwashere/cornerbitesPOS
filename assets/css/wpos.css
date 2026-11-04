@@ -146,15 +146,22 @@ body {
     padding-right: 0 !important;
 }
 #ibox {
-    position: fixed !important;
+    position: fixed;
     right: 0;
     top: 50px;
     bottom: 40px;
-    width: 450px !important;
+    width: 450px;
     max-width: 450px;
     z-index: 100;
-    overflow: visible !important;
-    overflow-x: visible !important;
+    background: #fff;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+}
+/* Responsive: hide sidebar by default on small screens, toggle via Products button */
+@media (max-width: 1199px) {
+    #ibox { display: none; }
+    #ibox.ibox-open { display: block; }
 }
 #iboxhandle { display: none !important;
     position: absolute;
@@ -348,25 +355,11 @@ body {
     }
 }
 
-/* Ensure content doesn't hide behind product sidebar */
-body, #wrapper {
-    padding-right: 460px !important;
+/* Reserve space for the product sidebar on desktop so content isn't hidden */
+@media (min-width: 1200px) {
+    #wrapper { margin-right: 450px !important; }
 }
-@media (max-width: 1200px) {
-    body, #wrapper {
-        padding-right: 0 !important;
-    }
-}
-
-/* Move action buttons to avoid sidebar overlap */
-#tabs-1 .regbtn, .regbtn {
-    margin-right: 5px;
-}
-button[onclick*="WPOS.sales.showPaymentDialog"], button[onclick*="userAbortSale"], button[onclick*="openCashDraw"], button[onclick*="recallLastTransaction"] {
-    position: relative;
-    right: 460px !important;
-}
-
-#regkey-container {
-    margin-right: 470px !important;
+/* On small screens, wrapper takes full width */
+@media (max-width: 1199px) {
+    #wrapper { margin-right: 0 !important; }
 }
