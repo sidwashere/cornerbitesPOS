@@ -309,6 +309,7 @@ body {
         margin-left:-175px;
     }
     #ibox {
+        width: 300px;
         max-width: 300px;
     }
     #iboxitems {
@@ -337,6 +338,7 @@ body {
         min-width: 70px;
     }
     #ibox {
+        width: 160px;
         max-width: 160px;
     }
     #iboxitems {
