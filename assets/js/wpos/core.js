@@ -1514,7 +1514,7 @@ function WPOS() {
     try { if (typeof WPOSTransactions === 'function') this.trans = new WPOSTransactions(); } catch(e) {}
     try { if (typeof WPOSReports === 'function') this.reports = new WPOSReports(); } catch(e) {}
     try { if (typeof WPOSPrint === 'function') this.print = new WPOSPrint(); } catch(e) {}
-    try { if (typeof WPOSOrders === 'function') this.orders = new WPOSOrders(); } catch(e) { alert("WPOSOrders ctor error: "+e.message); }
+    try { if (typeof WPOSOrders === 'function') this.orders = new WPOSOrders(); else $("body").append("<div id=dbg1>WPOSOrders not a function</div>"); } catch(e) { $("body").append("<div id=dbg2>WPOSOrders ctor error: "+e.message+"</div>"); }
     try { if (typeof WPOSUtil === 'function') this.util = new WPOSUtil(); } catch(e) {}
 
     if (typeof(WPOSEftpos) === 'function')
