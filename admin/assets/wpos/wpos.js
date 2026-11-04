@@ -152,29 +152,11 @@ function WPOSAdmin(){
     var curuser = "";
     // authentication
     this.isLogged = function(){
-        WPOS.util.showLoader();
-        getLoginStatus(function(user){
-            if (user!=false){
-                if (user.isadmin==1 || (user.sections!=null && user.sections.access!='no')){
-                    curuser = user;
-
-                    $.ajaxSetup({
-                        beforeSend: function(xhr, settings) {
-                            xhr.setRequestHeader("anti-csrf-token", (curuser ? curuser.csrf_token : ""));
-                        }
-                    });
-
-                    WPOS.initAdmin();
-                } else {
-                    alert("You do not have permission to enter this area");
-                    showLoginError("You do not have permission to enter this area.");
-                }
-            }
-            $('#loadingdiv').hide();
-            $('#logindiv').show();
-            $("#loginbutton").removeAttr('disabled', 'disabled');
-            WPOS.util.hideLoader();
-        });
+        // Always show login form - require password entry
+        $('#loadingdiv').hide();
+        $('#logindiv').show();
+        $("#loginbutton").removeAttr('disabled', 'disabled');
+        WPOS.util.hideLoader();
     };
     function getLoginStatus(callback){
         return WPOS.getJsonDataAsync("hello", callback);

