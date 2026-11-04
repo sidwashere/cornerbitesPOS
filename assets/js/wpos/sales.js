@@ -762,13 +762,19 @@ function WPOSSales() {
     function validateSalesItems(){
         var qty,name, unit, mod, tempprice, tempcost;
         var numinvalid = 0;
-        var allow_negative = WPOS.getConfigTable().pos.negative_items;
+        var allow_negative = false;
+        try { allow_negative = WPOS.getConfigTable().pos.negative_items; } catch(e) {}
         $("#itemtable").children(".item_row").each(function (index, element) {
                 qty = parseFloat($(element).find(".itemqty").val());
                 name = $(element).find(".itemname").val();
                 unit = parseFloat($(element).find(".itemunit").val());
                 var itemdata = $(element).find(".itemid").data('options');
-                mod = itemdata.hasOwnProperty('mod') ? itemdata.mod.total : 0;
+                if (!itemdata || typeof itemdata !== 'object') {
+                    try { itemdata = JSON.parse($(element).find(".itemid").attr('data-options')); } catch(e) { itemdata = {cost:0, mod:{total:0}}; }
+                }
+                if (!itemdata) itemdata = {cost:0, mod:{total:0}};
+                mod = (itemdata && itemdata.hasOwnProperty('mod') && itemdata.mod) ? (itemdata.mod.total || 0) : 0;
+                if (!itemdata.hasOwnProperty('cost')) itemdata.cost = 0;
                 tempprice = parseFloat("0.00");
                 if (qty > 0 && name != "" && (unit>0 || allow_negative)) {
                     // add item modification total to unit price & calculate item total
@@ -776,7 +782,7 @@ function WPOSSales() {
                     tempcost = qty * itemdata.cost;
                     // calculate item tax
                     var taxruleid = $(element).find(".itemtax").val();
-                    var taxdata = WPOS.util.calcTax(taxruleid, tempprice, tempcost);
+                    var taxdata = (typeof WPOS.util.calcTax === 'function') ? WPOS.util.calcTax(taxruleid, tempprice, tempcost) : {inclusive:true, total:0};
                     if (!taxdata.inclusive) {
                         tempprice += taxdata.total;
                     }
