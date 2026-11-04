@@ -1494,16 +1494,7 @@ $(function () {
     try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
 
     try { $("#wrapper").tabs(); } catch(e) {}
-    // Show product sidebar only on Till tab
-    try {
-        $("#wrapper").on("tabsactivate", function(e, ui){
-            if (ui.newPanel && ui.newPanel.attr('id') === 'tabs-1') {
-                $("#ibox").show();
-            } else {
-                $("#ibox").hide();
-            }
-        });
-    } catch(e) {}
+
 
     $("#paymentsdiv").dialog({
         maxWidth : 380,
