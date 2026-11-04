@@ -1266,7 +1266,6 @@ function WPOSSales() {
         return false;
     };
     this.directProcess = function() {
-        try { alert('direct'); } catch(e) {}
         try {
             if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
             if (typeof this.updateDiscount === 'function') this.updateDiscount();
@@ -1289,25 +1288,40 @@ function WPOSSales() {
         } catch(e) {}
         try { salebalanced = true; } catch(e) {}
         try {
-            // Try direct API call as fallback
             var salesobj = null;
-            try { salesobj = getSaleObject(); try { alert('gotso'); } catch(e){} } catch(e) { try { alert('getsoerr:'+e); } catch(e2){} }
-            if (salesobj && typeof WPOS.sendJsonDataAsync === 'function') {
+            try { salesobj = getSaleObject(); } catch(e) { }
+            if (salesobj) {
                 try {
-                    alert('calling api');
-                    WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ 
-                        try { alert('cb:'+data); } catch(e){}
-                        try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref); } catch(e){} 
-                        try { alert('done'); } catch(e) {}
-                    });
-                    try { clearSalesForm(); } catch(e) {}
-                    return true;
-                } catch(e) { try { alert('apierr:'+e); } catch(e2){} }
+                    if (salesobj.items) {
+                        for (var i=0; i<salesobj.items.length; i++) {
+                            if (!salesobj.items[i].desc) salesobj.items[i].desc = salesobj.items[i].name || '';
+                        }
+                    }
+                    if (!salesobj.userid && typeof WPOS.getCurrentUserId === 'function') salesobj.userid = WPOS.getCurrentUserId();
+                    if (typeof WPOS.getConfigTable === 'function') {
+                        var cfg = WPOS.getConfigTable();
+                        if (!salesobj.devid && cfg.deviceid) salesobj.devid = cfg.deviceid;
+                        if (!salesobj.locid && cfg.locationid) salesobj.locid = cfg.locationid;
+                    }
+                    if (typeof WPOS.sendJsonDataAsync === 'function') {
+                        WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ 
+                            try { 
+                                if (data && WPOS.sales && WPOS.sales.postSaleUpload) {
+                                    WPOS.sales.postSaleUpload(data, salesobj.ref); 
+                                } else if (data === false) {
+                                    // try offline
+                                }
+                            } catch(e){} 
+                        });
+                        try { if (typeof clearSalesForm === 'function') clearSalesForm(); } catch(e) {}
+                        try { $("#paymentsdiv").dialog('close'); } catch(e) { try { $("#paymentsdiv").hide(); } catch(e2){} }
+                        return true;
+                    }
+                } catch(e) { }
             }
-            try { alert('try pst'); } catch(e) {}
-            ProcessSaleTransaction();
+            try { ProcessSaleTransaction(); } catch(e2) {}
             return true;
-        } catch(e) { try { alert('derr:'+e); } catch(e2){} }
+        } catch(e) { }
         return false;
     };
 
