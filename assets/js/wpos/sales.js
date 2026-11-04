@@ -587,6 +587,7 @@ function WPOSSales() {
      *
      */
     this.updateSalesTotal = function () {
+        try {
         var total = 0.00;
         var tempprice = 0.00;
         curtaxtotal = 0.00; // clear last tax
@@ -598,24 +599,34 @@ function WPOSSales() {
         $("#itemtable").children('.valid').each(function (index, element) {
                 // get item total
                 tempprice = parseFloat($(element).find(".itemprice").val());
+                if (isNaN(tempprice)) tempprice = 0;
                 // add to total
                 total += tempprice;
                 // get tax amount included with each item
                 var taxtotals = $(element).find(".itemtaxval").data('taxdata');
-                curtaxtotal += taxtotals.total;
+                if (taxtotals && !isNaN(taxtotals.total)) {
+                    curtaxtotal += taxtotals.total;
+                }
         });
         // remove cur tax from the total and we have our subtotal
         curtotal = total;
         cursubtotal = (total - curtaxtotal);
+        if (isNaN(cursubtotal)) cursubtotal = 0;
+        if (isNaN(curtaxtotal)) curtaxtotal = 0;
+        if (isNaN(curtotal)) curtotal = 0;
         $("#subtotal").text(WPOS.util.currencyFormat(cursubtotal.toFixed(2)));
         $("#totaltax").text(WPOS.util.currencyFormat(curtaxtotal.toFixed(2)));
         this.updateDiscount();
+        } catch(e) {
+            console.error("updateSalesTotal error:", e);
+        }
     };
 
     /**
      *
      */
     this.updateDiscount = function () {
+        try {
         if (cursubtotal === null) {
             this.updateSalesTotal();
             return;
@@ -623,6 +634,8 @@ function WPOSSales() {
         var discountobj = $("#salediscount");
         var distxtobj = $("#discounttxt");
         var discount = discountobj.val();
+        if (isNaN(parseFloat(cursubtotal))) cursubtotal = 0;
+        if (isNaN(parseFloat(curtaxtotal))) curtaxtotal = 0;
         curtotal = (parseFloat(cursubtotal) + parseFloat(curtaxtotal)); // !important reset total
         if (discount === "" || discount == "0" || discount === null) {
             discountobj.val("0");
@@ -632,7 +645,11 @@ function WPOSSales() {
             distxtobj.text("(" + WPOS.util.currencyFormat(discountsum) + ")");
             curtotal = (curtotal - discountsum);
         }
+        if (isNaN(curtotal)) curtotal = 0;
         $("#total").text(WPOS.util.currencyFormat(curtotal.toFixed(2)));
+        } catch(e) {
+            console.error("updateDiscount error:", e);
+        }
     };
 
     /**
@@ -795,7 +812,15 @@ function WPOSSales() {
                     tempcost = qty * itemdata.cost;
                     // calculate item tax
                     var taxruleid = $(element).find(".itemtax").val();
-                    var taxdata = (typeof WPOS.util.calcTax === 'function') ? WPOS.util.calcTax(taxruleid, tempprice, tempcost) : {inclusive:true, total:0};
+                    var taxdata = {inclusive:true, total:0};
+                    try {
+                        if (typeof WPOS.util.calcTax === 'function') {
+                            taxdata = WPOS.util.calcTax(taxruleid, tempprice, tempcost);
+                            if (!taxdata) taxdata = {inclusive:true, total:0};
+                        }
+                    } catch(e) {
+                        taxdata = {inclusive:true, total:0};
+                    }
                     if (!taxdata.inclusive) {
                         tempprice += taxdata.total;
                     }
