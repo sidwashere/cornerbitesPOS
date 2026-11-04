@@ -171,8 +171,15 @@ function WPOSItems() {
     function addItemRow(qty, name, unit, taxid, sitemid, data) {
         sitemid = (sitemid>0?sitemid:0);
         var disable = (sitemid>0); // disable fields that are filled by the stored item
-        var disableprice = (sitemid>0 && WPOS.getConfigTable().pos.priceedit!="always");
-        var disabletax = (!WPOS.getConfigTable().pos.hasOwnProperty('taxedit') || WPOS.getConfigTable().pos.taxedit=='no');
+        var disableprice = false;
+        var disabletax = true;
+        try {
+            var cfg = WPOS.getConfigTable();
+            if (cfg && cfg.pos) {
+                disableprice = (sitemid>0 && cfg.pos.priceedit!="always");
+                disabletax = (!cfg.pos.hasOwnProperty('taxedit') || cfg.pos.taxedit=='no');
+            }
+        } catch(e) {}
         var row = $('<tr class="item_row">' +
             '<td><input class="itemid" type="hidden" value="' + sitemid + '" data-options=\''+JSON.stringify(data)+'\' /><input onChange="WPOS.sales.updateSalesTotal();" style="width:50px;" type="text" class="itemqty numpad" value="' + qty + '" /></td>' +
             '<td><input '+((disable==true && name!="")?"disabled":"")+' style="width: 100%; min-width: 100px;" type="text" class="itemname" value="' + name + '" onChange="WPOS.sales.updateSalesTotal();" /><div class="itemmodtxt"></div></td>' +
@@ -239,7 +246,9 @@ function WPOSItems() {
             var itemfield = $(element).find(".itemid");
             if (itemfield.val()==itemid){
                 // check for item modifiers, a new line item must be added if a modifier is used
-                if (itemfield.data('options').hasOwnProperty('mod') && itemfield.data('options').mod.items.length>0){
+                var itemopt = itemfield.data('options');
+                if (!itemopt) { try { itemopt = JSON.parse(itemfield.attr('data-options')); } catch(e) { itemopt = {}; } }
+                if (itemopt && itemopt.hasOwnProperty('mod') && itemopt.mod && itemopt.mod.items && itemopt.mod.items.length>0){
                     return true;
                 }
                 if (addqty) $(element).find(".itemqty").val(parseInt($(element).find(".itemqty").val())+1);
@@ -762,13 +771,19 @@ function WPOSSales() {
     function validateSalesItems(){
         var qty,name, unit, mod, tempprice, tempcost;
         var numinvalid = 0;
-        var allow_negative = WPOS.getConfigTable().pos.negative_items;
+        var allow_negative = false;
+        try { allow_negative = WPOS.getConfigTable().pos.negative_items; } catch(e) {}
         $("#itemtable").children(".item_row").each(function (index, element) {
                 qty = parseFloat($(element).find(".itemqty").val());
                 name = $(element).find(".itemname").val();
                 unit = parseFloat($(element).find(".itemunit").val());
                 var itemdata = $(element).find(".itemid").data('options');
-                mod = itemdata.hasOwnProperty('mod') ? itemdata.mod.total : 0;
+                if (!itemdata || typeof itemdata !== 'object') {
+                    try { itemdata = JSON.parse($(element).find(".itemid").attr('data-options')); } catch(e) { itemdata = {cost:0, mod:{total:0}}; }
+                }
+                if (!itemdata) itemdata = {cost:0, mod:{total:0}};
+                if (!itemdata.hasOwnProperty('cost')) itemdata.cost = 0;
+                mod = (itemdata.hasOwnProperty('mod') && itemdata.mod) ? (itemdata.mod.total || 0) : 0;
                 tempprice = parseFloat("0.00");
                 if (qty > 0 && name != "" && (unit>0 || allow_negative)) {
                     // add item modification total to unit price & calculate item total
@@ -776,7 +791,7 @@ function WPOSSales() {
                     tempcost = qty * itemdata.cost;
                     // calculate item tax
                     var taxruleid = $(element).find(".itemtax").val();
-                    var taxdata = WPOS.util.calcTax(taxruleid, tempprice, tempcost);
+                    var taxdata = (typeof WPOS.util.calcTax === 'function') ? WPOS.util.calcTax(taxruleid, tempprice, tempcost) : {inclusive:true, total:0};
                     if (!taxdata.inclusive) {
                         tempprice += taxdata.total;
                     }

@@ -41,43 +41,8 @@ function WPOSKitchen() {
     };
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
-        // check if cache exists, if the app is loaded for the first time, we don't need to wait for an update
-        if (window.applicationCache.status == window.applicationCache.UNCACHED){
-            console.log("Application cache not yet loaded.");
-            WPOS.initLogin();
-            return;
-        }
-        // For chrome, the UNCACHED status is never seen, instead listen for the cached event, cache has finished loading the first time
-        window.applicationCache.addEventListener('cached', function(e) {
-            console.log("Cache loaded for the first time, no need for reload.");
-            WPOS.initLogin();
-        });
-        // wait for update to finish: check after applying event listener aswell, we may have missed the event.
-        window.applicationCache.addEventListener('updateready', function(e) {
-            console.log("Appcache update finished, reloading...");
-            setLoadingBar(100, "Loading...");
-            location.reload(true);
-        });
-        window.applicationCache.addEventListener('noupdate', function(e) {
-            console.log("No appcache update found");
-            WPOS.initLogin();
-        });
-        window.applicationCache.addEventListener('progress', function(e) {
-            var loaded = parseInt((100/ e.total)*e.loaded);
-            cacheloaded = isNaN(loaded)?(cacheloaded+1):loaded;
-            //console.log(cacheloaded);
-            setLoadingBar(cacheloaded, "Updating application...");
-        });
-        window.applicationCache.addEventListener('downloading', function(e) {
-            console.log("Updating appcache");
-            setLoadingBar(1, "Updating application...");
-        });
-        if (window.applicationCache.status == window.applicationCache.UPDATEREADY){
-            console.log("Appcache update finished, reloading...");
-            setLoadingBar(100, "Loading...");
-            location.reload(true);
-        }
-    };
+        WPOS.initLogin();
+    };};
     // Check for device UUID & present Login, initial setup is triggered if the device UUID is not present
     this.initLogin = function(){
         showLogin();
