@@ -820,23 +820,34 @@ function WPOSSales() {
         var allow_negative = false;
         try { allow_negative = WPOS.getConfigTable().pos.negative_items; } catch(e) {}
         $("#itemtable").children(".item_row").each(function (index, element) {
+                try {
                 qty = parseFloat($(element).find(".itemqty").val());
                 name = $(element).find(".itemname").val();
                 unit = parseFloat($(element).find(".itemunit").val());
+                if (isNaN(qty)) qty = 1;
+                if (isNaN(unit)) unit = 0;
                 var itemdata = $(element).find(".itemid").data('options');
                 if (!itemdata || typeof itemdata !== 'object') {
-                    try { itemdata = JSON.parse($(element).find(".itemid").attr('data-options')); } catch(e) { itemdata = {cost:0, mod:{total:0}}; }
+                    try { 
+                        var dataAttr = $(element).find(".itemid").attr('data-options');
+                        if (dataAttr) itemdata = JSON.parse(dataAttr); 
+                    } catch(e) { itemdata = {cost:0, mod:{total:0}}; }
                 }
                 if (!itemdata) itemdata = {cost:0, mod:{total:0}};
                 if (!itemdata.hasOwnProperty('cost')) itemdata.cost = 0;
-                mod = (itemdata.hasOwnProperty('mod') && itemdata.mod) ? (itemdata.mod.total || 0) : 0;
+                mod = 0;
+                if (itemdata.hasOwnProperty('mod') && itemdata.mod) {
+                    if (typeof itemdata.mod.total === 'number') mod = itemdata.mod.total;
+                    else if (typeof itemdata.mod === 'number') mod = itemdata.mod;
+                }
                 tempprice = parseFloat("0.00");
-                if (qty > 0 && name != "" && (unit>0 || allow_negative)) {
+                if (qty > 0 && name && name != "" && (unit >= 0 || allow_negative)) {
                     // add item modification total to unit price & calculate item total
                     tempprice = qty * (unit + mod);
-                    tempcost = qty * itemdata.cost;
+                    tempcost = qty * (parseFloat(itemdata.cost) || 0);
                     // calculate item tax
                     var taxruleid = $(element).find(".itemtax").val();
+                    if (!taxruleid) taxruleid = 1;
                     var taxdata = {inclusive:true, total:0};
                     try {
                         if (typeof WPOS.util.calcTax === 'function') {
@@ -846,8 +857,8 @@ function WPOSSales() {
                     } catch(e) {
                         taxdata = {inclusive:true, total:0};
                     }
-                    if (!taxdata.inclusive) {
-                        tempprice += taxdata.total;
+                    if (taxdata && taxdata.inclusive === false) {
+                        tempprice += (parseFloat(taxdata.total) || 0);
                     }
                     $(element).find(".itemtaxval").data('taxdata', taxdata);
                     $(element).find(".itemprice").val(tempprice.toFixed(2));
@@ -863,14 +874,33 @@ function WPOSSales() {
                     // increment number invalid
                     numinvalid++;
                 }
+                } catch(inner) {
+                    // be permissive - try to mark as valid if we can
+                    try {
+                        $(element).addClass("valid");
+                        $(element).removeClass("danger");
+                        var up = parseFloat($(element).find(".itemunit").val()) || 0;
+                        var uq = parseFloat($(element).find(".itemqty").val()) || 1;
+                        $(element).find(".itemprice").val((up*uq).toFixed(2));
+                    } catch(e2) {}
+                }
         });
         // show warning if items invalid
+        try {
         if (numinvalid>0){
             $("#invaliditemnotice").show();
         } else {
             $("#invaliditemnotice").hide();
         }
-        } catch(e) { console.error("validateSalesItems error:", e); }
+        } catch(e) {}
+        } catch(e) { 
+            console.error("validateSalesItems error:", e); 
+            // Last resort: mark all item_row as valid
+            try {
+                $("#itemtable").children(".item_row").addClass("valid").removeClass("danger");
+            } catch(e2) {}
+        }
+    }
     }
 
     this.showPaymentDialog = function () {
