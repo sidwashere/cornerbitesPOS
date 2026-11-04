@@ -626,7 +626,7 @@ function WPOSSales() {
         var _tx = WPOS.util.currencyFormat(curtaxtotal.toFixed(2));
         $("#subtotal").text(_st);
         $("#totaltax").text(_tx);
-        alert("Subtotal: " + _st + " Tax: " + _tx + " Total rows: " + $("#itemtable").children('.valid').length + " subtotal var: " + cursubtotal);
+        document.title = "DEBUG: st=" + _st + " tx=" + _tx + " valid=" + $("#itemtable").children('.valid').length + " cursub=" + cursubtotal + " curtax=" + curtaxtotal;
         this.updateDiscount();
         } catch(e) {
             console.error("updateSalesTotal error:", e);
