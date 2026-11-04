@@ -213,12 +213,18 @@ function WPOSItems() {
      */
     function getTaxSelectHTML(taxid) {
         var taxselecthtml = "";
-        var taxrules = WPOS.getTaxTable().rules;
+        try {
+            var taxtable = WPOS.getTaxTable();
+            var taxrules = (taxtable && taxtable.rules) ? taxtable.rules : {};
             for (var key in taxrules) {
                 if (taxrules.hasOwnProperty(key)) {
                     taxselecthtml += "<option id='taxrule-" + key + "' value='" + key + "' "+(taxid==key?"selected='selected'":"")+">" + taxrules[key].name + "</option>";
                 }
             }
+        } catch(e) {}
+        if (taxselecthtml == "") {
+            taxselecthtml = "<option value='1'>No Tax</option>";
+        }
         return taxselecthtml;
     }
 
