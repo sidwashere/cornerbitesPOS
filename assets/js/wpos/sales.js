@@ -905,48 +905,41 @@ function WPOSSales() {
 
     this.showPaymentDialog = function () {
         try {
-            WPOS.sales.updateSalesTotal();
-            WPOS.sales.updateDiscount();
-            WPOS.sales.updatePaymentSums();
-        } catch(e) {}
+            if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal();
+            if (typeof WPOS.sales.updateDiscount === 'function') WPOS.sales.updateDiscount();
+            if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+        } catch(e) { console.error(e); }
         var hasItems = false;
-        try { hasItems = getNumSalesItems() > 0; } catch(e) { hasItems = $("#itemtable").children('.item_row').length > 0; }
-        if (!hasItems) {
-            try { $("#itemtable").children('.item_row').addClass('valid'); hasItems = true; } catch(e) {}
-        }
-        if (hasItems && (curgrandtotal > 0 || curtotal > 0 || cursubtotal > 0)) {
-            // Show integrated eftpos button if enabled
+        try { hasItems = getNumSalesItems() > 0; } catch(e) { try { hasItems = $("#itemtable").children('.item_row').length > 0; } catch(e2){} }
+        try { if (!hasItems) { $("#itemtable").children('.item_row').addClass('valid'); hasItems = true; } } catch(e) {}
+        // Try multiple approaches to open payment dialog
+        try {
             var inteftbtn = $("#eftpospaybtn");
             if (WPOS.hasOwnProperty('eftpos') && WPOS.eftpos.isEnabledAndReady()){
-                inteftbtn.show();
-                inteftbtn.text(WPOS.util.capFirstLetter(WPOS.eftpos.getType())+' Eftpos');
+                try { inteftbtn.show(); inteftbtn.text(WPOS.util.capFirstLetter(WPOS.eftpos.getType())+' Eftpos'); } catch(e){}
             } else {
-                inteftbtn.hide();
+                try { inteftbtn.hide(); } catch(e){}
             }
-            // Default to Mpesa till if no payments added
-            try {
-                if ($("#paymentstable").children('tr').length == 0) {
-                    var amt = (curgrandtotal > 0) ? curgrandtotal : (curtotal > 0 ? curtotal : cursubtotal);
-                    if (!amt || amt <= 0) amt = 0;
-                    addPaymentRow('mpesa', amt.toFixed(2), amt.toFixed(2), null);
-                    WPOS.sales.updatePaymentSums();
-                }
-            } catch(e){}
-            try { $("#paymentsdiv").dialog('open'); } catch(e) { $("#paymentsdiv").show(); }
+            if ($("#paymentstable").children('tr').length == 0) {
+                try {
+                    var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
+                    addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
+                    if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+                } catch(e){}
+            }
+            // Try jQuery UI dialog
+            try { if ($("#paymentsdiv").hasClass('ui-dialog-content')) { $("#paymentsdiv").dialog('open'); } else { $("#paymentsdiv").removeClass('hide').show(); } } catch(e) { try { $("#paymentsdiv").show(); } catch(e2){} }
             try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
-        } else if (hasItems) {
-            // Try to force open anyway
-            try {
-                if ($("#paymentstable").children('tr').length == 0) {
-                    addPaymentRow('mpesa', '0.00', '0.00', null);
-                    WPOS.sales.updatePaymentSums();
-                }
-            } catch(e){}
-            try { $("#paymentsdiv").dialog('open'); } catch(e) { $("#paymentsdiv").show(); }
-            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
-        } else {
-            alert("Please add some valid items to the sale before proceeding!");
+            return true;
+        } catch(e) {
+            console.error("process error", e);
         }
+        if (hasItems) {
+            try { $("#paymentsdiv").show(); } catch(e){}
+            return true;
+        }
+        alert("Please add some valid items to the sale before proceeding!");
+        return false;
     };
 
     this.addAdditionalPayment = function(){
