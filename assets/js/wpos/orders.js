@@ -143,7 +143,6 @@ function WPOSOrders(){
     this.moveOrderToHistory = function(ref, orderid){
         $("#order_box_" + ref + '-' + orderid).detach().prependTo(orderhistcontain);
     };
-}
 
     this.loadOnlineOrders = function(){
         var tbody = $("#onlineordersbody");
@@ -222,3 +221,5 @@ function WPOSOrders(){
             });
         }
     };
+
+}
