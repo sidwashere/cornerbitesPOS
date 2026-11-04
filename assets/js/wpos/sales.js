@@ -1289,6 +1289,19 @@ function WPOSSales() {
         } catch(e) {}
         try { salebalanced = true; } catch(e) {}
         try {
+            // Try direct API call as fallback
+            var salesobj = null;
+            try { salesobj = getSaleObject(); } catch(e) {}
+            if (salesobj && typeof WPOS.sendJsonDataAsync === 'function') {
+                try {
+                    WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){ 
+                        try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref); } catch(e){} 
+                        try { alert('done'); } catch(e) {}
+                    });
+                    try { clearSalesForm(); } catch(e) {}
+                    return true;
+                } catch(e) {}
+            }
             ProcessSaleTransaction();
             return true;
         } catch(e) { try { alert('derr:'+e); } catch(e2){} }
