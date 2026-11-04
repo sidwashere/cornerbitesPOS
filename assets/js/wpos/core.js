@@ -43,59 +43,14 @@ function WPOS() {
             alert("Your browser does not support localStorage required to run the POS terminal.");
             return false;
         }
-        // Check application cache: not required to run
-        if (window.applicationCache == null){
-            alert("Your browser does not support applicationCache and will not be able to function offline.");
-        }
+        // Application cache is deprecated and not required; skip check
         return true;
     }
 
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
-            if (window.applicationCache == null){
-                console.log("Application cache not supported.");
-                WPOS.initLogin();
-                return;
-            }
-            var appCache = window.applicationCache;
-            // check if cache exists, if the app is loaded for the first time, we don't need to wait for an update
-            if (appCache.status == appCache.UNCACHED){
-                console.log("Application cache not yet loaded.");
-                WPOS.initLogin();
-                return;
-            }
-            // For chrome, the UNCACHED status is never seen, instead listen for the cached event, cache has finished loading the first time
-            appCache.addEventListener('cached', function(e) {
-                console.log("Cache loaded for the first time, no need for reload.");
-                WPOS.initLogin();
-            });
-            // wait for update to finish: check after applying event listener aswell, we may have missed the event.
-            appCache.addEventListener('updateready', function(e) {
-                console.log("Appcache update finished, reloading...");
-                setLoadingBar(100, "Loading...");
-                appCache.swapCache();
-                location.reload(true);
-            });
-            appCache.addEventListener('noupdate', function(e) {
-                console.log("No appcache update found");
-                WPOS.initLogin();
-            });
-            appCache.addEventListener('progress', function(e) {
-                var loaded = parseInt((100/ e.total)*e.loaded);
-                cacheloaded = isNaN(loaded)?(cacheloaded+1):loaded;
-                //console.log(cacheloaded);
-                setLoadingBar(cacheloaded, "Updating application...");
-            });
-            appCache.addEventListener('downloading', function(e) {
-                console.log("Updating appcache");
-                setLoadingBar(1, "Updating application...");
-            });
-            if (appCache.status == appCache.UPDATEREADY){
-                console.log("Appcache update finished, reloading...");
-                setLoadingBar(100, "Loading...");
-                appCache.swapCache();
-                location.reload(true);
-            }
+        // Application cache is deprecated; go straight to login
+        WPOS.initLogin();
     };
     // PASSWORDLESS STAFF POS — auto-login, no login screen ever
     this.initLogin = function(){
