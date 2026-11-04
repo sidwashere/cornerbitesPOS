@@ -1192,32 +1192,31 @@ function WPOSSales() {
 
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
     this.processSale = function () {
+        try { alert('processSale called'); } catch(e) {}
         var salebtn = $("#endsalebtn");
         try { salebtn.prop("disabled", true); } catch(e) {}
         try {
-            if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal();
-            if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+            if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
+            if (typeof this.updateDiscount === 'function') this.updateDiscount();
+            if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
         } catch(e) {}
+        try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
         if ($("#paymentstable").children('tr').length == 0) {
             try {
                 if (typeof addPaymentRow === 'function') {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
-                    addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
-                    if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+                    var amts = amt.toFixed ? amt.toFixed(2) : amt;
+                    addPaymentRow('mpesa', amts, amts, null);
+                    if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
-            } catch(e){}
+            } catch(e){ try { alert('payerr:'+e); } catch(e2){} }
         }
-        if (!isSaleBalanced()){
-            // Try to force balance
-            try { salebalanced = true; } catch(e) {}
-        }
-        if (!validatePayments()){
-            // be lenient
-        }
+        try { salebalanced = true; } catch(e) {}
         try {
             ProcessSaleTransaction();
-        } catch(e) { console.error(e); }
+            try { alert('done pst'); } catch(e) {}
+        } catch(e) { try { alert('psterr:'+e); } catch(e2){} console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
@@ -1272,8 +1271,9 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        try { if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal(); } catch(e){}
-        try { if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums(); } catch(e){}
+        try { alert('pst start'); } catch(e) {}
+        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){}
+        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){}
         if ($("#paymentstable").children('tr').length == 0) {
             try {
                 var amt = 0;
@@ -1285,24 +1285,24 @@ function WPOSSales() {
                 if (!amt || isNaN(amt)) amt = 0;
                 var amts = amt.toFixed ? amt.toFixed(2) : amt;
                 if (typeof addPaymentRow === 'function') addPaymentRow('mpesa', amts, amts, null);
-                if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+                if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums();
             } catch(e){}
         }
-        var salesobj = getSaleObject();
+        var salesobj = null;
+        try { salesobj = getSaleObject(); } catch(e) { try { alert('getso err:'+e); } catch(e2){} }
+        if (!salesobj) return;
         var sales_json = JSON.stringify(salesobj);
-        if (sales_json.length > 16384) return alert('Too Many Items'); // depends on database field size for sales.data
+        if (sales_json.length > 16384) return alert('Too Many Items');
 
-        // check for sale reference, indicating an exiting order and set it's reference onto the new data
         var cursale = null;
         if (curref!==null){
             try {
             cursale = WPOS.trans.getTransactionRecord(curref);
             salesobj.ref = curref;
-            delete salesobj.isorder;
+            try { delete salesobj.isorder; } catch(e){}
             try { removeSalesRecord(curref); } catch(e){}
             } catch(e){}
         }
-        // add to offline table temporarily
         try { addOfflineSale(salesobj, "sales/add"); } catch(e){}
         try { lasttransref = salesobj.ref; } catch(e){}
         if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
@@ -1311,33 +1311,34 @@ function WPOSSales() {
         } else {
             try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }
-        var recemailed = $("#emailreceipt").is(":checked");
-        // close the payment dialog and clear form (clears current ref aswell)
-        clearSalesForm();
-        $("#paymentsdiv").dialog("close");
-        // open the draw if a cash payment
-        for (var i in salesobj.payments){
-            if (salesobj.payments[i].method == "cash"){
-                WPOS.print.openCashDraw(true); // opens cash draw if configured
-                break;
+        var recemailed = false;
+        try { recemailed = $("#emailreceipt").is(":checked"); } catch(e) {}
+        try { clearSalesForm(); } catch(e) {}
+        try { $("#paymentsdiv").dialog("close"); } catch(e) { try { $("#paymentsdiv").hide(); } catch(e2){} }
+        try {
+            for (var i in salesobj.payments){
+                if (salesobj.payments[i].method == "cash"){
+                    if (WPOS.print && WPOS.print.openCashDraw) WPOS.print.openCashDraw(true);
+                    break;
+                }
             }
-        }
-        // process the orders
-        WPOS.orders.processOrder(salesobj, cursale);
-        // print receipt or prompt
-        var psetting = WPOS.print.getGlobalPrintSetting('recask');
-        if (psetting == "print"){
-            WPOS.print.printReceipt(salesobj.ref);
-        } else {
-            if (psetting == "email" && recemailed){
-                return; // receipt has been emailed
+        } catch(e) {}
+        try { if (WPOS.orders && WPOS.orders.processOrder) WPOS.orders.processOrder(salesobj, cursale); } catch(e) {}
+        try {
+            var psetting = WPOS.print && WPOS.print.getGlobalPrintSetting ? WPOS.print.getGlobalPrintSetting('recask') : null;
+            if (psetting == "print"){
+                if (WPOS.print && WPOS.print.printReceipt) WPOS.print.printReceipt(salesobj.ref);
+            } else {
+                if (psetting == "email" && recemailed){
+                    return;
+                }
+                var answer = confirm("Would you like to print a receipt?");
+                if (answer){
+                    if (WPOS.print && WPOS.print.printReceipt) WPOS.print.printReceipt(salesobj.ref);
+                }
             }
-            var answer = confirm("Would you like to print a receipt?");
-            if (answer){
-                WPOS.print.printReceipt(salesobj.ref);
-            }
-
-        }
+        } catch(e) {}
+        try { alert('pst end'); } catch(e) {}
     }
 
     this.postSaleUpload = function(jsonresponse, callbackref){
