@@ -1519,7 +1519,6 @@ $(function () {
     try { $("#wrapper ul li a").on('click', function(){ setTimeout(updateSidebarVisibility, 50); }); } catch(e) {}
     setTimeout(updateSidebarVisibility, 300);
     setTimeout(updateSidebarVisibility, 1000);
-    setInterval(updateSidebarVisibility, 500);
 
     $("#paymentsdiv").dialog({
         maxWidth : 380,
