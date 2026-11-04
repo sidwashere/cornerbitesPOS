@@ -378,10 +378,12 @@ function WPOS() {
             $("#loadingprogdiv").show();
             $("#loadingdiv").show();
         }
+        try { checkOnlineStatus(); } catch(e){}
         if (online) {
             loadOnlineData(1, loginloader);
         } else {
-            initOfflineData(loginloader);
+            // Try online first even if check failed
+            loadOnlineData(1, loginloader);
         }
     }
 
@@ -457,11 +459,11 @@ function WPOS() {
     function initOfflineData(loginloader){
         // check records and initiate java objects
         setLoadingBar(50, "Loading offline data...");
-        loadConfigTable();
-        loadItemsTable();
-        loadCustTable();
-        loadSalesTable();
-        alert("Your internet connection is not active and WPOS has started in offline mode.\nSome features are not available in offline mode but you can always make sales and alter transactions that are locally available. \nWhen a connection becomes available WPOS will process your transactions on the server.");
+        try { loadConfigTable(); } catch(e){}
+        try { loadItemsTable(); } catch(e){}
+        try { loadCustTable(); } catch(e){}
+        try { loadSalesTable(); } catch(e){}
+        // Skip offline warning alert
         initDataSuccess(loginloader);
     }
 

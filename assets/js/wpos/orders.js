@@ -1,4 +1,8 @@
 function WPOSOrders(){
+    var self = this;
+    try {
+        setInterval(function(){ if(typeof self.loadOnlineOrders === 'function'){ try { self.loadOnlineOrders(); } catch(e){} } }, 10000);
+    } catch(e){}
     var ordercontain = $("#ordercontainer");
     var orderhistcontain = $("#orderhistcontainer");
 

@@ -31,7 +31,22 @@ function WPOSTransactions() {
 
     this.setupTransactionView = function(){
         loadLocalTransactions();
-        datatable.api().responsive.recalc();
+        try { if (datatable && datatable.api) datatable.api().responsive.recalc(); } catch(e){}
+        // Auto refresh sales data
+        try {
+            if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
+                WPOS.sendJsonDataAsync("sales/get", JSON.stringify({}), function(data){
+                    if (data) {
+                        if (typeof WPOS.updateSalesTableFromData === 'function') {
+                            WPOS.updateSalesTableFromData(data);
+                        } else if (typeof WPOS.getSalesTable === 'function') {
+                            // merge into existing
+                        }
+                        loadLocalTransactions();
+                    }
+                });
+            }
+        } catch(e){}
     };
 
     this.showTransactionInfo = function(ref){
