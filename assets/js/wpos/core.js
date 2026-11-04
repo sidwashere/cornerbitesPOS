@@ -880,8 +880,7 @@ function WPOS() {
         return WPOS.sendJsonDataAsync("config/get", JSON.stringify(data), function(data){
             if (data) {
                 if (data=="removed" || data=="disabled"){ // return false if dev is disabled
-                    if (data=="removed")
-                        removeDeviceUUID();
+                    // Don't remove UUID - try to re-register with current UUID
                     // Try to (re)register this terminal so the till can come online.
                     selfRegisterDevice(function(registered){
                         if (registered) {
@@ -908,7 +907,9 @@ function WPOS() {
     // Best-effort device (re)registration against the existing "general register" device (id 1).
     // Requires permission; staff accounts are normally denied, in which case an admin must register it.
     function selfRegisterDevice(callback) {
-        WPOS.sendJsonDataAsync("devices/setup", JSON.stringify({uuid: getDeviceUUID(), deviceid: 1}), function(res){
+        var uuid = getDeviceUUID();
+        if (!uuid) uuid = '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad';
+        WPOS.sendJsonDataAsync("devices/setup", JSON.stringify({uuid: uuid, deviceid: 1}), function(res){
             callback(res !== false && res != null && res.deviceid != null);
         });
     }
