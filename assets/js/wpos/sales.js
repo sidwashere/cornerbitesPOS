@@ -247,6 +247,7 @@ function WPOSItems() {
             }
         }
         $("#codeinput").val('');
+        alert("addItem called, WPOS exists: " + (typeof WPOS !== 'undefined') + ", WPOS.sales exists: " + (WPOS && !!WPOS.sales));
         try {
             if (typeof WPOS === 'undefined') {
                 alert("WPOS is undefined!");
@@ -255,7 +256,9 @@ function WPOSItems() {
             } else if (typeof WPOS.sales.updateSalesTotal !== 'function') {
                 alert("updateSalesTotal is not a function: " + typeof WPOS.sales.updateSalesTotal);
             } else {
+                alert("About to call updateSalesTotal");
                 WPOS.sales.updateSalesTotal();
+                alert("updateSalesTotal returned");
             }
         } catch(e) {
             alert("Error in addItem: " + e.message);
