@@ -905,32 +905,47 @@ function WPOSSales() {
 
     this.showPaymentDialog = function () {
         try {
-            if (typeof WPOS.sales.updateSalesTotal === 'function') WPOS.sales.updateSalesTotal();
-            if (typeof WPOS.sales.updateDiscount === 'function') WPOS.sales.updateDiscount();
-            if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
+            if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
+            if (typeof this.updateDiscount === 'function') this.updateDiscount();
+            if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
         } catch(e) {}
         try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
-        try {
-            if ($("#paymentstable").children('tr').length == 0) {
-                try {
+        if (getNumSalesItems && getNumSalesItems() > 0 || $("#itemtable").children('.item_row').length > 0) {
+            // Show integrated eftpos button if enabled
+            var inteftbtn = $("#eftpospaybtn");
+            try {
+                if (WPOS.hasOwnProperty('eftpos') && WPOS.eftpos.isEnabledAndReady()){
+                    inteftbtn.show();
+                    inteftbtn.text(WPOS.util.capFirstLetter(WPOS.eftpos.getType())+' Eftpos');
+                } else {
+                    inteftbtn.hide();
+                }
+            } catch(e) {}
+            // Default to Mpesa till if no payments added
+            try {
+                if ($("#paymentstable").children('tr').length == 0) {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
                     if (typeof addPaymentRow === 'function') {
-                        addPaymentRow('mpesa', (amt.toFixed?amt.toFixed(2):amt), (amt.toFixed?amt.toFixed(2):amt), null);
+                        addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
                     }
-                    if (typeof WPOS.sales.updatePaymentSums === 'function') WPOS.sales.updatePaymentSums();
-                } catch(e){}
-            }
-            // Try to process directly as fallback
-            try {
-                if (typeof WPOS.sales.processSale === 'function') {
-                    WPOS.sales.processSale();
-                    return true;
+                    if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
             } catch(e){}
-        } catch(e) {}
-        try { $("#paymentsdiv").show(); } catch(e){}
-        return true;
+            try {
+                if ($("#paymentsdiv").hasClass('ui-dialog-content')) {
+                    $("#paymentsdiv").dialog('open');
+                } else {
+                    $("#paymentsdiv").dialog({ width: 'auto', modal: true, resizable: false });
+                    $("#paymentsdiv").dialog('open');
+                }
+            } catch(e) {
+                try { $("#paymentsdiv").removeClass('hide').show(); } catch(e2) {}
+            }
+            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
+        } else {
+            alert("Please add some valid items to the sale before proceeding!");
+        }
     };
 
     this.addAdditionalPayment = function(){
