@@ -1514,8 +1514,7 @@ function WPOS() {
     try { if (typeof WPOSTransactions === 'function') this.trans = new WPOSTransactions(); } catch(e) {}
     try { if (typeof WPOSReports === 'function') this.reports = new WPOSReports(); } catch(e) {}
     try { if (typeof WPOSPrint === 'function') this.print = new WPOSPrint(); } catch(e) {}
-    $("body").append("<div id=dbg3>WPOSOrders type: "+(typeof WPOSOrders)+"</div>");
-    try { if (typeof WPOSOrders === 'function') this.orders = new WPOSOrders(); else $("body").append("<div id=dbg4>not function</div>"); } catch(e) { $("body").append("<div id=dbg5>ctor err: "+e.message+"</div>"); }
+    try { if (typeof WPOSOrders === 'function') this.orders = new WPOSOrders(); } catch(e) {}
     try { if (typeof WPOSUtil === 'function') this.util = new WPOSUtil(); } catch(e) {}
 
     if (typeof(WPOSEftpos) === 'function')
@@ -1540,7 +1539,6 @@ $(function () {
     }
     // initiate startup routine
     try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
-    setTimeout(function(){ $("body").append("<div id=dbg6>WPOS.orders: "+(WPOS.orders? "defined":"undefined")+"</div>"); }, 2000);
 
     try { $("#wrapper").tabs(); } catch(e) {}
 
