@@ -347,3 +347,13 @@ body {
         text-align: center;
     }
 }
+
+/* Ensure content doesn't hide behind product sidebar */
+body, #wrapper {
+    padding-right: 460px !important;
+}
+@media (max-width: 1200px) {
+    body, #wrapper {
+        padding-right: 0 !important;
+    }
+}
