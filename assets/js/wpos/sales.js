@@ -1220,6 +1220,36 @@ function WPOSSales() {
         } catch(e) { console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
+    this.quickProcess = function() {
+        try {
+            if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
+            if (typeof this.updateDiscount === 'function') this.updateDiscount();
+        } catch(e) {}
+        try { $("#itemtable").children('.item_row').addClass('valid'); } catch(e) {}
+        try {
+            if ($("#paymentstable").children('tr').length == 0) {
+                var amt = 0;
+                try {
+                    if (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) amt = curgrandtotal;
+                    else if (typeof curtotal !== 'undefined' && curtotal > 0) amt = curtotal;
+                    else if (typeof cursubtotal !== 'undefined' && cursubtotal > 0) amt = cursubtotal;
+                } catch(e) {}
+                if (!amt || isNaN(amt)) amt = 0;
+                var amts = amt.toFixed ? amt.toFixed(2) : amt;
+                try {
+                    if (typeof addPaymentRow === 'function') {
+                        addPaymentRow('mpesa', amts, amts, null);
+                    }
+                } catch(e) {}
+            }
+            if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+            if (typeof this.processSale === 'function') {
+                return this.processSale();
+            }
+        } catch(e) {}
+        return false;
+    };
+
 
     var salebalanced = false;
 

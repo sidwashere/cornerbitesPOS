@@ -45,7 +45,7 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=33"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=34"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261118"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261030"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261030"></script>
@@ -188,7 +188,7 @@
                 <div id="regkey-container" class="pull-right">
                         <div id="regkey-inner">
                         <div id="registerkeydiv">
-                            <button class="regbtn btn btn-success" onClick="try{if(typeof WPOS.sales.updateSalesTotal==='function')WPOS.sales.updateSalesTotal();}catch(e){}try{if(typeof WPOS.sales.updatePaymentSums==='function')WPOS.sales.updatePaymentSums();}catch(e){}try{$('#paymentstable').children('tr').length==0&&typeof addPaymentRow==='function'&&addPaymentRow('mpesa', (typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0).toFixed?((typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0)).toFixed(2):(typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0), (typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0).toFixed?((typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0)).toFixed(2):(typeof curgrandtotal!=='undefined'&&curgrandtotal>0?curgrandtotal:0), null);}catch(e){}try{if(typeof WPOS.sales.processSale==='function'){WPOS.sales.processSale();}}catch(e){try{WPOS.sales.showPaymentDialog();}catch(e2){}}">
+                            <button class="regbtn btn btn-success" onClick="try{WPOS.sales.quickProcess();}catch(e){try{WPOS.sales.showPaymentDialog();}catch(e2){try{WPOS.sales.processSale();}catch(e3){}}}">
                             </button>
                             <button class="regbtn btn btn-danger" onClick="WPOS.sales.userAbortSale();">Abort</button>
                             <button class="regbtn btn" onclick="WPOS.print.openCashDraw();">Till</button>
