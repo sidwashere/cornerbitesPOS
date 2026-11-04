@@ -43,19 +43,7 @@
     <script src="/assets/js/jquery-ui-1.10.3.full.min.js?v=20261030"></script>
     <script src="/assets/js/jquery.mustache.js?v=20261030"></script>
 
-    <!-- TEMP DEBUG: surface JS errors on-page -->
-    <script type="text/javascript">
-      window.__poserr = [];
-      window.onerror = function(msg, src, line, col, err){
-        var d = document.getElementById('debugerr');
-        if(!d){ d=document.createElement('div'); d.id='debugerr'; d.style='position:fixed;left:0;top:0;z-index:99999;background:#b00;color:#fff;padding:8px;max-width:60%;font:12px monospace;white-space:pre-wrap;'; document.body.appendChild(d); }
-        d.textContent = 'JS ERROR: '+msg+' @ '+(src||'').split('/').pop()+':'+line+'\n'+(err&&err.stack?err.stack:'');
-        window.__poserr.push(msg);
-        return false;
-      };
-      window.addEventListener('unhandledrejection', function(e){ window.onerror('Promise: '+(e.reason&&e.reason.message?e.reason.message:e.reason), '', 0, 0, e.reason); });
-    </script>
-
+    
     <!-- Wpos Libraries -->
     <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261113"></script>
     <script type="text/javascript" src="/assets/js/wpos/sales.js?v=3"></script>
