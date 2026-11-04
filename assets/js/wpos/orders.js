@@ -140,6 +140,7 @@ function WPOSOrders(){
 }
 
     this.loadOnlineOrders = function(){
+        try { alert("loadOnlineOrders called"); } catch(e){}
         var tbody = $("#onlineordersbody");
         if (tbody.length == 0) return;
         tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
