@@ -218,6 +218,7 @@ function WPOS() {
 
     function sessionRenew(){
         // send request to server
+        if (!currentuser) return false;
         var response = WPOS.sendJsonData("authrenew", JSON.stringify({username:currentuser.username, auth_hash:currentuser.auth_hash}));
         if (response !== false) {
             // set current user will possibly get passed additional data from server in the future but for now just username and pass is enough
@@ -258,7 +259,8 @@ function WPOS() {
     }
 
     this.getCurrentUserId = function () {
-        return currentuser.id
+        if (!currentuser) return null;
+        return currentuser.id;
     };
 
     var currentuser;
@@ -268,6 +270,9 @@ function WPOS() {
     }
 
     function isUserAdmin() {
+        // Ensure permissions are fully loaded before checking
+        if (!currentuser) return false;
+        if (currentuser.isadmin == null || currentuser.isadmin === undefined) return false;
         return currentuser.isadmin == 1;
     }
 
@@ -1354,7 +1359,7 @@ function WPOS() {
                         break;
 
                     case "regreq":
-                        socket.emit('reg', {deviceid: configtable.deviceid, username: currentuser.username});
+                        if (currentuser) socket.emit('reg', {deviceid: configtable.deviceid, username: currentuser.username});
                         break;
 
                     case "msg":
