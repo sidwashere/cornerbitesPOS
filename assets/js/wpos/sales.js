@@ -1473,15 +1473,19 @@ function WPOSSales() {
                     "sitemid": $(element).find(".itemid").val(),
                     "qty": tempqty,
                     "name": $(element).find(".itemname").val(),
-                    "unit": parseFloat($(element).find(".itemunit").val()).toFixed(2),
+                    "desc": $(element).find(".itemname").val() || $(element).find(".itemdesc").val() || '',
+                    "unit": parseFloat($(element).find(".itemunit").val() || 0).toFixed(2),
                     "taxid": taxruleid,
                     "tax": taxdata,
-                    "price": parseFloat($(element).find(".itemprice").val()).toFixed(2)
+                    "price": parseFloat($(element).find(".itemprice").val() || 0).toFixed(2)
                 };
                 itemdata = $(element).find(".itemid").data('options');
-                for (var x in itemdata) {
-                    data[x] = itemdata[x];
+                if (itemdata) {
+                    for (var x in itemdata) {
+                        data[x] = itemdata[x];
+                    }
                 }
+                if (!data.hasOwnProperty('desc') || data.desc === null) data.desc = data.name || '';
                 if (data.cost>0)
                     totalcost += (data.cost*data.qty);
                 items.push(data);

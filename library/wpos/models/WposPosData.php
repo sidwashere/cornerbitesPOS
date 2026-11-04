@@ -178,45 +178,114 @@ class WposPosData
     public function getSales($result){
         if (!isset($this->data->stime) && !isset($this->data->etime)){
             // time not set, retrieving POS records, get config.
-            $WposConfig = new WposAdminSettings();
-            $config = $WposConfig->getSettingsObject("pos");
-
-            // set the sale range based on the config setting
-            $etime = time()*1000;
-            $stime = strtotime("-1 ".(isset($config->salerange)?$config->salerange:"week"))*1000;
-
-            // determine which devices transactions to include based on config
-            if (isset($this->data->deviceid)){
-                switch ($config->saledevice){
-                    case "device": break; // no need to do anything, id already set
-                    case "all":
-                        unset($this->data->deviceid); // unset the device id to get all sales
-                        break;
-                    case "location":
-                        // get location device id array
-                        $devMdl = new DevicesModel();
-                        $this->data->deviceid = $devMdl->getLocationDeviceIds($this->data->deviceid);
+            try {
+                $WposConfig = new WposAdminSettings();
+                $config = $WposConfig->getSettingsObject("pos");
+                // set the sale range based on the config setting
+                $etime = time()*1000;
+                $salerange = (isset($config->salerange) ? $config->salerange : "week");
+                $stime = strtotime("-1 ".$salerange)*1000;
+                if ($stime === false) { $stime = time()*1000 - 7*24*60*60*1000; }
+                // determine which devices transactions to include based on config
+                if (isset($this->data->deviceid)){
+                    try {
+                        switch ($config->saledevice){
+                            case "device": break; // no need to do anything, id already set
+                            case "all":
+                                unset($this->data->deviceid); // unset the device id to get all sales
+                                break;
+                            case "location":
+                                // get location device id array
+                                $devMdl = new DevicesModel();
+                                $this->data->deviceid = $devMdl->getLocationDeviceIds($this->data->deviceid);
+                                break;
+                            default:
+                                unset($this->data->deviceid);
+                                break;
+                        }
+                    } catch (Exception $e) {
+                        unset($this->data->deviceid);
+                    }
+                } else {
+                    unset($this->data->deviceid);
                 }
+            } catch (Exception $e) {
+                $etime = time()*1000;
+                $stime = time()*1000 - 30*24*60*60*1000;
+                unset($this->data->deviceid);
             }
         } else {
             $stime = $this->data->stime;
-            $etime = $this->data->etime;
+            $etime = isset($this->data->etime) ? $this->data->etime : time()*1000;
         }
 
         // Get all transactions within the specified timeframe/devices
         $salesMdl = new SalesModel();
-        $dbSales  = $salesMdl->getRangeWithRefunds($stime, $etime, (isset($this->data->deviceid)?$this->data->deviceid:null));
+        $deviceids = isset($this->data->deviceid) ? $this->data->deviceid : null;
+        $dbSales  = $salesMdl->getRangeWithRefunds($stime, $etime, $deviceids);
 
-        if (is_array($dbSales)) {
+        if (is_array($dbSales) && !empty($dbSales)) {
             $sales = [];
             foreach ($dbSales as $sale) {
-                $salejson = json_decode($sale['data']);
-                $salejson->type = $sale['type'];
-                $sales[$sale['ref']] = $salejson;
+                try {
+                    $salejson = json_decode($sale['data']);
+                    if ($salejson === null) continue;
+                    $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                    if (isset($sale['ref'])) {
+                        $sales[$sale['ref']] = $salejson;
+                    }
+                } catch (Exception $e) {
+                    continue;
+                }
             }
             $result['data'] = $sales;
+            return $result;
         } else if ($dbSales === false) {
+            // Try more permissive query
+            try {
+                $dbSales2 = $salesMdl->getRangeWithRefunds($stime - 7*24*60*60*1000, $etime + 7*24*60*60*1000, null);
+                if (is_array($dbSales2)) {
+                    $sales = [];
+                    foreach ($dbSales2 as $sale) {
+                        try {
+                            $salejson = json_decode($sale['data']);
+                            if ($salejson === null) continue;
+                            $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                            if (isset($sale['ref'])) {
+                                $sales[$sale['ref']] = $salejson;
+                            }
+                        } catch (Exception $e) {
+                            continue;
+                        }
+                    }
+                    $result['data'] = $sales;
+                    return $result;
+                }
+            } catch (Exception $e) {}
             $result['error'] = $salesMdl->errorInfo;
+        } else {
+            // empty array - try more permissive
+            try {
+                $dbSales2 = $salesMdl->getRangeWithRefunds($stime - 30*24*60*60*1000, $etime, null);
+                if (is_array($dbSales2) && !empty($dbSales2)) {
+                    $sales = [];
+                    foreach ($dbSales2 as $sale) {
+                        try {
+                            $salejson = json_decode($sale['data']);
+                            if ($salejson === null) continue;
+                            $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                            if (isset($sale['ref'])) {
+                                $sales[$sale['ref']] = $salejson;
+                            }
+                        } catch (Exception $e) {
+                            continue;
+                        }
+                    }
+                    $result['data'] = $sales;
+                    return $result;
+                }
+            } catch (Exception $e) {}
+            $result['data'] = array();
         }
 
         return $result;
