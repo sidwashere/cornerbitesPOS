@@ -146,8 +146,8 @@ function WPOSOrders(){
         if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
             WPOS.sendJsonDataAsync("orders/get", JSON.stringify({limit: 100}), function(data){
                 if (!data) { tbody.html('<tr><td colspan="11" class="center text-danger">no data</td></tr>'); return; }
-                if (data.error && data.error !== 'OK') { tbody.html('<tr><td colspan="11" class="center text-danger">'+data.error+'</td></tr>'); return; }
-                var sales = (data.data) ? data.data : [];
+                if (data === false) { tbody.html('<tr><td colspan="11" class="center text-danger">request failed</td></tr>'); return; }
+                var sales = Array.isArray(data) ? data : (data && data.data ? data.data : []);
                 var rows = '';
                 (Array.isArray(sales)?sales:Object.values(sales||{})).forEach(function(s){
                     var items = '';
