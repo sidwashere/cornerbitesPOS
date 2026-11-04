@@ -247,7 +247,11 @@ function WPOSItems() {
             }
         }
         $("#codeinput").val('');
-        if (WPOS.sales && typeof WPOS.sales.updateSalesTotal === 'function') {
+        if (!WPOS.sales) {
+            alert("WPOS.sales is undefined!");
+        } else if (typeof WPOS.sales.updateSalesTotal !== 'function') {
+            alert("updateSalesTotal is not a function: " + typeof WPOS.sales.updateSalesTotal);
+        } else {
             WPOS.sales.updateSalesTotal();
         }
     }
