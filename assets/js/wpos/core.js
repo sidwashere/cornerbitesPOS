@@ -351,10 +351,7 @@ function WPOS() {
                 setLoadingBar(10, "Getting device settings...");
                 setStatusBar(4, "Updating device settings...", statusmsg, 0);
                 fetchConfigTable(function(data){
-                    if (data===false){
-                        showInitError();
-                        return;
-                    }
+                    try { if (data===false) loadConfigTable(); } catch(e){}
                     loadOnlineData(2, loginloader);
                 });
                 break;
@@ -388,9 +385,8 @@ function WPOS() {
                 setStatusBar(4, "Updating sales...", statusmsg, 0);
                 fetchSalesTable(function(data){
                     try { if (data===false) loadSalesTable(); } catch(e){}
-                    // start websocket connection
-                    startSocket();
-                    setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0);
+                    try { startSocket(); } catch(e){}
+                    try { setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0); } catch(e){}
                     initDataSuccess(loginloader);
                     var offline_num = WPOS.sales.getOfflineSalesNum();
                     if (offline_num>0){
@@ -418,21 +414,28 @@ function WPOS() {
 
     function initDataSuccess(loginloader){
         if (loginloader){
-            setLoadingBar(100, "Massaging the data...");
-            $("title").text("Cornerbites POS - Your POS in the cloud");
+            try { setLoadingBar(100, "Massaging the data..."); } catch(e){}
+            try { $("title").text("Cornerbites POS - Your POS in the cloud"); } catch(e){}
             // Non-critical plugins (print/scan) must never block the till from coming up.
             try { WPOS.initPlugins(); } catch(e){ console.error("initPlugins failed:", e); }
             try { populateDeviceInfo(); } catch(e){ console.error("populateDeviceInfo failed:", e); }
             // Always reveal the till and populate the product grid, even if a plugin above threw.
-            setTimeout(hideLogin, 500);
+            try { setTimeout(hideLogin, 200); } catch(e){ try { hideLogin(); } catch(e){} }
             setTimeout(function(){
-                $("#ibox").css('width', '450px');
+                try { $("#ibox").css('width', '450px'); } catch(e){}
                 try {
                     if (WPOS.items && WPOS.items.generateItemGridCategories) {
                         WPOS.items.generateItemGridCategories();
                     }
                 } catch(e){ console.error("generateItemGridCategories failed:", e); }
-            }, 800);
+                try { $("#wrapper").tabs('option', 'active', 0); } catch(e){}
+            }, 400);
+        } else {
+            try {
+                setTimeout(function(){
+                    try { if (WPOS.items && WPOS.items.generateItemGridCategories) WPOS.items.generateItemGridCategories(); } catch(e){}
+                }, 200);
+            } catch(e){}
         }
     }
 
