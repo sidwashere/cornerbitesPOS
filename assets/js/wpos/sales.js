@@ -599,6 +599,7 @@ function WPOSSales() {
      *
      */
     this.updateSalesTotal = function () {
+        alert("updateSalesTotal called");
         try { $("#subtotal").text("CALLING..."); } catch(e) {}
         try {
         var total = 0.00;
