@@ -1,4 +1,6 @@
 <?php
+ini_set("display_errors", "1");
+error_reporting(E_ALL);
 $root = dirname(__FILE__);
 $_SERVER['DOCUMENT_ROOT'] = $root;
 $_SERVER['APP_ROOT'] = "/";
