@@ -1507,18 +1507,7 @@ $(function () {
     // initiate startup routine
     try { WPOS.initApp(); } catch(e) { console.error('initApp error:', e); }
 
-    function updateSidebarVisibility(){
-        try {
-            var active = $("#wrapper").tabs('option','active');
-            var panelId = $("#wrapper .ui-tabs-panel").eq(active).attr('id');
-            if (panelId === 'tabs-1') { $("#ibox").show(); } else { $("#ibox").hide(); }
-        } catch(e) {}
-    }
-    try { $("#wrapper").tabs(); } catch(e) {}
-    try { $("#wrapper").on("tabsactivate", function(e, ui){ updateSidebarVisibility(); }); } catch(e) {}
-    try { $("#wrapper ul li a").on('click', function(){ setTimeout(updateSidebarVisibility, 50); }); } catch(e) {}
-    setTimeout(updateSidebarVisibility, 300);
-    setTimeout(updateSidebarVisibility, 1000);
+
 
     $("#paymentsdiv").dialog({
         maxWidth : 380,
