@@ -144,6 +144,7 @@ function WPOSOrders(){
         if (tbody.length == 0) return;
         tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
         $.get('/api/poll.php?last=0', function(data){
+            if (!data) { tbody.html('<tr><td colspan="11" class="center text-danger">no data</td></tr>'); return; }
             if (data.error) { tbody.html('<tr><td colspan="11" class="center text-danger">'+data.error+'</td></tr>'); return; }
             var sales = (data.result && data.result.sales) ? data.result.sales : [];
             var rows = '';
@@ -187,7 +188,7 @@ function WPOSOrders(){
             });
             if (!rows) rows = '<tr><td colspan="11" class="center">No online orders yet.</td></tr>';
             tbody.html(rows);
-        }, 'json').fail(function(){ tbody.html('<tr><td colspan="11" class="center text-danger">Failed to load orders.</td></tr>'); });
+        }, 'json').fail(function(xhr, status, err){ tbody.html('<tr><td colspan="11" class="center text-danger">Failed: '+status+' '+err+'</td></tr>'); });
     };
 
     this.updateOnlineStatus = function(ref, status){
