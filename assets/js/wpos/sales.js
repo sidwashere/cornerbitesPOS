@@ -622,8 +622,11 @@ function WPOSSales() {
         if (isNaN(cursubtotal)) cursubtotal = 0;
         if (isNaN(curtaxtotal)) curtaxtotal = 0;
         if (isNaN(curtotal)) curtotal = 0;
-        $("#subtotal").text(WPOS.util.currencyFormat(cursubtotal.toFixed(2)));
-        $("#totaltax").text(WPOS.util.currencyFormat(curtaxtotal.toFixed(2)));
+        var _st = WPOS.util.currencyFormat(cursubtotal.toFixed(2));
+        var _tx = WPOS.util.currencyFormat(curtaxtotal.toFixed(2));
+        $("#subtotal").text(_st);
+        $("#totaltax").text(_tx);
+        alert("Subtotal: " + _st + " Tax: " + _tx + " Total rows: " + $("#itemtable").children('.valid').length + " subtotal var: " + cursubtotal);
         this.updateDiscount();
         } catch(e) {
             console.error("updateSalesTotal error:", e);
