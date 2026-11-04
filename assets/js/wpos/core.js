@@ -1507,16 +1507,16 @@ function WPOS() {
 
     // Contructor code
     // load WPOS Objects
-    this.items = new WPOSItems();
-    this.sales = new WPOSSales();
-    this.trans = new WPOSTransactions();
-    this.reports = new WPOSReports();
-    this.print = new WPOSPrint();
-    this.orders = new WPOSOrders();
-    this.util = new WPOSUtil();
+    try { if (typeof WPOSItems === 'function') this.items = new WPOSItems(); } catch(e) {}
+    try { if (typeof WPOSSales === 'function') this.sales = new WPOSSales(); } catch(e) {}
+    try { if (typeof WPOSTransactions === 'function') this.trans = new WPOSTransactions(); } catch(e) {}
+    try { if (typeof WPOSReports === 'function') this.reports = new WPOSReports(); } catch(e) {}
+    try { if (typeof WPOSPrint === 'function') this.print = new WPOSPrint(); } catch(e) {}
+    try { if (typeof WPOSOrders === 'function') this.orders = new WPOSOrders(); } catch(e) {}
+    try { if (typeof WPOSUtil === 'function') this.util = new WPOSUtil(); } catch(e) {}
 
     if (typeof(WPOSEftpos) === 'function')
-        this.eftpos = new WPOSEftpos();
+        try { this.eftpos = new WPOSEftpos(); } catch(e) {}
 }
 // UI widget functions & initialization
 var toggleItemBox;
