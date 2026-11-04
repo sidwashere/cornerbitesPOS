@@ -1201,14 +1201,18 @@ function WPOS() {
     // fetches from server
     function fetchItemsTable(callback) {
         return WPOS.getJsonDataAsync("items/get", function(data){
+            try {
             if (data) {
                 itemtable = data;
-                localStorage.setItem("wpos_items", JSON.stringify(data));
-                generateItemIndex();
-                WPOS.items.generateItemGridCategories();
+                try { localStorage.setItem("wpos_items", JSON.stringify(data)); } catch(e){}
+                try { generateItemIndex(); } catch(e){}
+                try { if (WPOS.items && WPOS.items.generateItemGridCategories) WPOS.items.generateItemGridCategories(); } catch(e){}
             }
-            if (callback)
-                callback(data);
+            } catch(e) { console.error("fetchItemsTable err", e); }
+            try {
+                if (callback)
+                    callback(data);
+            } catch(e) { console.error("fetchItemsTable cb err", e); if (callback) { try { callback(false); } catch(e2){} } }
         });
     }
 
