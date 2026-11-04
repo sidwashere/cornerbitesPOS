@@ -1221,6 +1221,7 @@ function WPOSSales() {
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
+        try { alert('quickProcess called'); } catch(e) {}
         try {
             if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
             if (typeof this.updateDiscount === 'function') this.updateDiscount();
@@ -1244,9 +1245,10 @@ function WPOSSales() {
             }
             if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
             if (typeof this.processSale === 'function') {
+                try { alert('calling processSale'); } catch(e) {}
                 return this.processSale();
             }
-        } catch(e) {}
+        } catch(e) { try { alert('err:'+e); } catch(e2){} }
         return false;
     };
 
