@@ -67,8 +67,9 @@ function WPOSItems() {
      * @param {Number} id
      */
     this.addItemFromId = function (id) {
+        alert("addItemFromId called with id=" + id);
         var item = WPOS.getItemsTable()[id];
-        if (item === null) {
+        if (item === null || item === undefined) {
             alert("Item not found");
         } else {
             // add the item
