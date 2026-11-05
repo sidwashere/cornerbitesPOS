@@ -413,11 +413,14 @@
         for (var i in options){
             if (i == "currencyformat"){
                 var format = options[i].split("~");
-                $("#currency_symbol").val(format[0]);
-                $("#currency_decimals").val(format[1]);
-                $("#currency_decimalsep").val(format[2]);
-                $("#currency_thousandsep").val(format[3]);
-                $("#currency_symbolpos").val(format[4]);
+                if (format[0] && format[0].toLowerCase() === 'ksh') {
+                    format[0] = 'KSh';
+                }
+                $("#currency_symbol").val(format[0] || 'KSh');
+                $("#currency_decimals").val(format[1] || 2);
+                $("#currency_decimalsep").val(format[2] || '.');
+                $("#currency_thousandsep").val(format[3] || ',');
+                $("#currency_symbolpos").val(format[4] || 0);
             } else if (i == "altlabels"){
                 for (var x in options.altlabels){
                     $("#altlabel_"+x).val(options.altlabels[x]);

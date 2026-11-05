@@ -267,15 +267,37 @@ function WPOSUtil() {
 
     var curformat = null;
     var printcursymbol = "";
+    function normalizeCurrencyFormat(format) {
+        var defaultFormat = ['KSh', '2', '.', ',', 0];
+        if (!format || typeof format !== 'string') {
+            return defaultFormat.slice();
+        }
+        var parts = format.split('~');
+        while (parts.length < 5) {
+            parts.push('');
+        }
+        if (parts[0] && parts[0].toLowerCase() === 'ksh') {
+            parts[0] = 'KSh';
+        }
+        if (!parts[0]) parts[0] = 'KSh';
+        if (!parts[1]) parts[1] = '2';
+        if (!parts[2]) parts[2] = '.';
+        if (!parts[3]) parts[3] = ',';
+        if (parts[4] === undefined || parts[4] === null || parts[4] === '') parts[4] = 0;
+        return parts.slice(0, 5);
+    }
     function loadCurrencyValues(){
         if (curformat==null){
-            if (!WPOS.getConfigTable().hasOwnProperty('general'))
-                return;
-
-            curformat = WPOS.getConfigTable().general.currencyformat.split('~');
+            var config = WPOS && WPOS.getConfigTable ? WPOS.getConfigTable() : {};
+            var general = config.general || {};
+            var formatValue = general.currencyformat || 'KSh~2~.~,~0';
+            if (typeof formatValue !== 'string') {
+                formatValue = 'KSh~2~.~,~0';
+            }
+            curformat = normalizeCurrencyFormat(formatValue.replace(/\s+/g, ''));
             //if (WPOS.getConfigTable().pos.hasOwnProperty('reccurrency') && WPOS.getConfigTable().pos.reccurrency!="")
                 //printcursymbol = String.fromCharCode(parseInt(WPOS.getConfigTable().pos.reccurrency));
-            if (WPOS.hasOwnProperty('print')) {
+            if (WPOS && WPOS.hasOwnProperty && WPOS.hasOwnProperty('print')) {
                 printcursymbol = getPrintCurrencySymbol();
                 if (printcursymbol == "" && (curformat[0] == "£" || containsNonLatinCodepoints(curformat[0]))) {
                     // check for unicode characters and set default alt character if so
@@ -334,14 +356,17 @@ function WPOSUtil() {
     this.currencyFormat = function(value, nosymbol, usesymboloverride){
         loadCurrencyValues();
         if (!curformat) {
-            return value;
+            curformat = normalizeCurrencyFormat('KSh~2~.~,~0');
         }
-        var result = number_format(value, curformat[1], curformat[2], curformat[3]);
+        var formatted = value;
+        if (typeof value === 'number' || !isNaN(parseFloat(value))) {
+            formatted = number_format(value, curformat[1], curformat[2], curformat[3]);
+        }
         if (!nosymbol){
             var cursymbol = ((printcursymbol!="" && usesymboloverride)?printcursymbol:curformat[0]);
-            result = curformat[4]==0 ? (cursymbol + result) : (result + cursymbol);
+            return curformat[4]==0 ? (cursymbol + formatted) : (formatted + cursymbol);
         }
-        return result;
+        return formatted;
     };
     // javascript equiv of php's number_format
     function number_format(number, decimals, dec_point, thousands_sep) {

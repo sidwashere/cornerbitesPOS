@@ -639,7 +639,6 @@ function WPOSSales() {
         var _tx = WPOS.util.currencyFormat(curtaxtotal.toFixed(2));
         $("#subtotal").text(_st);
         $("#totaltax").text(_tx);
-        document.title = "DEBUG: st=" + _st + " tx=" + _tx + " valid=" + $("#itemtable").children('.valid').length + " cursub=" + cursubtotal + " curtax=" + curtaxtotal;
         this.updateDiscount();
         } catch(e) {
             console.error("updateSalesTotal error:", e);
@@ -1207,7 +1206,6 @@ function WPOSSales() {
 
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
     this.processSale = function () {
-        try { alert('processSale called'); } catch(e) {}
         var salebtn = $("#endsalebtn");
         try { salebtn.prop("disabled", true); } catch(e) {}
         try {
@@ -1225,17 +1223,15 @@ function WPOSSales() {
                     addPaymentRow('mpesa', amts, amts, null);
                     if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
-            } catch(e){ try { alert('payerr:'+e); } catch(e2){} }
+            } catch(e){ console.error('payerr:', e); }
         }
         try { salebalanced = true; } catch(e) {}
         try {
             ProcessSaleTransaction();
-            try { alert('done pst'); } catch(e) {}
-        } catch(e) { try { alert('psterr:'+e); } catch(e2){} console.error(e); }
+        } catch(e) { console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
-        try { alert('quickProcess called'); } catch(e) {}
         try {
             if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
             if (typeof this.updateDiscount === 'function') this.updateDiscount();
@@ -1259,10 +1255,9 @@ function WPOSSales() {
             }
             if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
             if (typeof this.processSale === 'function') {
-                try { alert('calling processSale'); } catch(e) {}
                 return this.processSale();
             }
-        } catch(e) { try { alert('err:'+e); } catch(e2){} }
+        } catch(e) { console.error(e); }
         return false;
     };
     this.directProcess = function() {
@@ -1345,7 +1340,6 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        try { alert('pst start'); } catch(e) {}
         try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){}
         try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){}
         if ($("#paymentstable").children('tr').length == 0) {
@@ -1412,7 +1406,6 @@ function WPOSSales() {
                 }
             }
         } catch(e) {}
-        try { alert('pst end'); } catch(e) {}
     }
 
     this.postSaleUpload = function(jsonresponse, callbackref){
@@ -2047,5 +2040,4 @@ function WPOSSales() {
         }
         return true;
     }
-}
 }
