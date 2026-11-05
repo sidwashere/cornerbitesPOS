@@ -1393,13 +1393,14 @@ function WPOSSales() {
         try { lasttransref = salesobj.ref; } catch(e){}
         if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
-            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { console.error(e); }
+            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); try { $("#salenotes").val("RESP=" + JSON.stringify(_r)); } catch(e){} if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { try { $("#salenotes").val("ERR=" + e); } catch(e2){} }
         } else {
             try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }
         var recemailed = false;
         try { recemailed = $("#emailreceipt").is(":checked"); } catch(e) {}
         try { clearSalesForm(); } catch(e) {}
+        try { $('#salenotes').val('REACHED_CLEAR'); } catch(e) {}
         try { $("#paymentsdiv").dialog("close"); } catch(e) { try { $("#paymentsdiv").hide(); } catch(e2){} }
         try {
             for (var i in salesobj.payments){
