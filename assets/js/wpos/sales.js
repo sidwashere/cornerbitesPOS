@@ -1241,8 +1241,10 @@ function WPOSSales() {
         }
         try { salebalanced = true; } catch(e) {}
         try {
+            document.title = 'calling PST';
             ProcessSaleTransaction();
-        } catch(e) { console.error(e); }
+            document.title = 'PST done';
+        } catch(e) { document.title = 'PST err: ' + e; console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
@@ -1354,8 +1356,10 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){}
-        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){}
+        document.title = 'PST1';
+        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){ document.title = 'e1:'+e; }
+        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){ document.title = 'e2:'+e; }
+        document.title = 'PST2 items=' + $("#itemtable").children('.item_row').length;
         if ($("#paymentstable").children('tr').length == 0) {
             try {
                 var amt = 0;
@@ -1371,8 +1375,8 @@ function WPOSSales() {
             } catch(e){}
         }
         var salesobj = null;
-        try { salesobj = getSaleObject(); } catch(e) { console.error(e); }
-        if (!salesobj) return;
+        try { salesobj = getSaleObject(); document.title = 'PST3 gotso=' + (salesobj && salesobj.items ? salesobj.items.length : 'null'); } catch(e) { document.title = 'PST3 err:' + e; }
+        if (!salesobj) { document.title = 'PST3 no salesobj'; return; }
         var sales_json = JSON.stringify(salesobj);
         if (sales_json.length > 16384) return alert('Too Many Items');
 
