@@ -47,6 +47,9 @@ function WPOSTransactions() {
             if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
                 WPOS.sendJsonDataAsync("sales/get", JSON.stringify({}), function(data){
                     if (data && data.data) {
+                        if (typeof WPOS.setSalesTableData === 'function') {
+                            WPOS.setSalesTableData(data.data);
+                        }
                         if (typeof WPOS.setSalesTable === 'function') {
                             WPOS.setSalesTable(data.data);
                         }

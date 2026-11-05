@@ -1146,11 +1146,17 @@ function WPOS() {
     this.updateSalesTable = function (ref, saleobj) {
         salestable[ref] = saleobj;
     };
+    this.setSalesTableData = function (data) {
+        if (!data) return;
+        salestable = data;
+        try { localStorage.setItem("wpos_csales", JSON.stringify(data)); } catch(e) {}
+    };
 
     this.removeFromSalesTable = function (ref){
         delete salestable[ref];
     };
 
+    this.fetchSalesTable = fetchSalesTable;
     function fetchSalesTable(callback) {
         return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: configtable.deviceid}), function(data){
             if (data) {
