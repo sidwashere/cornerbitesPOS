@@ -138,6 +138,8 @@ function WPOSTransactions() {
         datatable.fnAddData(tableData, false);
         datatable.api().draw(false);
     }
+    self.setSalesTable = loadIntoTable;
+    this.setSalesTable = loadIntoTable;
 
     function getDeviceLocationText(deviceid, locationid){
         var text = "";
