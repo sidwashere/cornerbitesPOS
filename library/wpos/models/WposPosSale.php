@@ -869,18 +869,32 @@ class WposPosSale {
         $config = $wposConfig->getSettingsObject("pos");
         $devices = [];
 
-        switch ($config->saledevice){
-            case "device": return true; // no need to do anything, the device will already get the updated record
-            case "all":
-                // get all device id's
-                $devMdl = new DevicesModel();
-                $devices = $devMdl->getDeviceIds();
-                break;
-            case "location":
-                // get location device id array
-                $devMdl = new DevicesModel();
-                $devices = $devMdl->getLocationDeviceIds($curdeviceid);
-                break;
+        try {
+            switch (isset($config->saledevice) ? $config->saledevice : 'all'){
+                case "device": return true; // no need to do anything, the device will already get the updated record
+                case "all":
+                    // get all device id's
+                    $devMdl = new DevicesModel();
+                    $devices = $devMdl->getDeviceIds();
+                    break;
+                case "location":
+                    // get location device id array
+                    $devMdl = new DevicesModel();
+                    $locationDevices = $devMdl->getLocationDeviceIds($curdeviceid);
+                    if (is_array($locationDevices) && !empty($locationDevices)) {
+                        $devices = $locationDevices;
+                    } else {
+                        $devices = $devMdl->getDeviceIds();
+                    }
+                    break;
+                default:
+                    $devMdl = new DevicesModel();
+                    $devices = $devMdl->getDeviceIds();
+                    break;
+            }
+        } catch (Exception $e) {
+            $devMdl = new DevicesModel();
+            $devices = $devMdl->getDeviceIds();
         }
 
         // put devices into object, node.js array functions suck
