@@ -1,3 +1,4 @@
+try { $('body').append('<div id="salesdbg2" style="position:fixed;bottom:80px;left:0;background:purple;color:white;z-index:9999;padding:5px;">sales.js loaded, WPOSSales=' + (typeof WPOSSales) + '</div>'); } catch(e){}
 /**
  * sales.js is part of Wallace Point of Sale system (WPOS)
  *
