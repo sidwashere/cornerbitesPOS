@@ -1241,8 +1241,10 @@ function WPOSSales() {
         }
         try { salebalanced = true; } catch(e) {}
         try {
+            alert('calling PST');
             ProcessSaleTransaction();
-        } catch(e) { console.error(e); }
+            alert('PST done');
+        } catch(e) { alert('PST err: ' + e); console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
