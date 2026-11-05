@@ -122,7 +122,7 @@ function WPOSItems() {
 
         for (var i in items){
             price = (items[i].price==""?"??.??":parseFloat(items[i].price).toFixed(2));
-            iboxitems.append('<div class="iboxitem" onclick="WPOS.items.addItemFromId('+items[i].id+'); toggleItemBox(false);">' +
+            iboxitems.append('<div class="iboxitem" onclick="WPOS.items.addItemFromId('+items[i].id+');">' +
                                 '<h6>'+items[i].name+'</h6>'+
                                 '<h5>'+WPOS.util.currencyFormat(price)+'</h5>'+
                             '</div>');
@@ -151,16 +151,15 @@ function WPOSItems() {
     };
 
     this.generateQuickItemsGrid = function(){
-        // delegate to WPOSSales implementation
-        return WPOS.sales.generateQuickItemsGrid();
+        return this.generateItemGridCategories();
     };
 
     this.toggleQuickItem = function(itemId){
-        return WPOS.sales.toggleQuickItem(itemId);
+        return false;
     };
 
     this.showQuickItemPicker = function(){
-        return WPOS.sales.showQuickItemPicker();
+        return false;
     };
 
     /**
@@ -586,9 +585,9 @@ $(function () {
 
 function WPOSSales() {
     // Quick Items (favourites) live on WPOS.items; expose them here too for back-compat
-    this.generateQuickItemsGrid = function(){ return WPOS.items.generateQuickItemsGrid(); };
-    this.toggleQuickItem = function(itemId){ return WPOS.items.toggleQuickItem(itemId); };
-    this.showQuickItemPicker = function(){ return WPOS.items.showQuickItemPicker(); };
+    this.generateQuickItemsGrid = function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; };
+    this.toggleQuickItem = function(itemId){ return false; };
+    this.showQuickItemPicker = function(){ return false; };
     var paymentMethods = ['eftpos', 'credit', 'cash', 'cheque', 'deposit'];
     var cursubtotal = 0.00;
     var curtaxtotal = 0.00;
