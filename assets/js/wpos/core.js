@@ -1506,6 +1506,7 @@ function WPOS() {
             } catch (e) {
                 console.error('WPOSSales constructor failed:', e);
                 this.sales = null;
+                try { $('body').append('<div id="wsdbg" style="position:fixed;bottom:0;left:0;background:orange;color:black;z-index:9999;padding:5px;">WPOSSales ctor error: ' + (e && e.message ? e.message : e) + '</div>'); } catch(e2){}
             }
         } else {
             console.error('WPOSSales not defined');
