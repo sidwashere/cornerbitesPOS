@@ -4,13 +4,15 @@ html, body {
     padding: 0;
 }
 body {
-	background-color:#000000 !important;
+	background-color:#ffffff !important;
     min-height: 100vh !important;
+    overflow-x: hidden;
 }
 #wrapper {
-	margin: auto;
+	margin: 0;
+    width: 100%;
+    max-width: none;
     height: auto;
-	max-width: 1152px;
     min-height: 100vh;
     padding: 0;
     background-color: #FFF;
@@ -37,11 +39,15 @@ body.tray-open #wrapper {
     min-height: 300px;
 }
 #totals {
-    width:calc(100% - 13px);
+    width: 100%;
     margin-top:10px;
-    margin-bottom: 50px;
-    position: absolute;
-    bottom: 0;
+    margin-bottom: 20px;
+    position: relative;
+    bottom: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
 }
 #loginmodal {
     position:absolute;
@@ -288,9 +294,16 @@ body.tray-open #wrapper {
 }
 
 #totals-container {
-    display:inline-block;
-    max-width:450px;
+    display: block;
+    max-width: 100%;
+    flex: 1 1 560px;
     vertical-align:top;
+}
+#regkey-container {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+    margin-left: auto;
 }
 
 /* #Media Queries
@@ -301,6 +314,28 @@ body.tray-open #wrapper {
     #window_width_toggle {
         display: none;
     }
+    #wrapper {
+        min-width: 0;
+    }
+    #totals {
+        flex-direction: column;
+        gap: 12px;
+    }
+    #regkey-container {
+        width: 100%;
+        margin-left: 0;
+    }
+    #regkey-inner {
+        width: 100%;
+    }
+    #regkey-inner .regbtn {
+        width: calc(50% - 8px);
+        min-width: 0;
+    }
+    .toolbarbtn,
+    .regbtn {
+        margin-left: 4px;
+    }
 }
 
 /* Tablet Portrait size to standard 960 (devices and browsers) */
@@ -310,7 +345,30 @@ body.tray-open #wrapper {
 
 /* All Mobile Sizes (devices and browser) */
 @media only screen and (max-width: 767px) {
-
+    body {
+        overflow-x: hidden;
+    }
+    #items_contain {
+        max-height: none;
+        overflow-x: auto;
+    }
+    #wrapper {
+        width: 100vw;
+    }
+    #items table,
+    #transactiontable,
+    #salestable {
+        min-width: 540px;
+    }
+    .navbar {
+        overflow: visible;
+        height: auto;
+    }
+    .navbar li,
+    .navbar button {
+        float: none !important;
+        display: inline-block !important;
+    }
 }
 
 /* Mobile Landscape Size to Tablet Portrait (devices and browsers) */

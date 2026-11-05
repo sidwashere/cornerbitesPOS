@@ -1041,6 +1041,7 @@ function WPOS() {
             // put default config here.
             var defcon = {
                 keypad: true,
+                window_size: 'none',
                 eftpos:{
                     enabled: false,
                     receipts:true,
