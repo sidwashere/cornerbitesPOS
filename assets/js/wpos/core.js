@@ -1500,8 +1500,20 @@ function WPOS() {
     try { if (typeof WPOSItems === 'function') this.items = new WPOSItems(); } catch(e) {}
     try {
         if (typeof WPOSSales === 'function') {
-            this.sales = new WPOSSales();
+            try {
+                this.sales = new WPOSSales();
+                console.log('WPOSSales loaded OK');
+            } catch (e) {
+                console.error('WPOSSales constructor failed:', e);
+                this.sales = null;
+            }
         } else {
+            console.error('WPOSSales not defined');
+            this.sales = null;
+        }
+        if (this.sales === null) {
+            console.error('Using fallback sales object');
+            try { $('body').append('<div id="salesdbg" style="position:fixed;bottom:0;left:0;background:orange;color:black;z-index:9999;padding:5px;">FALLBACK SALES (WPOSSales failed)</div>'); } catch(e){}
             this.sales = {
                 generateQuickItemsGrid: function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; },
                 toggleQuickItem: function(itemId){ return WPOS.items && WPOS.items.toggleQuickItem ? WPOS.items.toggleQuickItem(itemId) : null; },
