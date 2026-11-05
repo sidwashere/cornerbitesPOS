@@ -148,14 +148,23 @@ function WPOSAdmin(){
         return WPOS.getJsonDataAsync("hello", callback);
     }
     var sessionTimer = null;
+    var _sessionFailures = 0;
     function startSessionCheck(){
         if (sessionTimer==null){
-            sessionTimer = setInterval(startSessionCheck, 630000);
+            sessionTimer = setInterval(startSessionCheck, 300000);
             return;
         }
         getLoginStatus(function(user){
-            if (user==false)
-                WPOS.sessionExpired();
+            if (user==false) {
+                _sessionFailures++;
+                // tolerate a single transient failure before logging out
+                if (_sessionFailures >= 2) {
+                    _sessionFailures = 0;
+                    WPOS.sessionExpired();
+                }
+            } else {
+                _sessionFailures = 0;
+            }
         });
     }
     function stopSessionCheck(){
