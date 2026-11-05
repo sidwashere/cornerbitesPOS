@@ -1356,8 +1356,10 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){}
-        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){}
+        document.title = 'PST start';
+        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){ document.title = 'err1: ' + e; }
+        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){ document.title = 'err2: ' + e; }
+        document.title = 'PST mid1, items=' + $("#itemtable").children('.item_row').length;
         if ($("#paymentstable").children('tr').length == 0) {
             try {
                 var amt = 0;
@@ -1373,7 +1375,7 @@ function WPOSSales() {
             } catch(e){}
         }
         var salesobj = null;
-        try { salesobj = getSaleObject(); } catch(e) { try { alert('getso err:'+e); } catch(e2){} }
+        try { salesobj = getSaleObject(); document.title = 'gotso, items=' + (salesobj && salesobj.items ? salesobj.items.length : 'null'); } catch(e) { document.title = 'getso err: ' + e; }
         if (!salesobj) return;
         var sales_json = JSON.stringify(salesobj);
         if (sales_json.length > 16384) return alert('Too Many Items');
