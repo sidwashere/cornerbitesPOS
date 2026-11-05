@@ -45,7 +45,7 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261105-142"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261105-141"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261105-141"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261105-141"></script>
@@ -956,6 +956,7 @@
         </div>
     </div>
     <button id="endsalebtn" class="btn btn-success" onclick="WPOS.sales.processSale();">Complete</button>
+    <button id="printsalebtn" class="btn btn-info" onclick="WPOS.sales.processSale(true);">Complete &amp; Print</button>
     <button id="savesalebtn" class="btn btn-primary" onclick="WPOS.sales.saveOrder();">Add Order</button>
     <button class="btn btn-danger" onClick="$('#paymentsdiv').dialog('close');">Cancel</button>
 </div>

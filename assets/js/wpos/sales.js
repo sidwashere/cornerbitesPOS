@@ -1217,7 +1217,9 @@ function WPOSSales() {
     }
 
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
-    this.processSale = function () {
+    var printReceiptAfterSale = false;
+    this.processSale = function (printReceipt) {
+        printReceiptAfterSale = !!printReceipt;
         var salebtn = $("#endsalebtn");
         try { salebtn.prop("disabled", true); } catch(e) {}
         try {
@@ -1405,16 +1407,21 @@ function WPOSSales() {
         } catch(e) {}
         try { if (WPOS.orders && WPOS.orders.processOrder) WPOS.orders.processOrder(salesobj, cursale); } catch(e) {}
         try {
-            var psetting = WPOS.print && WPOS.print.getGlobalPrintSetting ? WPOS.print.getGlobalPrintSetting('recask') : null;
-            if (psetting == "print"){
+            if (printReceiptAfterSale) {
                 if (WPOS.print && WPOS.print.printReceipt) WPOS.print.printReceipt(salesobj.ref);
+                printReceiptAfterSale = false;
             } else {
-                if (psetting == "email" && recemailed){
-                    return;
-                }
-                var answer = confirm("Would you like to print a receipt?");
-                if (answer){
+                var psetting = WPOS.print && WPOS.print.getGlobalPrintSetting ? WPOS.print.getGlobalPrintSetting('recask') : null;
+                if (psetting == "print"){
                     if (WPOS.print && WPOS.print.printReceipt) WPOS.print.printReceipt(salesobj.ref);
+                } else {
+                    if (psetting == "email" && recemailed){
+                        return;
+                    }
+                    var answer = confirm("Would you like to print a receipt?");
+                    if (answer){
+                        if (WPOS.print && WPOS.print.printReceipt) WPOS.print.printReceipt(salesobj.ref);
+                    }
                 }
             }
         } catch(e) {}
