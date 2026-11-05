@@ -312,12 +312,14 @@ function WPOSUtil() {
     function getPrintCurrencySymbol(){
         // check local setting first
         var codepage, codes;
-        if (WPOS.print.getGlobalPrintSetting('currency_override') && WPOS.print.getGlobalPrintSetting('currency_codes')!=""){
+        var config = WPOS && WPOS.getConfigTable ? WPOS.getConfigTable() : {};
+        var posConfig = config && config.pos ? config.pos : {};
+        if (WPOS && WPOS.print && WPOS.print.getGlobalPrintSetting && WPOS.print.getGlobalPrintSetting('currency_override') && WPOS.print.getGlobalPrintSetting('currency_codes')!=""){
             codepage = WPOS.print.getGlobalPrintSetting('currency_codepage');
             codes = WPOS.print.getGlobalPrintSetting('currency_codes').split(',');
-        } else if (WPOS.getConfigTable().pos.hasOwnProperty('reccurrency') && WPOS.getConfigTable().pos.reccurrency!="") {
-            codepage = WPOS.getConfigTable().pos.reccurrency_codepage;
-            codes = WPOS.getConfigTable().pos.reccurrency.split(',');
+        } else if (posConfig && posConfig.hasOwnProperty && posConfig.hasOwnProperty('reccurrency') && posConfig.reccurrency!="") {
+            codepage = posConfig.reccurrency_codepage;
+            codes = posConfig.reccurrency.split(',');
         } else {
             return "";
         }

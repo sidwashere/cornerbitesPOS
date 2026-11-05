@@ -406,7 +406,7 @@ function WPOS() {
                     startSocket();
                     setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0);
                     initDataSuccess(loginloader);
-                    var offline_num = WPOS.sales.getOfflineSalesNum();
+                    var offline_num = (WPOS.sales && typeof WPOS.sales.getOfflineSalesNum === 'function') ? WPOS.sales.getOfflineSalesNum() : 0;
                     if (offline_num>0){
                         $("#backup_btn").show();
                         // check for offline sales on login
@@ -1486,7 +1486,61 @@ function WPOS() {
     // Contructor code
     // load WPOS Objects
     try { if (typeof WPOSItems === 'function') this.items = new WPOSItems(); } catch(e) {}
-    try { if (typeof WPOSSales === 'function') this.sales = new WPOSSales(); } catch(e) {}
+    try {
+        if (typeof WPOSSales === 'function') {
+            this.sales = new WPOSSales();
+        } else {
+            this.sales = {
+                generateQuickItemsGrid: function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; },
+                toggleQuickItem: function(itemId){ return WPOS.items && WPOS.items.toggleQuickItem ? WPOS.items.toggleQuickItem(itemId) : null; },
+                showQuickItemPicker: function(){ return WPOS.items && WPOS.items.showQuickItemPicker ? WPOS.items.showQuickItemPicker() : null; },
+                getOfflineSalesNum: function(){ return 0; },
+                uploadOfflineRecords: function(){ return false; },
+                updateSalesTotal: function(){
+                    try {
+                        var total = 0.00;
+                        var tempprice = 0.00;
+                        var curtaxtotal = 0.00;
+                        var curtotal = 0.00;
+                        var cursubtotal = 0.00;
+                        var rows = $('#itemtable').children('.item_row');
+                        rows.each(function(){
+                            var qty = parseFloat($(this).find('.itemqty').val()) || 1;
+                            var unit = parseFloat($(this).find('.itemunit').val()) || 0;
+                            var itemName = $(this).find('.itemname').val() || '';
+                            if (qty > 0 && itemName !== '') {
+                                tempprice = qty * unit;
+                                $(this).find('.itemprice').val(tempprice.toFixed(2));
+                                total += tempprice;
+                                var taxdata = $(this).find('.itemtaxval').data('taxdata') || { total: 0 };
+                                if (taxdata && !isNaN(taxdata.total)) {
+                                    curtaxtotal += parseFloat(taxdata.total) || 0;
+                                }
+                            } else {
+                                $(this).find('.itemprice').val('0.00');
+                            }
+                        });
+                        curtotal = total;
+                        cursubtotal = total - curtaxtotal;
+                        $('#subtotal').text(WPOS.util.currencyFormat((isNaN(cursubtotal) ? 0 : cursubtotal).toFixed(2)));
+                        $('#totaltax').text(WPOS.util.currencyFormat((isNaN(curtaxtotal) ? 0 : curtaxtotal).toFixed(2)));
+                        $('#total').text(WPOS.util.currencyFormat((isNaN(curtotal) ? 0 : curtotal).toFixed(2)));
+                    } catch (e) {}
+                },
+                updateDiscount: function(){
+                    var discountObj = $('#salediscount');
+                    var discount = parseFloat(discountObj.val()) || 0;
+                    var val = parseFloat($('#subtotal').text().replace(/[^0-9.-]/g,'')) || 0;
+                    var tax = parseFloat($('#totaltax').text().replace(/[^0-9.-]/g,'')) || 0;
+                    var base = val + tax;
+                    var discounted = discount > 0 ? base * (discount / 100) : 0;
+                    $('#discounttxt').text('(' + WPOS.util.currencyFormat(discounted.toFixed(2)) + ')');
+                    $('#total').text(WPOS.util.currencyFormat((base - discounted).toFixed(2)));
+                },
+                updatePaymentSums: function(){ return true; }
+            };
+        }
+    } catch(e) {}
     try { if (typeof WPOSTransactions === 'function') this.trans = new WPOSTransactions(); } catch(e) {}
     try { if (typeof WPOSReports === 'function') this.reports = new WPOSReports(); } catch(e) {}
     try { if (typeof WPOSPrint === 'function') this.print = new WPOSPrint(); } catch(e) {}
