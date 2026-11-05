@@ -1510,6 +1510,7 @@ function WPOS() {
             }
         } else {
             console.error('WPOSSales not defined');
+            alert('WPOSSales is NOT a function');
             this.sales = null;
         }
         if (this.sales === null) {
