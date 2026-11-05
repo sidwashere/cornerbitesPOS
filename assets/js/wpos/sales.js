@@ -1375,8 +1375,7 @@ function WPOSSales() {
             } catch(e){}
         }
         var salesobj = null;
-        try { salesobj = getSaleObject(); document.title = 'PST3 gotso=' + (salesobj && salesobj.items ? salesobj.items.length : 'null'); } catch(e) { document.title = 'PST3 err:' + e; }
-        if (!salesobj) { document.title = 'PST3 no salesobj'; return; }
+        try { salesobj = getSaleObject(); try { $('body').append('<div id="dbgout" style="position:fixed;top:0;left:0;background:blue;color:white;z-index:9999;padding:10px;font-size:12px;max-width:90%;word-break:break-all;">GOTSO items=' + (salesobj && salesobj.items ? salesobj.items.length : 'null') + '</div>'); } catch(e){} } catch(e) { try { $('body').append('<div id="dbgout" style="position:fixed;top:0;left:0;background:blue;color:white;z-index:9999;padding:10px;font-size:12px;max-width:90%;word-break:break-all;">GETSO ERR=' + e + '</div>'); } catch(e2){} }
         var sales_json = JSON.stringify(salesobj);
         if (sales_json.length > 16384) return alert('Too Many Items');
 
@@ -1488,13 +1487,14 @@ function WPOSSales() {
         itemtable.children(".item_row, .valid").each(function (index, element) {
                 // add tax information into the tax totals array
                 taxdata = $(element).find(".itemtaxval").data('taxdata');
+                if (!taxdata) taxdata = {inclusive:true, total:0, values:{}};
                 taxruleid = $(element).find(".itemtax").val();
-                for (var i in taxdata.values) {
+                try { for (var i in taxdata.values) {
                     if (!taxtotals.hasOwnProperty(i)) {
                         taxtotals[i] = 0;
                     }
                     taxtotals[i] += taxdata.values[i];
-                }
+                } } catch(e) { taxdata = {inclusive:true, total:0, values:{}}; }
                 // add # items to total
                 tempqty = parseFloat($(element).find(".itemqty").val());
                 numitems += tempqty;
