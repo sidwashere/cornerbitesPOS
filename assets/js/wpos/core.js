@@ -1496,6 +1496,62 @@ function WPOS() {
                 showQuickItemPicker: function(){ return WPOS.items && WPOS.items.showQuickItemPicker ? WPOS.items.showQuickItemPicker() : null; },
                 getOfflineSalesNum: function(){ return 0; },
                 uploadOfflineRecords: function(){ return false; },
+                userAbortSale: function(){ if (confirm('Are you sure you want to abort this order?')) { $('#itemtable').html('<tr class="order_row"><td style="background-color:#438EB9; color:#FFF;" colspan="7"><h4 style="text-align: center; margin: 0;">New Order</h4></td></tr>'); $('#totaltax').text(WPOS.util.currencyFormat(0)); $('#subtotal').text(WPOS.util.currencyFormat(0)); $('#total').text(WPOS.util.currencyFormat(0)); $('#salediscount').val(0); $('#discounttxt').text('(KSh0.00)'); } },
+                processSale: function(){
+                    try {
+                        var rows = $('#itemtable').children('.item_row');
+                        if (!rows.length) { alert('Please add some valid items to the sale before proceeding.'); return false; }
+                        var items = [];
+                        var total = 0;
+                        rows.each(function(){
+                            var qty = parseFloat($(this).find('.itemqty').val()) || 1;
+                            var unit = parseFloat($(this).find('.itemunit').val()) || 0;
+                            var name = $(this).find('.itemname').val() || '';
+                            if (!name) return;
+                            var amount = qty * unit;
+                            total += amount;
+                            items.push({
+                                name: name,
+                                qty: qty,
+                                unit: unit.toFixed(2),
+                                price: amount.toFixed(2),
+                                taxid: $(this).find('.itemtax').val() || 1,
+                                sitemid: $(this).find('.itemid').val() || 0
+                            });
+                        });
+                        if (!items.length) { alert('Please add some valid items to the sale before proceeding.'); return false; }
+                        var ref = Date.now() + '-' + Math.floor((Math.random() * 10000) + 1);
+                        var sale = {
+                            ref: ref,
+                            userid: (WPOS && WPOS.getCurrentUserId) ? WPOS.getCurrentUserId() : 0,
+                            devid: (WPOS && WPOS.getConfigTable) ? WPOS.getConfigTable().deviceid : 1,
+                            locid: (WPOS && WPOS.getConfigTable) ? WPOS.getConfigTable().locationid : 1,
+                            custid: $('#custid').val() || 0,
+                            custemail: $('#custemail').val() || '',
+                            notes: $('#salenotes').val() || '',
+                            discount: parseFloat($('#salediscount').val()) || 0,
+                            subtotal: total.toFixed(2),
+                            total: total.toFixed(2),
+                            tax: '0.00',
+                            numitems: items.length,
+                            processdt: Date.now(),
+                            items: items,
+                            payments: [{ method: 'mpesa', amount: total.toFixed(2) }]
+                        };
+                        var stored = {};
+                        try { stored = JSON.parse(localStorage.getItem('wpos_osales') || '{}'); } catch(e) {}
+                        stored[sale.ref] = { a: 'sales/add', data: sale };
+                        localStorage.setItem('wpos_osales', JSON.stringify(stored));
+                        $('#itemtable').html('<tr class="order_row"><td style="background-color:#438EB9; color:#FFF;" colspan="7"><h4 style="text-align: center; margin: 0;">New Order</h4></td></tr>');
+                        $('#totaltax').text(WPOS.util.currencyFormat(0));
+                        $('#subtotal').text(WPOS.util.currencyFormat(0));
+                        $('#total').text(WPOS.util.currencyFormat(0));
+                        $('#salediscount').val(0);
+                        $('#discounttxt').text('(KSh0.00)');
+                        if (WPOS && WPOS.setStatusBar) WPOS.setStatusBar(1, 'Sale recorded', 'Sale saved locally to the offline queue.', 0);
+                        return true;
+                    } catch (e) { console.error('fallback processSale error:', e); return false; }
+                },
                 updateSalesTotal: function(){
                     try {
                         var total = 0.00;
@@ -1689,6 +1745,7 @@ $(function () {
             $('#iboxitems').hide();
         }
     };
+    toggleItemBox(true);
     var isDragging = false;
     iboxhandle.on('mousedown', function() {
             $(window).on('mousemove touchmove', function() {
