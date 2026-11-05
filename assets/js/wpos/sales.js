@@ -1,4 +1,4 @@
-try { $('body').append('<div id="salesdbg2" style="position:fixed;bottom:80px;left:0;background:purple;color:white;z-index:9999;padding:5px;">sales.js loaded, WPOSSales=' + (typeof WPOSSales) + '</div>'); } catch(e){}
+try { var _d = document.createElement('div'); _d.id='salesdbg2'; _d.style.cssText='position:fixed;bottom:80px;left:0;background:purple;color:white;z-index:9999;padding:5px;'; _d.textContent = 'sales.js loaded, WPOSSales=' + (typeof WPOSSales); document.body.appendChild(_d); } catch(e){ var _d2 = document.createElement('div'); _d2.textContent = 'sales.js error: ' + e; document.body.appendChild(_d2); }
 /**
  * sales.js is part of Wallace Point of Sale system (WPOS)
  *
