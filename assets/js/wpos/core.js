@@ -1506,7 +1506,8 @@ function WPOS() {
             } catch (e) {
                 console.error('WPOSSales constructor failed:', e);
                 this.sales = null;
-                try { $('body').append('<div id="wsdbg" style="position:fixed;bottom:40px;left:0;background:orange;color:black;z-index:9999;padding:5px;font-size:11px;max-width:95%;word-break:break-all;">CTOR ERR: ' + (e && e.message ? e.message : e) + ' | stack: ' + (e && e.stack ? e.stack.substring(0,300) : '') + '</div>'); } catch(e2){}
+                window.__wserr = e;
+                try { $('body').append('<div id="wsdbg" style="position:fixed;bottom:40px;left:0;background:orange;color:black;z-index:9999;padding:5px;font-size:11px;max-width:95%;word-break:break-all;">CTOR ERR: ' + (e && e.message ? e.message : e) + '</div>'); } catch(e2){ $('body').append('<div id="wsdbg2">append failed: ' + e2 + '</div>'); }
             }
         } else {
             console.error('WPOSSales not defined');
@@ -1515,7 +1516,7 @@ function WPOS() {
         }
         if (this.sales === null) {
             console.error('Using fallback sales object');
-            try { $('body').append('<div id="salesdbg" style="position:fixed;bottom:0;left:0;background:orange;color:black;z-index:9999;padding:5px;">FALLBACK SALES (WPOSSales failed)</div>'); } catch(e){}
+            try { $('body').append('<div id="salesdbg" style="position:fixed;bottom:0;left:0;background:orange;color:black;z-index:9999;padding:5px;">FALLBACK SALES. ERR=' + (window.__wserr && window.__wserr.message ? window.__wserr.message : window.__wserr) + '</div>'); } catch(e){}
             this.sales = {
                 generateQuickItemsGrid: function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; },
                 toggleQuickItem: function(itemId){ return WPOS.items && WPOS.items.toggleQuickItem ? WPOS.items.toggleQuickItem(itemId) : null; },
