@@ -1356,8 +1356,8 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        document.title = 'PST1';
-        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){ document.title = 'e1:'+e; }
+        try { $('body').append('<div id="dbgout" style="position:fixed;top:0;left:0;background:blue;color:white;z-index:9999;padding:10px;font-size:12px;max-width:90%;word-break:break-all;">PST-START</div>'); } catch(e){}
+        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){ try { $('body').append('<div id="dbgout2" style="position:fixed;top:60px;left:0;background:blue;color:white;z-index:9999;padding:10px;font-size:12px;">ERR1=' + e + '</div>'); } catch(e2){} }
         try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){ document.title = 'e2:'+e; }
         document.title = 'PST2 items=' + $("#itemtable").children('.item_row').length;
         if ($("#paymentstable").children('tr').length == 0) {
