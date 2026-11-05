@@ -1397,6 +1397,7 @@ function WPOSSales() {
             try {
                 WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){
                     try { alert('upload resp: ' + JSON.stringify(data)); } catch(e){}
+                    try { $('#salenotes').val('UPLOAD_RESP=' + JSON.stringify(data)); } catch(e){}
                     try {
                         if (data && WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref);
                     } catch(e){}
