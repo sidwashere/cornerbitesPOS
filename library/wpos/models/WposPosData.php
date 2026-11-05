@@ -197,7 +197,12 @@ class WposPosData
                             case "location":
                                 // get location device id array
                                 $devMdl = new DevicesModel();
-                                $this->data->deviceid = $devMdl->getLocationDeviceIds($this->data->deviceid);
+                                $locationDeviceIds = $devMdl->getLocationDeviceIds($this->data->deviceid);
+                                if (is_array($locationDeviceIds) && !empty($locationDeviceIds)) {
+                                    $this->data->deviceid = $locationDeviceIds;
+                                } else {
+                                    unset($this->data->deviceid);
+                                }
                                 break;
                             default:
                                 unset($this->data->deviceid);

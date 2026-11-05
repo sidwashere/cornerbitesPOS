@@ -137,10 +137,15 @@ class DevicesModel extends DbConfig
         $devarr = [];
         if ($locationid === null){
             $device = $this->get($deviceid);
-            if (!is_array($device)){
+            if (!is_array($device) || empty($device)){
                 return false;
             }
-            $locationid = $device[0]['locationid'];
+
+            $deviceEntry = isset($device[$deviceid]) ? $device[$deviceid] : reset($device);
+            if (!is_array($deviceEntry) || !isset($deviceEntry['locationid'])) {
+                return false;
+            }
+            $locationid = $deviceEntry['locationid'];
         }
 
         $locdev = $this->get(null, $locationid); // get location devices
@@ -149,7 +154,7 @@ class DevicesModel extends DbConfig
         }
 
         foreach ($locdev as $dev){
-            if ($dev['disabled']==0){ // no disabled devices included
+            if (isset($dev['disabled']) && $dev['disabled']==0){ // no disabled devices included
                 array_push($devarr, $dev['id']);
             }
         }
