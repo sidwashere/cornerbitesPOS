@@ -1391,7 +1391,7 @@ function WPOSSales() {
         try { lasttransref = salesobj.ref; } catch(e){}
         if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
-            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); alert('sync resp: ' + JSON.stringify(_r)); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { alert('send err: ' + e); }
+            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); var _msg = 'sync resp: ' + JSON.stringify(_r); try { $('#salenotes').val(_msg); } catch(e){} console.log(_msg); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { var _e = 'send err: ' + e; try { $('#salenotes').val(_e); } catch(e2){} console.log(_e); }
         } else {
             try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }
