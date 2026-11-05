@@ -152,11 +152,19 @@ body {
     bottom: 40px;
     width: 450px;
     max-width: 450px;
-    z-index: 100;
+    z-index: 15;
     background: #fff;
     overflow-y: auto;
     overflow-x: hidden;
     box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+    transition: width 0.2s ease, max-width 0.2s ease, box-shadow 0.2s ease;
+}
+#ibox:not(.ibox-open) {
+    overflow: hidden;
+    border-left: 1px solid #e5e5e5;
+}
+#ibox:not(.ibox-open) #iboxitems {
+    display: none !important;
 }
 /* Responsive: hide sidebar by default on small screens, toggle via Products button */
 @media (max-width: 1199px) {

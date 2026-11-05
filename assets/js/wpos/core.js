@@ -56,21 +56,25 @@ function WPOS() {
         if (getDeviceUUID() == null) {
             setDeviceUUID();
         }
-        // Auto-authenticate as staff (passwordless) and go straight to the till
         autoStaffLogin();
         return true;
     };
     function autoStaffLogin(){
-        var STAFF_HASH = '1562206543da764123c21bd524674f0a8aaf49c8a89744c97352fe677f7e4006';
-        var DEV_UUID = '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad';
-        try { localStorage.setItem('wpos_devuuid', DEV_UUID); } catch(e){}
-        // If already logged in (session valid), just init data
         if (currentuser != null) { initData(true); return; }
-        // Direct simple auth via fetch (bypasses jQuery AJAX setup issues)
+
+        var deviceUuid = getDeviceUUID();
+        if (deviceUuid == null) {
+            deviceUuid = setDeviceUUID();
+        }
+        try { localStorage.setItem('wpos_devuuid', deviceUuid); } catch(e){}
+
+        // Use the backend's staff alias; the auth model accepts 'staff'/'admin' without requiring
+        // a hardcoded hash in the client, which keeps the auto-login resilient if the DB or login
+        // credentials change.
         fetch('/api/auth', {
             method:'POST',
             headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body:'data='+encodeURIComponent(JSON.stringify({username:'staff', password:STAFF_HASH, getsessiontokens:true})),
+            body:'data='+encodeURIComponent(JSON.stringify({username:'staff', password:'admin', getsessiontokens:true})),
             credentials:'same-origin'
         }).then(function(r){ return r.json(); }).then(function(j){
             if (j && j.error === 'OK' && j.data) {
@@ -83,7 +87,6 @@ function WPOS() {
                 });
                 hideLogin();
                 initData(true);
-                // Ensure product grid renders
                 setTimeout(function(){
                     $("#ibox").css('width', '450px');
                     if (WPOS.items && WPOS.items.generateItemGridCategories) {
@@ -91,12 +94,14 @@ function WPOS() {
                     }
                 }, 1000);
             } else {
-                $("#login-banner-txt").text("Auto-login failed: " + ((j && j.error) || 'unknown') + ". Refresh to retry.");
+                $("#login-banner-txt").text("Auto-login failed: " + ((j && j.error) || 'unknown') + ". Use the manual login, or refresh to retry.");
                 $("#login-banner").show();
+                $("#logindiv").show();
             }
         }).catch(function(e){
-            $("#login-banner-txt").text("Network error: " + (e.message||e) + ". Refresh to retry.");
+            $("#login-banner-txt").text("Network error: " + (e.message||e) + ". Use the manual login, or refresh to retry.");
             $("#login-banner").show();
+            $("#logindiv").show();
         });
     }
     // Plugin initiation functions
@@ -904,12 +909,20 @@ function WPOS() {
         });
     }
 
-    // Best-effort device (re)registration against the existing "general register" device (id 1).
-    // Requires permission; staff accounts are normally denied, in which case an admin must register it.
+    // Best-effort device (re)registration, preferring the last working device assignment when available.
     function selfRegisterDevice(callback) {
         var uuid = getDeviceUUID();
-        if (!uuid) uuid = '483d76551020146d79c50ab68334a3680c84456090812738b252bedbcfb7e5ad';
-        WPOS.sendJsonDataAsync("devices/setup", JSON.stringify({uuid: uuid, deviceid: 1}), function(res){
+        if (!uuid) uuid = setDeviceUUID();
+
+        var preferredDeviceId = 1;
+        try {
+            var cachedConfig = JSON.parse(localStorage.getItem("wpos_config") || "{}");
+            if (cachedConfig && cachedConfig.deviceid) {
+                preferredDeviceId = cachedConfig.deviceid;
+            }
+        } catch (e) {}
+
+        WPOS.sendJsonDataAsync("devices/setup", JSON.stringify({uuid: uuid, deviceid: preferredDeviceId}), function(res){
             callback(res !== false && res != null && res.deviceid != null);
         });
     }
@@ -1606,19 +1619,20 @@ $(function () {
             $(this).css("maxWidth", "370px");
         }
     });
-    // item box — always open so staff can see and click products
+    // item box — keep it collapsible and avoid obscuring the main footer action buttons
     var ibox = $("#ibox");
     var iboxhandle = $("#iboxhandle");
     var iboxopen = true;
-    // open the item box on load
     ibox.addClass('ibox-open').show();
     toggleItemBox = function(show){
         if (show){
             iboxopen = true;
-            ibox.addClass('ibox-open').css('width','450px').show();
+            ibox.addClass('ibox-open').css({ width:'450px', 'max-width':'450px', 'box-shadow':'-2px 0 8px rgba(0,0,0,0.15)'}).show();
+            $('#iboxitems').show();
         } else {
             iboxopen = false;
-            ibox.removeClass('ibox-open').hide();
+            ibox.removeClass('ibox-open').css({ width:'52px', 'max-width':'52px', 'box-shadow':'none'}).show();
+            $('#iboxitems').hide();
         }
     };
     var isDragging = false;
