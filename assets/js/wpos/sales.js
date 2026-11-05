@@ -1396,8 +1396,7 @@ function WPOSSales() {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
             try {
                 WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){
-                    try { alert('upload resp: ' + JSON.stringify(data)); } catch(e){}
-                    try { $('#salenotes').val('UPLOAD_RESP=' + JSON.stringify(data)); } catch(e){}
+                    try { $('body').append('<div class="dbgresp" style="position:fixed;bottom:10px;left:10px;background:black;color:lime;z-index:9999;padding:8px;font-size:11px;max-width:90%;word-break:break-all;">RESP=' + JSON.stringify(data) + '</div>'); } catch(e){}
                     try {
                         if (data && WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref);
                     } catch(e){}
