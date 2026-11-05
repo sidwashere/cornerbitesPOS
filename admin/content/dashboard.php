@@ -123,6 +123,24 @@
         </div>
     </div>
 
+    <div style="clear: both; margin-top: 18px; padding-top: 12px; border-top: 1px solid #e5e5e5;">
+        <div style="font-weight: bold; color: #333; margin-bottom: 8px;">
+            <i class="icon-signal"></i> Sales by Source
+        </div>
+        <table class="table table-striped table-bordered table-hover" style="margin-bottom: 0; font-size: 12px;">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Orders</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="salesBySourceBody">
+                <tr><td colspan="3" class="center">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     </div>
     </div>
 </div>
@@ -372,6 +390,35 @@
         $("#takings").text(WPOS.util.currencyFormat(totals.totaltakings, true));
         $("#cost").text(WPOS.util.currencyFormat(totals.cost, true));
         $("#profit").text(WPOS.util.currencyFormat(totals.profit, true));
+
+        var sourceBody = $('#salesBySourceBody');
+        var sourceBreakdown = totals.sourceBreakdown || {};
+        var sourceRows = '';
+        var sourceNames = {website:'Website', pos:'POS', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone', dinein:'Dine In', delivery:'Delivery', pickup:'Pickup'};
+        var sourceOrder = [];
+        for (var key in sourceBreakdown) {
+            if (sourceBreakdown.hasOwnProperty(key)) sourceOrder.push(key);
+        }
+        sourceOrder.sort(function(a,b){
+            var av = parseFloat(sourceBreakdown[a].stotal || 0), bv = parseFloat(sourceBreakdown[b].stotal || 0);
+            return bv - av;
+        });
+        if (sourceOrder.length === 0) {
+            sourceRows = '<tr><td colspan="3" class="center">No sales yet.</td></tr>';
+        } else {
+            sourceOrder.forEach(function(key){
+                var item = sourceBreakdown[key] || {};
+                var label = sourceNames[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                var total = WPOS.util.currencyFormat(item.stotal || 0, true);
+                sourceRows += '<tr>'
+                    + '<td>' + label + '</td>'
+                    + '<td>' + (item.snum || 0) + '</td>'
+                    + '<td>' + total + '</td>'
+                    + '</tr>';
+            });
+        }
+        sourceBody.html(sourceRows);
+
         // Set onclicks
         $(".infobox-sales").on('click', function(){ WPOS.transactions.openTransactionList(totals.salerefs); });
         $(".infobox-refunds").on('click', function(){ WPOS.transactions.openTransactionList(totals.refundrefs); });
@@ -690,18 +737,19 @@ function loadDashboardOrders(filter){
     $.get('/api/poll.php?last=0' + (_dashFilter === 'website' ? '&source=website' : ''), function(data){
         if (data.error) { tbody.html('<tr><td colspan="8" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
-        if (_dashFilter === 'kitchen') sales = sales.filter(function(s){ return s.source !== 'website'; });
+        if (_dashFilter === 'kitchen') sales = sales.filter(function(s){ return (s.source || 'pos') !== 'website'; });
         var rows = '';
-        var sourceColors = {website:'success', glovo:'warning', ubereats:'info', phone:'default'};
-        var sourceLabels = {website:'Website', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone'};
+        var sourceColors = {website:'success', pos:'primary', glovo:'warning', ubereats:'info', phone:'default', dinein:'success'};
+        var sourceLabels = {website:'Website', pos:'POS', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone', dinein:'Dine In'};
         sales.slice(0, 20).forEach(function(s){
             var items = '';
             for (var k in s.items) { items += s.items[k].qty + 'x ' + s.items[k].name; if (k < Object.keys(s.items).length - 1) items += ', '; }
             if (items.length > 40) items = items.substring(0, 40) + '...';
             if (s.table_number) items = '[T' + s.table_number + '] ' + items;
             var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default'}[s.orderstatus] || 'default';
-            var srcColor = sourceColors[s.source] || 'default';
-            var srcLabel = sourceLabels[s.source] || s.source;
+            var sourceKey = String(s.source || s.channel || 'pos').toLowerCase();
+            var srcColor = sourceColors[sourceKey] || 'default';
+            var srcLabel = sourceLabels[sourceKey] || sourceKey.charAt(0).toUpperCase() + sourceKey.slice(1);
             rows += '<tr>'
                 + '<td>'+s.id+'</td>'
                 + '<td><span class="label label-'+srcColor+'">'+srcLabel+'</span></td>'

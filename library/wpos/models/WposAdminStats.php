@@ -111,6 +111,29 @@ class WposAdminStats {
         }
         $stats->refs = implode(',', $stats->refs);
 
+        // Group totals by sales source so POS, kitchen, dine-in, website and any future
+        // channel are always summarized together without hard-coding each source name.
+        $sourceSql = "SELECT source, COALESCE(SUM(total), 0) as stotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE (processdt>= :stime AND processdt<= :etime) AND status != 0";
+        $sourceParams = [':stime' => $stime, ':etime' => $etime];
+        if (!empty($this->data->type)) {
+            $sourceSql .= ' AND type = :type';
+            $sourceParams[':type'] = $this->data->type;
+        }
+        $sourceSql .= ' GROUP BY source ORDER BY stotal DESC';
+        $sourceRows = $salesMdl->select($sourceSql, $sourceParams);
+        $stats->sourceBreakdown = [];
+        if (is_array($sourceRows)) {
+            foreach ($sourceRows as $sourceRow) {
+                $sourceKey = isset($sourceRow['source']) && $sourceRow['source'] !== '' ? $sourceRow['source'] : 'unknown';
+                $stats->sourceBreakdown[$sourceKey] = [
+                    'source' => $sourceKey,
+                    'snum' => (int)$sourceRow['snum'],
+                    'stotal' => (float)$sourceRow['stotal'],
+                    'refs' => $sourceRow['refs'],
+                ];
+            }
+        }
+
         $result['data'] = $stats;
 
         return $result;
