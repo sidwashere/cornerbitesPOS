@@ -1,4 +1,4 @@
-try { var _d = document.createElement('div'); _d.id='salesdbg2'; _d.style.cssText='position:fixed;bottom:80px;left:0;background:purple;color:white;z-index:9999;padding:5px;'; _d.textContent = 'sales.js loaded, WPOSSales=' + (typeof WPOSSales); document.body.appendChild(_d); } catch(e){ var _d2 = document.createElement('div'); _d2.textContent = 'sales.js error: ' + e; document.body.appendChild(_d2); }
+
 /**
  * sales.js is part of Wallace Point of Sale system (WPOS)
  *
@@ -1241,11 +1241,9 @@ function WPOSSales() {
             } catch(e){ console.error('payerr:', e); }
         }
         try { salebalanced = true; } catch(e) {}
-        alert('processSale START');
         try {
             ProcessSaleTransaction();
-            alert('processSale END');
-        } catch(e) { alert('processSale ERR: ' + e); console.error(e); }
+        } catch(e) { console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
@@ -1394,7 +1392,7 @@ function WPOSSales() {
         try { lasttransref = salesobj.ref; } catch(e){}
         if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
-            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); var _dbg = 'RESP=' + JSON.stringify(_r); try { $('body').append('<div id="dbgout" style="position:fixed;top:0;left:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;max-width:90%;word-break:break-all;">' + _dbg + '</div>'); } catch(e){} if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { var _dbg2 = 'ERR=' + e; try { $('body').append('<div id="dbgout" style="position:fixed;top:0;left:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;max-width:90%;word-break:break-all;">' + _dbg2 + '</div>'); } catch(e2){} }
+            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { console.error(e); }
         } else {
             try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }

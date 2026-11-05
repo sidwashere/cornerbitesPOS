@@ -1146,17 +1146,11 @@ function WPOS() {
     this.updateSalesTable = function (ref, saleobj) {
         salestable[ref] = saleobj;
     };
-    this.setSalesTableData = function (data) {
-        if (!data) return;
-        salestable = data;
-        try { localStorage.setItem("wpos_csales", JSON.stringify(data)); } catch(e) {}
-    };
 
     this.removeFromSalesTable = function (ref){
         delete salestable[ref];
     };
 
-    this.fetchSalesTable = fetchSalesTable;
     function fetchSalesTable(callback) {
         return WPOS.sendJsonDataAsync("sales/get", JSON.stringify({deviceid: configtable.deviceid}), function(data){
             if (data) {
@@ -1500,23 +1494,8 @@ function WPOS() {
     try { if (typeof WPOSItems === 'function') this.items = new WPOSItems(); } catch(e) {}
     try {
         if (typeof WPOSSales === 'function') {
-            try {
-                this.sales = new WPOSSales();
-                console.log('WPOSSales loaded OK');
-            } catch (e) {
-                console.error('WPOSSales constructor failed:', e);
-                this.sales = null;
-                window.__wserr = e;
-                try { $('body').append('<div id="wsdbg" style="position:fixed;bottom:40px;left:0;background:orange;color:black;z-index:9999;padding:5px;font-size:11px;max-width:95%;word-break:break-all;">CTOR ERR: ' + (e && e.message ? e.message : e) + '</div>'); } catch(e2){ $('body').append('<div id="wsdbg2">append failed: ' + e2 + '</div>'); }
-            }
+            this.sales = new WPOSSales();
         } else {
-            console.error('WPOSSales not defined');
-            alert('WPOSSales is NOT a function');
-            this.sales = null;
-        }
-        if (this.sales === null) {
-            console.error('Using fallback sales object');
-            try { $('body').append('<div id="salesdbg" style="position:fixed;bottom:0;left:0;background:orange;color:black;z-index:9999;padding:5px;">FALLBACK SALES. ERR=' + (window.__wserr && window.__wserr.message ? window.__wserr.message : window.__wserr) + '</div>'); } catch(e){}
             this.sales = {
                 generateQuickItemsGrid: function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; },
                 toggleQuickItem: function(itemId){ return WPOS.items && WPOS.items.toggleQuickItem ? WPOS.items.toggleQuickItem(itemId) : null; },
