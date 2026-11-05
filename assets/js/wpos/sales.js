@@ -1241,10 +1241,8 @@ function WPOSSales() {
         }
         try { salebalanced = true; } catch(e) {}
         try {
-            alert('calling PST');
             ProcessSaleTransaction();
-            alert('PST done');
-        } catch(e) { alert('PST err: ' + e); console.error(e); }
+        } catch(e) { console.error(e); }
         try { salebtn.prop("disabled", false); } catch(e) {}
     };
     this.quickProcess = function() {
@@ -1356,10 +1354,8 @@ function WPOSSales() {
     }
 
     function ProcessSaleTransaction(){
-        document.title = 'PST start';
-        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){ document.title = 'err1: ' + e; }
-        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){ document.title = 'err2: ' + e; }
-        document.title = 'PST mid1, items=' + $("#itemtable").children('.item_row').length;
+        try { if (typeof WPOS.sales && WPOS.sales.updateSalesTotal) WPOS.sales.updateSalesTotal(); } catch(e){}
+        try { if (typeof WPOS.sales && WPOS.sales.updatePaymentSums) WPOS.sales.updatePaymentSums(); } catch(e){}
         if ($("#paymentstable").children('tr').length == 0) {
             try {
                 var amt = 0;
@@ -1375,7 +1371,7 @@ function WPOSSales() {
             } catch(e){}
         }
         var salesobj = null;
-        try { salesobj = getSaleObject(); document.title = 'gotso, items=' + (salesobj && salesobj.items ? salesobj.items.length : 'null'); } catch(e) { document.title = 'getso err: ' + e; }
+        try { salesobj = getSaleObject(); } catch(e) { console.error(e); }
         if (!salesobj) return;
         var sales_json = JSON.stringify(salesobj);
         if (sales_json.length > 16384) return alert('Too Many Items');
@@ -1393,7 +1389,7 @@ function WPOSSales() {
         try { lasttransref = salesobj.ref; } catch(e){}
         if (typeof WPOS.isOnline === 'function' && WPOS.isOnline()) {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
-            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); var _msg = 'sync resp: ' + JSON.stringify(_r); document.title = _msg; try { $('#salenotes').val(_msg); } catch(e){} console.log(_msg); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { var _e = 'send err: ' + e; document.title = _e; try { $('#salenotes').val(_e); } catch(e2){} console.log(_e); }
+            try { var _r = WPOS.sendJsonData("sales/add", JSON.stringify(salesobj)); if (_r) { try { if (WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(_r, salesobj.ref); } catch(e){} } } catch(e) { console.error(e); }
         } else {
             try { if (WPOS.sales && WPOS.sales.getOfflineSalesNum) WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)"); } catch(e){}
         }
