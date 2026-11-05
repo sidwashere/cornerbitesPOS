@@ -269,6 +269,10 @@
     }
 
     $(function() {
+        if ($.fn.dataTable && $.fn.dataTable.isDataTable('#invoicestable')) {
+            $('#invoicestable').DataTable().destroy();
+        }
+
         // get default data
         var data = WPOS.sendJsonData("multi", JSON.stringify({"customers/get":"", "invoices/get":{"stime":stime, "etime":etime}}));
         if (data===false) return;
@@ -290,6 +294,9 @@
         }
         datatable = $('#invoicestable').dataTable({
             "bProcessing": true,
+            "bDestroy": true,
+            "bLengthChange": false,
+            "sDom": 'frtip',
             "aaData": itemarray,
             "aaSorting": [[8, "desc"],[ 1, "desc" ]],
             "aoColumns": [

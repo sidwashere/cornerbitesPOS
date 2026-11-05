@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" sizes="72x72" href="/assets/images/apple-touch-icon-72x72.png">
     <link rel="apple-touch-icon" sizes="114x114" href="/assets/images/apple-touch-icon-114x114.png">
     <!-- UI FRAMEWORK STYLES -->
-    <link type="text/css" rel="stylesheet" href="assets/css/wpos.css?v=20261109"/>
+    <link type="text/css" rel="stylesheet" href="assets/css/wpos.css?v=20261105-141"/>
     <link rel="stylesheet" href="/assets/css/jquery-ui-1.10.3.full.min.css?v=20261030"/>
     <link href="/assets/css/bootstrap.min.css?v=20261030" rel="stylesheet"/>
     <link rel="stylesheet" href="/assets/css/font-awesome.min.css?v=20261030"/>
@@ -45,13 +45,13 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261105-3"></script>
-    <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261118"></script>
-    <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261030"></script>
-    <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261030"></script>
-    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261118"></script>
-    <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261105-3"></script>
-    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261105-3"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261105-141"></script>
     <script type="text/javascript" src="/assets/libs/webprint.js?v=20261030"></script>
     <!-- Websocket library -->
     <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>
@@ -82,10 +82,9 @@
     <li><a href="#tabs-4">Settings</a></li>
     <button onClick="WPOS.logout();" style="float:right; height: 45px; padding: 6px 8px;" class="btn logout_btn"><i class="glyphicon glyphicon-log-out"></i>Logout</button>
     <div style="float:right; vertical-align: middle; margin-top: 10px; text-align: right;">
-        <button title="Toggle Product Grid" onClick="if(typeof toggleItemBox==='function'){var w=document.getElementById('ibox'); if(w && w.classList && w.classList.contains('ibox-open')){toggleItemBox(false);}else{toggleItemBox(true);}}" style="margin-right: 4px; margin-left: 4px;" class="btn btn-xs btn-info"><i class="icon icon-th"></i>&nbsp;Products</button>
+        <button title="Toggle Product Grid" class="btn btn-xs btn-info toggle-product-grid" onClick="if(typeof toggleItemBox==='function'){var w=document.getElementById('ibox'); if(w && w.classList && w.classList.contains('ibox-open')){toggleItemBox(false);}else{toggleItemBox(true);}}" style="margin-right: 4px; margin-left: 4px;"><i class="icon icon-th"></i>&nbsp;Products</button>
         <button title="Open Administration Dashboard" onClick="window.open('/admin');" style="margin-right: 4px; margin-left: 4px;" class="btn btn-xs btn-primary"><i class="icon icon-cog">&nbsp;Admin</i></button>
         <button title="Lock terminal or switch user" id="switch_user_btn" onClick="WPOS.lockSession();" style="margin-right: 4px; margin-left: 4px;" class="btn btn-xs btn-primary"><i class="icon icon-lock"></i>&nbsp;Lock</button>
-        <button title="Expand window" id="window_width_toggle" onClick="expandWindow();" style="margin-right: 4px; margin-left: 6px;" class="btn btn-xs btn-primary"><i class="icon icon-expand"></i></button>
     </div>
 </ul>
 <div id="tabs-1">
@@ -188,7 +187,7 @@
                 <div id="regkey-container" class="pull-right">
                         <div id="regkey-inner">
                         <div id="registerkeydiv">
-                            <button class="regbtn btn btn-success" onClick="WPOS.sales.processSale();">Process</button>
+                            <button class="regbtn btn btn-success" onClick="WPOS.sales.showPaymentDialog();">Process</button>
                             <button class="regbtn btn btn-danger" onClick="WPOS.sales.userAbortSale();">Abort</button>
                             <button class="regbtn btn" onclick="WPOS.print.openCashDraw();">Till</button>
                             <button class="regbtn btn" onclick="WPOS.trans.recallLastTransaction();">Recall</button>
@@ -924,12 +923,12 @@
 <div id="paymentsdiv" style="display:none; padding:5px;" title="Complete Sale">
     <table width="100%" class="ui-widget-content">
         <tr>
-            <td><strong style="width: 60px; display: inline-block;">Total:</strong><span id="salestotal">$0.00</span></td>
-            <td><strong style="width: 80px; display: inline-block;">Payments:</strong><span id="paymentstotal">$0.00</span></td>
+            <td><strong style="width: 60px; display: inline-block;">Total:</strong><span id="salestotal">KSh0.00</span></td>
+            <td><strong style="width: 80px; display: inline-block;">Payments:</strong><span id="paymentstotal">KSh0.00</span></td>
         </tr>
         <tr>
-            <td><strong style="width: 60px; display: inline-block;">Balance:</strong><span id="salesbalance">$0.00</span></td>
-            <td><strong style="width: 80px; display: inline-block;">Change:</strong><span id="saleschange">$0.00</span></td>
+            <td><strong style="width: 60px; display: inline-block;">Balance:</strong><span id="salesbalance">KSh0.00</span></td>
+            <td><strong style="width: 80px; display: inline-block;">Change:</strong><span id="saleschange">KSh0.00</span></td>
         </tr>
     </table>
     <div style="height:250px; overflow:auto; padding:0;">

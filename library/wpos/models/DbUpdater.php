@@ -440,7 +440,7 @@ class DbUpdater {
             }
         }
 
-        WposAdminSettings::putValue('general', 'currencyformat', 'Ksh~2~.~,~0');
+        WposAdminSettings::putValue('general', 'currencyformat', 'KSh~2~.~,~0');
 
         return true;
     }

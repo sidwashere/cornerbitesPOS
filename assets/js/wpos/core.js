@@ -52,6 +52,11 @@ function WPOS() {
     };
     // PASSWORDLESS STAFF POS — auto-login, no login screen ever
     this.initLogin = function(){
+        // Only auto-login on the POS site root. Admin access must require credentials.
+        var path = window.location.pathname || '/';
+        if (path.indexOf('/admin') !== -1 || path.indexOf('/admin/') !== -1) {
+            return false;
+        }
         // Always ensure device UUID exists (fixed terminal)
         if (getDeviceUUID() == null) {
             setDeviceUUID();
@@ -1497,6 +1502,59 @@ function WPOS() {
                 getOfflineSalesNum: function(){ return 0; },
                 uploadOfflineRecords: function(){ return false; },
                 userAbortSale: function(){ if (confirm('Are you sure you want to abort this order?')) { $('#itemtable').html('<tr class="order_row"><td style="background-color:#438EB9; color:#FFF;" colspan="7"><h4 style="text-align: center; margin: 0;">New Order</h4></td></tr>'); $('#totaltax').text(WPOS.util.currencyFormat(0)); $('#subtotal').text(WPOS.util.currencyFormat(0)); $('#total').text(WPOS.util.currencyFormat(0)); $('#salediscount').val(0); $('#discounttxt').text('(KSh0.00)'); } },
+                showPaymentDialog: function () {
+                    try {
+                        if (typeof this.updateSalesTotal === 'function') this.updateSalesTotal();
+                        if (typeof this.updateDiscount === 'function') this.updateDiscount();
+                    } catch (e) {}
+                    if ($('#itemtable').children('.item_row').length === 0) {
+                        alert('Please add some valid items to the sale before proceeding.');
+                        return false;
+                    }
+                    if ($('#paymentstable').children('tr').length === 0) {
+                        var amt = 0;
+                        try {
+                            var totalText = $('#total').text();
+                            var numericTotal = parseFloat(totalText.replace(/[^0-9.-]/g, '')) || 0;
+                            if (numericTotal > 0) amt = numericTotal;
+                            else if (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) amt = curgrandtotal;
+                            else if (typeof curtotal !== 'undefined' && curtotal > 0) amt = curtotal;
+                            else if (typeof cursubtotal !== 'undefined' && cursubtotal > 0) amt = cursubtotal;
+                        } catch (e) {}
+                        if (!amt || isNaN(amt)) amt = 0;
+                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="mpesa" selected>MPESA</option><option value="cash">Cash</option><option value="credit">Credit</option><option value="cheque">Cheque</option></select></td><td><input class="payamount numpad" value="'+(amt.toFixed ? amt.toFixed(2) : amt)+'" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
+                    }
+                    if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+                    try { $('#paymentsdiv').dialog('open'); } catch (e) { $('#paymentsdiv').show(); }
+                    return true;
+                },
+                addAdditionalPayment: function(){
+                    if ($('#paymentstable').length) {
+                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="cash" selected>Cash</option><option value="mpesa">MPESA</option><option value="credit">Credit</option><option value="cheque">Cheque</option></select></td><td><input class="payamount numpad" value="0.00" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
+                    }
+                },
+                addPayment: function(method){
+                    var amount = 0;
+                    try {
+                        var totalText = $('#total').text();
+                        var numericTotal = parseFloat(totalText.replace(/[^0-9.-]/g, '')) || 0;
+                        if (numericTotal > 0) amount = numericTotal;
+                        else if (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) amount = curgrandtotal;
+                        else if (typeof curtotal !== 'undefined' && curtotal > 0) amount = curtotal;
+                        else if (typeof cursubtotal !== 'undefined' && cursubtotal > 0) amount = cursubtotal;
+                    } catch(e) {}
+                    if (!amount || isNaN(amount)) amount = 0;
+                    if ($('#paymentstable').children('tr').length > 0) {
+                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="'+method+'" selected>' + method.toUpperCase() + '</option></select></td><td><input class="payamount numpad" value="'+(amount.toFixed ? amount.toFixed(2) : amount)+'" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
+                    } else {
+                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="'+method+'" selected>' + method.toUpperCase() + '</option></select></td><td><input class="payamount numpad" value="'+(amount.toFixed ? amount.toFixed(2) : amount)+'" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
+                    }
+                    if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+                },
+                removePayment: function(elem){
+                    $(elem).closest('tr').remove();
+                    if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
+                },
                 processSale: function(){
                     try {
                         var rows = $('#itemtable').children('.item_row');
@@ -1593,7 +1651,24 @@ function WPOS() {
                     $('#discounttxt').text('(' + WPOS.util.currencyFormat(discounted.toFixed(2)) + ')');
                     $('#total').text(WPOS.util.currencyFormat((base - discounted).toFixed(2)));
                 },
-                updatePaymentSums: function(){ return true; }
+                updatePaymentSums: function(){
+                    var total = 0;
+                    try {
+                        var totalText = $('#total').text();
+                        total = parseFloat(totalText.replace(/[^0-9.-]/g, '')) || 0;
+                    } catch (e) {}
+                    var paid = 0;
+                    $('#paymentstable').children('tr').each(function(){
+                        var amount = parseFloat($(this).find('.payamount').val()) || 0;
+                        paid += amount;
+                    });
+                    var balance = total - paid;
+                    $('#salestotal').text(WPOS.util.currencyFormat(total.toFixed(2)));
+                    $('#paymentstotal').text(WPOS.util.currencyFormat(paid.toFixed(2)));
+                    $('#salesbalance').text(WPOS.util.currencyFormat(balance.toFixed(2)));
+                    $('#saleschange').text(WPOS.util.currencyFormat((Math.max(0, balance)).toFixed(2)));
+                    return true;
+                }
             };
         }
     } catch(e) {}
@@ -1734,18 +1809,45 @@ $(function () {
     var iboxhandle = $("#iboxhandle");
     var iboxopen = true;
     ibox.addClass('ibox-open').show();
+    window.syncTrayLayout = function(){
+        var trayWidth = iboxopen ? (parseFloat(ibox.css('width')) || 360) : 0;
+        $('body').toggleClass('tray-open', !!iboxopen && trayWidth > 0);
+        $('#wrapper').css({
+            'margin-right': iboxopen ? (trayWidth + 12) + 'px' : '0px',
+            'padding-right': '0px',
+            'transition': 'margin-right 0.2s ease'
+        });
+    };
     toggleItemBox = function(show){
         if (show){
             iboxopen = true;
-            ibox.addClass('ibox-open').css({ width:'450px', 'max-width':'450px', 'box-shadow':'-2px 0 8px rgba(0,0,0,0.15)'}).show();
+            ibox.addClass('ibox-open').css({ width:'360px', 'max-width':'360px', 'box-shadow':'-2px 0 8px rgba(0,0,0,0.15)'}).show();
             $('#iboxitems').show();
         } else {
             iboxopen = false;
             ibox.removeClass('ibox-open').css({ width:'52px', 'max-width':'52px', 'box-shadow':'none'}).show();
             $('#iboxitems').hide();
         }
+        window.syncTrayLayout();
     };
     toggleItemBox(true);
+    $(window).on('resize.itembox', window.syncTrayLayout);
+    $(document).on('click.itembox', function(event){
+        var target = $(event.target);
+        if (target.closest('.toggle-product-grid').length) {
+            return;
+        }
+        if (!ibox.is(event.target) && ibox.has(event.target).length === 0 && !target.closest('.ui-dialog, .ui-widget-overlay, .modal, .dropdown-menu, .select2-container').length) {
+            if (iboxopen) {
+                toggleItemBox(false);
+            }
+        }
+    });
+    $(document).on('dialogopen.itembox', function(event){
+        if ($(event.target).is('.ui-dialog-content')) {
+            toggleItemBox(false);
+        }
+    });
     var isDragging = false;
     iboxhandle.on('mousedown', function() {
             $(window).on('mousemove touchmove', function() {
@@ -1769,8 +1871,10 @@ $(function () {
                         //console.log(parent.offset().left);
                         // set box open indicator
                         iboxopen = (relX>0);
+                        window.syncTrayLayout();
                     } else {
                         ibox.css('width', "0px");//closing too fast hide.
+                        window.syncTrayLayout();
                     }
                 });
 
@@ -1794,10 +1898,7 @@ $(function () {
             }
         }
     }
-    // close on click outside item box — disabled so product grid stays visible
-    // $('html').on("click", function() {
-    //     if (iboxopen) toggleItemBox(false); // hide if currently visible
-    // });
+    // keep the product tray open when it is actively used, but let it collapse when the user leaves it or a dialog is presented
     ibox.on("click", function(event){
         event.stopPropagation();
     });

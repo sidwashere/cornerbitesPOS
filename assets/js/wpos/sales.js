@@ -634,6 +634,7 @@ function WPOSSales() {
         if (isNaN(cursubtotal)) cursubtotal = 0;
         if (isNaN(curtaxtotal)) curtaxtotal = 0;
         if (isNaN(curtotal)) curtotal = 0;
+        curgrandtotal = curtotal;
         var _st = WPOS.util.currencyFormat(cursubtotal.toFixed(2));
         var _tx = WPOS.util.currencyFormat(curtaxtotal.toFixed(2));
         $("#subtotal").text(_st);
@@ -668,6 +669,7 @@ function WPOSSales() {
             curtotal = (curtotal - discountsum);
         }
         if (isNaN(curtotal)) curtotal = 0;
+        curgrandtotal = curtotal;
         $("#total").text(WPOS.util.currencyFormat(curtotal.toFixed(2)));
         } catch(e) {
             console.error("updateDiscount error:", e);
@@ -688,6 +690,7 @@ function WPOSSales() {
         var totalchange = 0;
         var allcash = true;
         var paymentstable = $("#paymentstable");
+        curgrandtotal = (isNaN(parseFloat(curtotal)) ? 0 : parseFloat(curtotal));
         // loop through payments, if cash apply rounding to payment amount and find change amount
         paymentstable.children('tr').each(function (index, element) {
             var paystr = $(element).find(".payamount").val();
@@ -919,13 +922,14 @@ function WPOSSales() {
                     inteftbtn.hide();
                 }
             } catch(e) {}
-            // Default to Mpesa till if no payments added
+            // Default to cash so the operator can collect change from the total while still keeping the amount editable.
             try {
                 if ($("#paymentstable").children('tr').length == 0) {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
+                    var amountValue = amt.toFixed ? amt.toFixed(2) : amt;
                     if (typeof addPaymentRow === 'function') {
-                        addPaymentRow('mpesa', amt.toFixed ? amt.toFixed(2) : amt, amt.toFixed ? amt.toFixed(2) : amt, null);
+                        addPaymentRow('cash', amountValue, amountValue, 0.00);
                     }
                     if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
@@ -1046,6 +1050,15 @@ function WPOSSales() {
         if (extraData)
             data = "data-paydata='"+JSON.stringify(extraData)+"'";
 
+        var amount = parseFloat(value || 0) || 0;
+        var tenderValue = (typeof tender !== 'undefined' && tender !== null && tender !== '') ? parseFloat(tender) : amount;
+        if (method !== 'cash') {
+            tenderValue = 0.00;
+        }
+        if (method === 'cash' && (typeof change === 'undefined' || change === null || change === '')) {
+            change = Math.max(0, tenderValue - amount);
+        }
+
         var curBefore = "", curAfter = "";
         if (WPOS.util.getCurrencyPlacedAfter()){
             curAfter = WPOS.util.getCurrencySymbol();
@@ -1062,10 +1075,10 @@ function WPOSSales() {
             '<option value="deposit" '+(method=='deposit'?'selected':'')+'>Deposit</option>' +
             exmethod+ '</select>' +
             '<div class="cashvals" '+(method!='cash'?'style="display: none"':'width:150px;')+'>' +
-            '<div style="width: 100px; display: inline-block;">Tendered:</div><input onChange="WPOS.sales.updatePaymentChange($(this).parent());" class="paytender numpad" style="width:50px;" type="text" value="'+(method!='cash'?0.00:(tender!=null?tender:value))+'" />' +
-            '<div style="width: 100px; display: inline-block;">Change:</div><input class="paychange" style="width:50px;" type="text" value="'+(method!='cash'?0.00:(change!=null?change:0.00))+'" readonly />' +
+            '<div style="width: 100px; display: inline-block;">Tendered:</div><input onChange="WPOS.sales.updatePaymentChange($(this).parent());" class="paytender numpad" style="width:50px;" type="text" value="'+(method!='cash'?0.00:(tenderValue.toFixed ? tenderValue.toFixed(2) : tenderValue))+'" />' +
+            '<div style="width: 100px; display: inline-block;">Change:</div><input class="paychange" style="width:50px;" type="text" value="'+(method!='cash'?0.00:(change!=null?parseFloat(change).toFixed(2):0.00))+'" readonly />' +
             '</div></td>' +
-            '<td>'+curBefore+'<input onChange="WPOS.sales.updatePaymentSums();" class="payamount numpad" style="width:50px;" type="text" value="'+value+'" autocomplete="off"/>'+curAfter+'</td>' +
+            '<td>'+curBefore+'<input onChange="WPOS.sales.updatePaymentSums();" class="payamount numpad" style="width:50px;" type="text" value="'+(amount.toFixed ? amount.toFixed(2) : amount)+'" autocomplete="off"/>'+curAfter+'</td>' +
             '<td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>';
 
         $("#paymentstable").append(payrow);
@@ -1219,7 +1232,7 @@ function WPOSSales() {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
                     var amts = amt.toFixed ? amt.toFixed(2) : amt;
-                    addPaymentRow('mpesa', amts, amts, null);
+                    addPaymentRow('cash', amts, amts, 0.00);
                     if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
             } catch(e){ console.error('payerr:', e); }
@@ -1248,7 +1261,7 @@ function WPOSSales() {
                 var amts = amt.toFixed ? amt.toFixed(2) : amt;
                 try {
                     if (typeof addPaymentRow === 'function') {
-                        addPaymentRow('mpesa', amts, amts, null);
+                        addPaymentRow('cash', amts, amts, 0.00);
                     }
                 } catch(e) {}
             }
@@ -1276,7 +1289,7 @@ function WPOSSales() {
                 } catch(e) {}
                 if (!amt || isNaN(amt)) amt = 0;
                 var amts = amt.toFixed ? amt.toFixed(2) : amt;
-                if (typeof addPaymentRow === 'function') addPaymentRow('mpesa', amts, amts, null);
+                if (typeof addPaymentRow === 'function') addPaymentRow('cash', amts, amts, 0.00);
                 if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
             }
         } catch(e) {}

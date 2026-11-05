@@ -112,10 +112,27 @@ function WPOSTransactions() {
         }
     );
 
+    function normalizeTransactionRecord(record){
+        if (!record || typeof record !== 'object') return record;
+        record.source = record.source || record.channel || 'pos';
+        record.processdt = record.processdt || record.dt || Date.now();
+        record.total = parseFloat(record.total || record.subtotal || 0) || 0;
+        if (!Array.isArray(record.items)) {
+            record.items = record.items && typeof record.items === 'object' ? Object.keys(record.items).map(function(key){ return record.items[key]; }) : [];
+        }
+        if (!Array.isArray(record.payments)) {
+            record.payments = record.payments && typeof record.payments === 'object' ? Object.keys(record.payments).map(function(key){ return record.payments[key]; }) : [];
+        }
+        if (typeof record.numitems !== 'number') {
+            record.numitems = Array.isArray(record.items) ? record.items.length : 0;
+        }
+        return record;
+    }
+
     function loadIntoTable(sales){
         tableData = [];
         for (var key in sales){
-            tableData.push(sales[key]);
+            tableData.push(normalizeTransactionRecord(sales[key]));
         }
         datatable.fnClearTable(false);
         datatable.fnAddData(tableData, false);

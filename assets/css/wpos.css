@@ -15,6 +15,15 @@ body {
     padding: 0;
     background-color: #FFF;
     z-index: 1;
+    transition: margin-right 0.18s ease, max-width 0.18s ease;
+}
+body.tray-open #wrapper {
+    margin-right: 420px !important;
+}
+@media (max-width: 1199px) {
+    body.tray-open #wrapper {
+        margin-right: 0 !important;
+    }
 }
 .ui-tabs-panel {
     position: relative;
@@ -150,8 +159,8 @@ body {
     right: 0;
     top: 50px;
     bottom: 40px;
-    width: 450px;
-    max-width: 450px;
+    width: 360px;
+    max-width: 360px;
     z-index: 15;
     background: #fff;
     overflow-y: auto;
@@ -193,7 +202,7 @@ body {
 #iboxitems {
     margin: 5px;
     margin-left: 15px;
-    width: 440px;
+    width: 330px;
     overflow-x: hidden !important;
 }
 .iboxitem {
@@ -367,9 +376,9 @@ body {
 
 /* Reserve space for the product sidebar on desktop so content isn't hidden */
 @media (min-width: 1200px) {
-    #wrapper { margin-right: 450px !important; }
+    body.tray-open #wrapper { margin-right: 372px !important; }
 }
 /* On small screens, wrapper takes full width */
 @media (max-width: 1199px) {
-    #wrapper { margin-right: 0 !important; }
+    body.tray-open #wrapper { margin-right: 0 !important; }
 }

@@ -269,17 +269,12 @@ function WPOSUtil() {
     var printcursymbol = "";
     function normalizeCurrencyFormat(format) {
         var defaultFormat = ['KSh', '2', '.', ',', 0];
-        if (!format || typeof format !== 'string') {
-            return defaultFormat.slice();
-        }
-        var parts = format.split('~');
+        var formatValue = (typeof format === 'string' && format.trim() !== '') ? format : 'KSh~2~.~,~0';
+        var parts = formatValue.split('~');
         while (parts.length < 5) {
             parts.push('');
         }
-        if (parts[0] && parts[0].toLowerCase() === 'ksh') {
-            parts[0] = 'KSh';
-        }
-        if (!parts[0]) parts[0] = 'KSh';
+        parts[0] = 'KSh';
         if (!parts[1]) parts[1] = '2';
         if (!parts[2]) parts[2] = '.';
         if (!parts[3]) parts[3] = ',';
@@ -291,7 +286,7 @@ function WPOSUtil() {
             var config = WPOS && WPOS.getConfigTable ? WPOS.getConfigTable() : {};
             var general = config.general || {};
             var formatValue = general.currencyformat || 'KSh~2~.~,~0';
-            if (typeof formatValue !== 'string') {
+            if (typeof formatValue !== 'string' || formatValue.trim() === '') {
                 formatValue = 'KSh~2~.~,~0';
             }
             curformat = normalizeCurrencyFormat(formatValue.replace(/\s+/g, ''));

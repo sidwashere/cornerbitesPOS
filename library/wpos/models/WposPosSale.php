@@ -477,6 +477,25 @@ class WposPosSale {
      */
     public function insertTransaction($result)
     {
+        if (!isset($this->jsonobj->source) || empty($this->jsonobj->source)) {
+            $this->jsonobj->source = 'pos';
+        }
+        if (!isset($this->jsonobj->processdt) || empty($this->jsonobj->processdt)) {
+            $this->jsonobj->processdt = round(microtime(true) * 1000);
+        }
+        if (!isset($this->jsonobj->subtotal) && isset($this->jsonobj->total)) {
+            $this->jsonobj->subtotal = $this->jsonobj->total;
+        }
+        if (!isset($this->jsonobj->total) && isset($this->jsonobj->subtotal)) {
+            $this->jsonobj->total = $this->jsonobj->subtotal;
+        }
+        if (!isset($this->jsonobj->items) || !is_array($this->jsonobj->items)) {
+            $this->jsonobj->items = array();
+        }
+        if (!isset($this->jsonobj->payments) || !is_array($this->jsonobj->payments)) {
+            $this->jsonobj->payments = array();
+        }
+
         $jsonval = new JsonValidate($this->jsonobj, '{"ref":"", "userid":1, "devid":1, "locid":1, "items":"[", "payments":"[", "cost":1, "total":1, "processdt":1}');
         if (($errors = $jsonval->validate())!==true){
             // fix for offline sales not containing cost field and getting stuck

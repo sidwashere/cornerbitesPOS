@@ -35,6 +35,7 @@
                                 <th data-priority="1">ID</th>
                                 <th data-priority="7">Ref</th>
                                 <th data-priority="8">User</th>
+                                <th data-priority="3">Source</th>
                                 <th data-priority="3">Device / Location</th>
                                 <th data-priority="9"># Items</th>
                                 <th data-priority="4">Sale Time</th>
@@ -71,13 +72,30 @@
         WPOS.util.hideLoader();
     }
 
+    function normalizeSalesRow(tempitem){
+        if (!tempitem || typeof tempitem !== 'object') return tempitem;
+        tempitem.source = tempitem.source || tempitem.channel || 'pos';
+        tempitem.devlocname = (WPOS.devices.hasOwnProperty(tempitem.devid)?WPOS.devices[tempitem.devid].name:'NA')+" / "+(WPOS.locations.hasOwnProperty(tempitem.locid)?WPOS.locations[tempitem.locid].name:'NA');
+        if (typeof tempitem.numitems !== 'number') {
+            var itemCount = 0;
+            if (Array.isArray(tempitem.items)) {
+                itemCount = tempitem.items.length;
+            } else if (tempitem.items && typeof tempitem.items === 'object') {
+                itemCount = Object.keys(tempitem.items).length;
+            }
+            tempitem.numitems = itemCount;
+        }
+        tempitem.processdt = tempitem.processdt || tempitem.dt || Date.now();
+        tempitem.total = parseFloat(tempitem.total || tempitem.subtotal || 0) || 0;
+        return tempitem;
+    }
+
     function reloadSalesTable(){
         var itemarray = [];
         var tempitem;
         var sales = WPOS.transactions.getTransactions();
         for (var key in sales){
-            tempitem = sales[key];
-            tempitem.devlocname = (WPOS.devices.hasOwnProperty(tempitem.devid)?WPOS.devices[tempitem.devid].name:'NA')+" / "+(WPOS.locations.hasOwnProperty(tempitem.locid)?WPOS.locations[tempitem.locid].name:'NA');
+            tempitem = normalizeSalesRow(sales[key]);
             itemarray.push(tempitem);
         }
         datatable.fnClearTable(false);
@@ -99,8 +117,7 @@
                 WPOS.transactions.setTransactions(sales);
                 var tempitem;
                 for (var key in sales){
-                    tempitem = sales[key];
-                    tempitem.devlocname = (WPOS.devices.hasOwnProperty(tempitem.devid)?WPOS.devices[tempitem.devid].name:'NA')+" / "+(WPOS.locations.hasOwnProperty(tempitem.locid)?WPOS.locations[tempitem.locid].name:'NA');
+                    tempitem = normalizeSalesRow(sales[key]);
                     itemarray.push(tempitem);
                 }
                 datatable.fnClearTable(false);
@@ -233,8 +250,7 @@
         var itemarray = [];
         var tempitem;
         for (var key in sales){
-            tempitem = sales[key];
-            tempitem.devlocname = (WPOS.devices.hasOwnProperty(tempitem.devid)?WPOS.devices[tempitem.devid].name:'NA')+" / "+(WPOS.locations.hasOwnProperty(tempitem.locid)?WPOS.locations[tempitem.locid].name:'NA');
+            tempitem = normalizeSalesRow(sales[key]);
             itemarray.push(tempitem);
         }
         datatable = $('#salestable').dataTable({
@@ -246,8 +262,9 @@
                 { "mData":"id" },
                 { "mData":function(data, type, val){ return '<a class="reflabel" title="'+data.ref+'" href="">'+data.ref.split("-")[2]+'</a>'; } },
                 { "mData":function(data, type, val){ var users = WPOS.getConfigTable().users; if (users.hasOwnProperty(data.userid)){ return users[data.userid].username; } return 'N/A'; } },
+                { "mData":function(data, type, val){ return data.source || data.channel || 'pos'; } },
                 { "mData":"devlocname" },
-                { "mData":"numitems" },
+                { "mData":function(data, type, val){ return (typeof data.numitems === 'number') ? data.numitems : ((Array.isArray(data.items)) ? data.items.length : ((data.items && typeof data.items === 'object') ? Object.keys(data.items).length : 0)); } },
                 { "sType": "timestamp", "mData":function(data, type, val){ return datatableTimestampRender(type, data.processdt, WPOS.util.getDateFromTimestamp);} },
                 { "sType": "currency", "mData":function(data,type,val){return WPOS.util.currencyFormat(data["total"]);} },
                 { "mData":function(data,type,val){return getStatusHtml(getTransactionStatus(data));} },
@@ -256,6 +273,7 @@
             "columns": [
                 {},
                 {type: "numeric"},
+                {type: "string"},
                 {type: "string"},
                 {type: "string"},
                 {type: "string"},

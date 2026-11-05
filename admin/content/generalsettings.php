@@ -45,6 +45,7 @@
                         <div class="col-sm-5"><label>Currency Symbol:</label></div>
                         <div class="col-sm-5">
                         <select id="currency_symbol">
+                            <option value="KSh" selected>KSh Kenyan Shilling</option>
                             <option value="$">$ Dollar</option>
                             <option value="€">€ Euro</option>
                             <option value="£">£ Pound</option>
@@ -70,7 +71,6 @@
                             <option value="Rp">Rp Rupiah</option>
                             <option value="kr">kr Krone/Kroon/Krona</option>
                             <option value="Kč">Kč Koruna</option>
-                            <option value="KSh">KSh Kenyan Shilling</option>
                             <option value="TSh">TSh Tanzanian Shilling</option>
                             <option value="USh">USh Ugandan Shilling</option>
                             <option value="RWF">RWF Rwandan Franc</option>
