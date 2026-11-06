@@ -619,6 +619,7 @@ function WPOS() {
         return online;
     };
 
+    this.checkOnlineStatus = checkOnlineStatus;
     function checkOnlineStatus() {
         try {
             var res = $.ajax({

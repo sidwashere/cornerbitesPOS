@@ -47,6 +47,9 @@ function WPOSTransactions() {
             if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
                 WPOS.sendJsonDataAsync("sales/get", JSON.stringify({}), function(data){
                     if (data && data.data) {
+                        if (typeof WPOS.setSalesTableData === 'function') {
+                            WPOS.setSalesTableData(data.data);
+                        }
                         if (typeof WPOS.setSalesTable === 'function') {
                             WPOS.setSalesTable(data.data);
                         }
@@ -138,6 +141,8 @@ function WPOSTransactions() {
         datatable.fnAddData(tableData, false);
         datatable.api().draw(false);
     }
+    self.setSalesTable = loadIntoTable;
+    this.setSalesTable = loadIntoTable;
 
     function getDeviceLocationText(deviceid, locationid){
         var text = "";

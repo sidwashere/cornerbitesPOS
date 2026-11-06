@@ -15,6 +15,12 @@ AddType application/x-httpd-php .appcache
 </IfModule>
 
 
+# --- Session lifetime (30 minutes) ---
+<IfModule mod_php.c>
+    php_value session.gc_maxlifetime 1800
+    php_value session.cookie_lifetime 1800
+</IfModule>
+
 # --- Cornerbites POS production hardening ---
 <FilesMatch "^\.">
     Order allow,deny
