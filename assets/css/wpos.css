@@ -7,25 +7,23 @@ body {
 	background-color:#ffffff !important;
     min-height: 100vh !important;
     overflow-x: hidden;
+    overflow-y: auto;
 }
 #wrapper {
 	margin: 0;
     width: 100%;
-    max-width: none;
+    max-width: none !important;
+    min-width: 0;
     height: auto;
     min-height: 100vh;
     padding: 0;
+    box-sizing: border-box;
     background-color: #FFF;
     z-index: 1;
-    transition: margin-right 0.18s ease, max-width 0.18s ease;
+    transition: width 0.18s ease;
 }
 body.tray-open #wrapper {
-    margin-right: 420px !important;
-}
-@media (max-width: 1199px) {
-    body.tray-open #wrapper {
-        margin-right: 0 !important;
-    }
+    width: calc(100% - 372px);
 }
 .ui-tabs-panel {
     position: relative;
@@ -84,7 +82,7 @@ body.tray-open #wrapper {
     border: solid 1px #ccc;
     width: 100%;
     max-width: 550px;
-    min-width: 480px;
+    min-width: 0;
     -moz-box-shadow:    3px 3px 5px 6px #ccc;
     -webkit-box-shadow: 3px 3px 5px 6px #ccc;
     box-shadow:         3px 3px 5px 6px #ccc;
@@ -161,18 +159,23 @@ body.tray-open #wrapper {
     padding-right: 0 !important;
 }
 #ibox {
+    display: none;
     position: fixed;
     right: 0;
     top: 50px;
     bottom: 40px;
     width: 360px;
-    max-width: 360px;
-    z-index: 15;
+    max-width: min(360px, 100vw);
+    z-index: 1050;
     background: #fff;
     overflow-y: auto;
     overflow-x: hidden;
     box-shadow: -2px 0 8px rgba(0,0,0,0.15);
-    transition: width 0.2s ease, max-width 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+}
+#ibox.ibox-open {
+    display: block;
 }
 #ibox:not(.ibox-open) {
     overflow: hidden;
@@ -180,11 +183,6 @@ body.tray-open #wrapper {
 }
 #ibox:not(.ibox-open) #iboxitems {
     display: none !important;
-}
-/* Responsive: hide sidebar by default on small screens, toggle via Products button */
-@media (max-width: 1199px) {
-    #ibox { display: none; }
-    #ibox.ibox-open { display: block; }
 }
 #iboxhandle { display: none !important;
     position: absolute;
@@ -352,43 +350,68 @@ body.tray-open #wrapper {
         max-height: none;
         overflow-x: auto;
     }
-    #wrapper {
-        width: 100vw;
+    body.tray-open #wrapper {
+        width: 100%;
     }
     #items table,
     #transactiontable,
     #salestable {
         min-width: 540px;
     }
-    .navbar {
-        overflow: visible;
+    #wrapper > .navbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
         height: auto;
+        overflow: visible;
+        padding: 4px;
     }
-    .navbar li,
-    .navbar button {
+    #wrapper > .navbar li,
+    #wrapper > .navbar button {
         float: none !important;
         display: inline-block !important;
+    }
+    #wrapper > .navbar > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        float: none !important;
+        margin: 4px 0 0 !important;
+        text-align: left !important;
+    }
+    #transactiontable_wrapper,
+    #salestable_wrapper {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    #reportcontain {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    #loginbox {
+        width: calc(100% - 16px);
+        max-width: 400px;
+        height: auto;
+        left: 8px;
+        margin-left: 0;
+        box-sizing: border-box;
+    }
+    #totals-container {
+        min-width: 0;
+        flex-basis: 100%;
+    }
+    .totalsbox {
+        max-width: 100%;
     }
 }
 
 /* Mobile Landscape Size to Tablet Portrait (devices and browsers) */
 @media only screen and (min-width: 480px) and (max-width: 767px) {
-    #reportcontain {
-        width: 480px;
-    }
     .hlabel {
         width: 100px;
-    }
-    #loginbox {
-        width: 350px;
-        margin-left:-175px;
-    }
-    #ibox {
-        width: 300px;
-        max-width: 300px;
-    }
-    #iboxitems {
-        width: 290px;
     }
     #transactioninfo {
         max-width: 96%;
@@ -397,27 +420,14 @@ body.tray-open #wrapper {
 
 /* Mobile Portrait Size to Mobile Landscape Size (devices and browsers) */
 @media only screen and (max-width: 479px) {
-    #reportcontain {
-        width: 480px;
-    }
     .hlabel {
         width: 95px;
-    }
-    #loginbox {
-        width: 100%;
-        left: 0;
-        padding: 5px;
-        margin-left: 0;
     }
     .settings-row label label {
         min-width: 70px;
     }
-    #ibox {
-        width: 160px;
-        max-width: 160px;
-    }
     #iboxitems {
-        width: 150px;
+        width: calc(100% - 20px);
     }
     .ui-dialog {
         width: 100% !important;
@@ -432,11 +442,30 @@ body.tray-open #wrapper {
     }
 }
 
-/* Reserve space for the product sidebar on desktop so content isn't hidden */
 @media (min-width: 1200px) {
-    body.tray-open #wrapper { margin-right: 372px !important; }
+    body.tray-open #wrapper {
+        width: calc(100% - 372px);
+    }
 }
-/* On small screens, wrapper takes full width */
 @media (max-width: 1199px) {
-    body.tray-open #wrapper { margin-right: 0 !important; }
+    body.tray-open #wrapper {
+        width: 100%;
+    }
+    #ibox.ibox-open {
+        position: relative;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        width: 100%;
+        max-width: none;
+        max-height: 40vh;
+        margin: 0;
+        box-shadow: none;
+    }
+    #iboxitem_contain {
+        height: auto;
+    }
+    #iboxitems {
+        width: calc(100% - 20px);
+    }
 }
