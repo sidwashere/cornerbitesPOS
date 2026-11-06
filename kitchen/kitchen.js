@@ -42,7 +42,7 @@ function WPOSKitchen() {
     var cacheloaded = 1;
     this.checkCacheUpdate = function(){
         WPOS.initLogin();
-    };};
+    };
     // Check for device UUID & present Login, initial setup is triggered if the device UUID is not present
     this.initLogin = function(){
         showLogin();
@@ -1090,7 +1090,7 @@ function WPOSKitchen() {
     }
 
     function _doPoll(){
-        fetch("api/poll.php?since=" + _pollSince, { credentials: "same-origin", cache: "no-store" })
+        fetch("/api/poll.php?since=" + _pollSince, { credentials: "same-origin", cache: "no-store" })
             .then(function (r) { return r.json(); })
             .then(function (resp) {
                 if (resp && resp.result && resp.result.sales) {

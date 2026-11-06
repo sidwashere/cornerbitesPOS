@@ -180,7 +180,7 @@ class SalesModel extends TransactionsModel
     public function getRange($stime, $etime, $deviceids=null, $status=null, $statparity= true, $includeorders=true){
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = 'SELECT * FROM sales WHERE (processdt>= :stime AND processdt<= :etime)';
+        $sql = 'SELECT * FROM sales WHERE ((processdt>= :stime AND processdt<= :etime) OR (processdt*1000>= :stime AND processdt*1000<= :etime))';
 
         if ($deviceids !== null) {
             if (is_array($deviceids)){
@@ -221,7 +221,7 @@ class SalesModel extends TransactionsModel
         $placeholders = [":stime"=>$stime];
         if ($etime!=null)
             $placeholders[":etime"] = $etime;
-        $sql = 'SELECT s.* FROM sales as s LEFT JOIN sale_voids as v ON s.id=v.saleid WHERE ((s.processdt>= :stime'.($etime!=null?' AND s.processdt<= :etime':'').') OR (v.processdt>= :stime'.($etime!==null?' AND v.processdt<= :etime':'').'))';
+        $sql = 'SELECT s.* FROM sales as s LEFT JOIN sale_voids as v ON s.id=v.saleid WHERE (((s.processdt>= :stime'.($etime!=null?' AND s.processdt<= :etime':'').') OR (s.processdt*1000>= :stime'.($etime!=null?' AND s.processdt*1000<= :etime':'').')) OR (v.processdt>= :stime'.($etime!==null?' AND v.processdt<= :etime':'').'))';
 
         if ($deviceids !== null) {
             if (is_array($deviceids)){
@@ -275,7 +275,7 @@ class SalesModel extends TransactionsModel
         }
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = 'SELECT *, d.id as groupid, '.($grouptype=='device'?"CONCAT(d.name, ' (', l.name, ')')":'d.name').' as name, SUM(s.total) as stotal, COUNT(s.id) as snum FROM sales as s LEFT JOIN '.$joinsql.' WHERE (processdt>= :stime AND processdt<= :etime)';
+        $sql = 'SELECT *, d.id as groupid, '.($grouptype=='device'?"CONCAT(d.name, ' (', l.name, ')')":'d.name').' as name, SUM(s.total) as stotal, COUNT(s.id) as snum FROM sales as s LEFT JOIN '.$joinsql.' WHERE ((s.processdt>= :stime AND s.processdt<= :etime) OR (s.processdt*1000>= :stime AND s.processdt*1000<= :etime))';
 
         if ($status !== null) {
             $sql .= ' AND status'.($statparity?'=':'!=').' :status';

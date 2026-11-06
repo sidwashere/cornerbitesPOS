@@ -501,6 +501,7 @@ function WPOSItems() {
             return false;
         }
     }
+}
 // Item UI stuff
 $(function () {
     $.ui.autocomplete.prototype._renderItem = function (ul, item) {
@@ -578,10 +579,10 @@ $(function () {
         ]
     });
 
-    $("#subtotal").text(WPOS.util.currencyFormat(0));
-    $("#totaltax").text(WPOS.util.currencyFormat(0));
-    $("#discounttxt").text("("+WPOS.util.currencyFormat(0)+")");
-    $("#total").text(WPOS.util.currencyFormat(0));
+    try { $("#subtotal").text(WPOS.util.currencyFormat(0)); } catch(e) {}
+    try { $("#totaltax").text(WPOS.util.currencyFormat(0)); } catch(e) {}
+    try { $("#discounttxt").text("("+WPOS.util.currencyFormat(0)+")"); } catch(e) {}
+    try { $("#total").text(WPOS.util.currencyFormat(0)); } catch(e) {}
 });
 
 function WPOSSales() {
@@ -902,7 +903,6 @@ function WPOSSales() {
                 $("#itemtable").children(".item_row").addClass("valid").removeClass("danger");
             } catch(e2) {}
         }
-    }
     }
 
     this.showPaymentDialog = function () {
@@ -1444,6 +1444,218 @@ function WPOSSales() {
                 }
             }
         } catch(e) {}
+    }
+
+    this.postSaleUpload = function(jsonresponse, callbackref){
+        if (jsonresponse !== false) {
+            // SUCCESS
+            try { addSalesRecord(jsonresponse); } catch(e) { console.error("postSaleUpload addSalesRecord", e); }
+            try { removeOfflineSale(callbackref); } catch(e) {}
+            // check if customer data available for processing
+            try {
+                if (jsonresponse.custdata != undefined){
+                    jsonresponse.custdata.id = jsonresponse.custid;
+                    WPOS.updateCustTable(jsonresponse.custdata);
+                }
+            } catch(e) {}
+            // refresh Sales tab immediately so the new sale appears without waiting 15s
+            try {
+                if (WPOS.trans && typeof WPOS.trans.setupTransactionView === 'function') WPOS.trans.setupTransactionView();
+            } catch(e) {}
+            // reset status Icon
+            try { WPOS.setStatusBar(1, "WPOS is Online", "The POS is running in online mode.\nThe feed server is connected and receiving realtime updates.", 0); } catch(e) {}
+        } else {
+            // ERROR
+            try {
+                if (WPOS.switchToOffline()) { // do not store record if offline mode is not supported.
+                    // update status
+                    var statusmsg = "The POS is offline and will store sale data locally until a connection becomes available.";
+                    WPOS.setStatusBar(3, "WPOS is offline ("+WPOS.sales.getOfflineSalesNum()+" offline records)", statusmsg, 0);
+                } else {
+                    // remove from offline temp
+                    removeOfflineSale(callbackref);
+                }
+            } catch(e) {}
+        }
+    };
+
+    function getSaleObject(){
+        // get sales items
+        var itemtable = $("#itemtable");
+        var date = new Date().getTime();
+        var items = [];
+        var taxtotals = {};
+        var taxdata, itemdata, taxruleid, tempqty, numitems = 0, totalcost = 0;
+        var orders = {};
+        var oldorders = {};
+        var neworderid = null;
+        // get orders & load their data
+        itemtable.children(".order_row").each(function (index, element) {
+            var curorder;
+            if ($(element).attr('data-data')) {
+                try { curorder = $(element).data('data'); } catch(e){ curorder = null; }
+                if (curorder && typeof curorder === 'object') {
+                    oldorders[curorder.id] = $.extend({}, curorder); // save the current order to work out if it's been modified
+                    curorder.items = {};
+                } else {
+                    curorder = getNewOrderObject(date);
+                    if (orders.hasOwnProperty(curorder.id)){
+                        curorder.id = WPOS.util.getSequencialOrderNumber(); // avoiding a duplicate order numbers in the same transaction
+                    }
+                    neworderid = curorder.id;
+                }
+            } else {
+                curorder = getNewOrderObject(date);
+                if (orders.hasOwnProperty(curorder.id)){
+                    curorder.id = WPOS.util.getSequencialOrderNumber(); // avoiding a duplicate order numbers in the same transaction
+                }
+                neworderid = curorder.id;
+            }
+            orders[curorder.id] = curorder;
+        });
+        itemtable.children(".item_row, .valid").each(function (index, element) {
+                // add tax information into the tax totals array
+                taxdata = $(element).find(".itemtaxval").data('taxdata');
+                if (!taxdata || typeof taxdata !== 'object') {
+                    taxdata = { values: {}, inclusive: true, total: 0 };
+                    try {
+                        var _tid = $(element).find(".itemtax").val() || 1;
+                        if (typeof WPOS.util.calcTax === 'function') {
+                            var _p = parseFloat($(element).find(".itemprice").val()) || 0;
+                            var _c = parseFloat($(element).find(".itemid").data('options') && $(element).find(".itemid").data('options').cost) || 0;
+                            var _t = WPOS.util.calcTax(_tid, _p, _c);
+                            if (_t) taxdata = _t;
+                        }
+                    } catch(e) {}
+                }
+                taxruleid = $(element).find(".itemtax").val();
+                if (taxdata && taxdata.values) {
+                    for (var i in taxdata.values) {
+                        if (!taxtotals.hasOwnProperty(i)) {
+                            taxtotals[i] = 0;
+                        }
+                        taxtotals[i] += taxdata.values[i];
+                    }
+                }
+                // add # items to total
+                tempqty = parseFloat($(element).find(".itemqty").val());
+                if (isNaN(tempqty)) tempqty = 1;
+                numitems += tempqty;
+                // add item to the array
+                var data = {
+                    "ref": WPOS.util.getRandomId ? WPOS.util.getRandomId() : (date + "-" + index),
+                    "sitemid": $(element).find(".itemid").val(),
+                    "qty": tempqty,
+                    "name": $(element).find(".itemname").val(),
+                    "unit": parseFloat($(element).find(".itemunit").val() || 0).toFixed(2),
+                    "taxid": taxruleid,
+                    "tax": taxdata,
+                    "price": parseFloat($(element).find(".itemprice").val() || 0).toFixed(2)
+                };
+                itemdata = $(element).find(".itemid").data('options');
+                if (itemdata && typeof itemdata === 'object') {
+                    for (var x in itemdata) {
+                        data[x] = itemdata[x];
+                    }
+                }
+                if (data.cost>0)
+                    totalcost += (data.cost*data.qty);
+                items.push(data);
+
+                try {
+                    if (WPOS.isOrderTerminal && WPOS.isOrderTerminal()){
+                        // if order id is undefined, add to the new order
+                        if (!data.hasOwnProperty('orderid')) {
+                            data.orderid = neworderid;
+                        }
+                        // add reference to current order item; store the index for quick access to it's data, the index may change but the id will remain the same.
+                        if (orders[data.orderid]) orders[data.orderid].items[data.ref] = index;
+                    }
+                } catch(e) {}
+        });
+
+        // cycle through orders & match the old order items to the new, if they don't match, update the moddt
+        try {
+            if (WPOS.isOrderTerminal && WPOS.isOrderTerminal())
+                for (var o in orders){
+                    // check number of items & remove if 0
+                    if (Object.keys(orders[o].items).length==0) {
+                        delete orders[o];
+                    } else {
+                        // We can determine if the order has changed if the ids have changed, if so we set the order modified flag.
+                        if (oldorders.hasOwnProperty(o)) {
+                            if (Object.keys(orders[o].items).sort().join(',')!=Object.keys(oldorders[o].items).sort().join(',')){
+                                orders[o].moddt = date;
+                            } else {
+                                // otherwise we need to check against each value
+                                try {
+                                    var olditems = WPOS.trans.getTransactionRecord(curref).items;
+                                    for (var index in orders[o].items) {
+                                        if (WPOS.util.areObjectsEquivalent && !WPOS.util.areObjectsEquivalent(items[orders[o].items[index]], olditems[orders[o].items[index]])) {
+                                            orders[o].moddt = date;
+                                        }
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+                }
+        } catch(e) {}
+
+        // gather payments
+        var payments = [];
+        $("#paymentstable").children("tr").each(function (index, element) {
+            var payment = {"method": $(element).find(".paymethod option:selected").val(), "amount": parseFloat($(element).find(".payamount").val() || 0).toFixed(2) };
+            if (payment.method == 'cash'){
+                payment.tender = parseFloat($(element).find(".paytender").val() || 0).toFixed(2);
+                payment.change = parseFloat($(element).find(".paychange").val() || 0).toFixed(2);
+            }
+            if ($(element).data('paydata'))
+                payment.paydata = $(element).data('paydata');
+            payments.push(payment);
+        });
+
+        // create object
+        var salesobj = {};
+        var config = WPOS.getConfigTable();
+        salesobj.ref = date + "-" + config.deviceid + "-" + Math.floor((Math.random() * 10000) + 1);
+        salesobj.userid = WPOS.getCurrentUserId();
+        salesobj.devid = config.deviceid;
+        salesobj.locid = config.locationid;
+        salesobj.custid = $("#custid").val();
+        salesobj.custemail = $("#custemail").val();
+        salesobj.notes = $("#salenotes").val();
+        salesobj.discount = $("#salediscount").val();
+        salesobj.rounding = curround.toFixed(2);
+        salesobj.cost = parseFloat(totalcost).toFixed(2);
+        salesobj.subtotal = cursubtotal.toFixed(2);
+        salesobj.total = parseFloat(curgrandtotal).toFixed(2);
+        salesobj.numitems = numitems;
+        salesobj.processdt = date;
+        salesobj.items = items;
+        salesobj.payments = payments;
+        // add tax information
+        salesobj.tax = curtaxtotal.toFixed(2);
+        for (var i in taxtotals){
+            taxtotals[i] = taxtotals[i].toFixed(2);
+        }
+        salesobj.taxdata = taxtotals;
+
+        // is customer data needed
+        if (updatecust){
+            salesobj.custdata = getCustomerObject();
+            updatecust = false; // reset flag
+        }
+
+        // if customer wants the receipt send, set the flag
+        if ($("#emailreceipt").is(":checked")){
+            salesobj.emailrec = true;
+        }
+
+        // add order data to the record
+        try { if (WPOS.isOrderTerminal && WPOS.isOrderTerminal()) salesobj.orderdata = orders; } catch(e) {}
+
+        return salesobj;
     }
 
     function getNewOrderObject(date){

@@ -174,6 +174,10 @@
   <span id="cart-badge" class="hidden min-w-[20px] h-5 px-1.5 rounded-full bg-black text-lime-400 text-xs font-black flex items-center justify-center">0</span>
 </button>
 <script>
+  // Use the local POS API when running on a local development host, otherwise production.
+  const LOCAL_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+  const API_BASE = LOCAL_HOSTS.indexOf(location.hostname) !== -1 ? '' : 'https://pos.cornerbites.co.ke';
+
   const CART_KEY = 'cornerbites_cart_v1';
   let cart = [];
   try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch(e){ cart = []; }
@@ -258,7 +262,7 @@
     // Push the order to the POS (kitchen + admin) — order is ingested as usual.
     // After success, a WhatsApp chat opens with a pre-filled order message so the
     // customer sends it directly to the business WhatsApp.
-    fetch('https://pos.cornerbites.co.ke/api/webhooks.php?platform=website', {
+    fetch(API_BASE + '/api/webhooks.php?platform=website', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -350,10 +354,11 @@
   // --- Dynamic Menu Sync from POS ---
   // Fetches menu from POS API and syncs prices/visibility. No manual sync needed.
   (function syncMenuFromPOS(){
-    fetch('https://pos.cornerbites.co.ke/api/menu.php', {cache:'no-store'})
+    fetch(API_BASE + '/api/menu.php', {cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(data){
-        if (!data || !data.ok || !data.menu) return;
+        // Keep the static flyer menu if the POS has no synced items yet.
+        if (!data || !data.ok || !Array.isArray(data.menu) || data.menu.length === 0) return;
         // Build a map of item name -> price and image from API
         var apiItems = {};
         var apiItemImages = {};
