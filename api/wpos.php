@@ -103,8 +103,8 @@ if ($_SERVER['HTTP_ANTI_CSRF_TOKEN'] != $auth->getCsrfToken()) {
 if (isset($_REQUEST['data']) && $_REQUEST['data']!=""){
 
     // Easier to sanitize in JSON format all at once.
-    $config = HTMLPurifier_Config::createDefault();
-    $purifier = new HTMLPurifier($config);
+    $purifierConfig = HTMLPurifier_Config::createDefault();
+    $purifier = new HTMLPurifier($purifierConfig);
     $cleanData = $purifier->purify($_REQUEST['data']);
 
     if (($requests=json_decode($cleanData))==false){

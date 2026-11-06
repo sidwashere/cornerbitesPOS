@@ -1808,30 +1808,19 @@ $(function () {
     // item box — keep it collapsible and avoid obscuring the main footer action buttons
     var ibox = $("#ibox");
     var iboxhandle = $("#iboxhandle");
-    var iboxopen = true;
-    ibox.addClass('ibox-open').show();
+    var isDesktopViewport = function(){
+        return window.matchMedia ? window.matchMedia('(min-width: 1200px)').matches : $(window).width() >= 1200;
+    };
+    var iboxopen = isDesktopViewport();
     window.syncTrayLayout = function(){
-        var trayWidth = iboxopen ? (parseFloat(ibox.css('width')) || 360) : 0;
-        $('body').toggleClass('tray-open', !!iboxopen && trayWidth > 0);
-        $('#wrapper').css({
-            'margin-right': iboxopen ? (trayWidth + 12) + 'px' : '0px',
-            'padding-right': '0px',
-            'transition': 'margin-right 0.2s ease'
-        });
+        $('body').toggleClass('tray-open', iboxopen && isDesktopViewport());
     };
     toggleItemBox = function(show){
-        if (show){
-            iboxopen = true;
-            ibox.addClass('ibox-open').css({ width:'360px', 'max-width':'360px', 'box-shadow':'-2px 0 8px rgba(0,0,0,0.15)'}).show();
-            $('#iboxitems').show();
-        } else {
-            iboxopen = false;
-            ibox.removeClass('ibox-open').css({ width:'52px', 'max-width':'52px', 'box-shadow':'none'}).show();
-            $('#iboxitems').hide();
-        }
+        iboxopen = !!show;
+        ibox.toggleClass('ibox-open', iboxopen);
         window.syncTrayLayout();
     };
-    toggleItemBox(true);
+    toggleItemBox(iboxopen);
     $(window).on('resize.itembox', window.syncTrayLayout);
     $(document).on('click.itembox', function(event){
         var target = $(event.target);
@@ -1971,8 +1960,7 @@ $(function () {
     }
 
     // window size
-    if (WPOS.getLocalConfig().hasOwnProperty("window_size"))
-        $("#wrapper").css("max-width", WPOS.getLocalConfig()["window_size"]);
+    $("#wrapper").css("max-width", "none");
 
     // set padding for item list
     setItemListPadding();
@@ -1994,28 +1982,6 @@ function setItemListPadding(){
 }
 
 function expandWindow(){
-    var wrapper = $("#wrapper");
-    var maxWidth = wrapper.css("max-width");
-    switch (maxWidth){
-        case "960px":
-            wrapper.css("max-width", "1152px");
-            WPOS.setLocalConfigValue("window_size", "1152px");
-            break;
-        case "1152px":
-            wrapper.css("max-width", "1280px");
-            WPOS.setLocalConfigValue("window_size", "1280px");
-            break;
-        case "1280px":
-            wrapper.css("max-width", "1366px");
-            WPOS.setLocalConfigValue("window_size", "1366px");
-            break;
-        case "1366px":
-            wrapper.css("max-width", "none");
-            WPOS.setLocalConfigValue("window_size", "none");
-            break;
-        default:
-            wrapper.css("max-width", "960px");
-            WPOS.setLocalConfigValue("window_size", "960px");
-            break;
-    }
+    $("#wrapper").css("max-width", "none");
+    WPOS.setLocalConfigValue("window_size", "none");
 }
