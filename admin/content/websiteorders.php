@@ -11,28 +11,35 @@
 
 <div class="table-header">
     Orders received from cornerbites.co.ke
+    <span style="float:right; font-weight:normal;">
+        <button class="btn btn-xs btn-default" onclick="if(typeof setOrderSoundMuted==='function') setOrderSoundMuted(!isOrderSoundMuted());" data-order-sound-toggle>🔊 Sound: On</button>
+        <span id="websiteOrdersSummary" style="font-size:11px; color:#999;"></span>
+    </span>
 </div>
 
-<table id="websiteorderstable" class="table table-striped table-bordered table-hover" style="width:100%;">
-<thead>
-<tr>
-    <th>ID</th>
-    <th>External Ref</th>
-    <th>Customer</th>
-    <th>Phone</th>
-    <th>Address</th>
-    <th>Table</th>
-    <th>Items</th>
-    <th>Total</th>
-    <th>Status</th>
-    <th>Received</th>
-    <th>Actions</th>
+<div style="max-height: 420px; overflow-y: auto; border:1px solid #ddd; border-top:none;">
+<table id="websiteorderstable" class="table table-striped table-bordered table-hover cb-compact" style="width:100%; margin-bottom:0; font-size:12px;">
+<thead style="position:sticky; top:0; z-index:5;">
+<tr style="background:#f0f0f0;">
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">ID</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">External Ref</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Customer</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Phone</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Address</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Table</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Items</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Total</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Status</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Received</th>
+    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Actions</th>
 </tr>
 </thead>
 <tbody id="websiteordersbody">
     <tr><td colspan="11" class="center">Loading...</td></tr>
 </tbody>
 </table>
+</div>
+<style>.cb-compact td{padding:2px 6px !important; vertical-align:middle;} .cb-compact .btn-xs{padding:1px 5px; font-size:11px;}</style>
 
 </div>
 </div>
@@ -44,6 +51,13 @@ function loadWebsiteOrders(){
     $.get('/api/poll.php?last=0', function(data){
         if (data.error) { tbody.html('<tr><td colspan="11" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
+        try { if (typeof checkNewOrders === 'function') checkNewOrders(sales, 'website'); } catch(e){}
+        try {
+            var webSales = sales.filter(function(s){ return s.source === 'website'; });
+            var queued = webSales.filter(function(s){ return (s.orderstatus || 'queued') === 'queued'; });
+            var pipeline = queued.reduce(function(sum, s){ return sum + parseFloat(s.total || 0); }, 0);
+            $('#websiteOrdersSummary').text(webSales.length + ' total · ' + queued.length + ' queued · KES ' + pipeline.toFixed(2) + ' pipeline');
+        } catch(e){}
         var rows = '';
         sales.forEach(function(s){
             if (s.source !== 'website') return;
@@ -84,5 +98,5 @@ function deleteWebsiteOrder(ref){
         if (r !== false) loadWebsiteOrders();
     });
 }
-$(document).ready(function(){ loadWebsiteOrders(); setInterval(loadWebsiteOrders, 15000); });
+$(document).ready(function(){ try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e){} loadWebsiteOrders(); setInterval(loadWebsiteOrders, 15000); });
 </script>

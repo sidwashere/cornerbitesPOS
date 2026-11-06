@@ -45,13 +45,14 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261106-166"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261106-167"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261105-143"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261105-141"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261105-141"></script>
-    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261105-141"></script>
+    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261106-142"></script>
+    <script type="text/javascript" src="/assets/js/wpos/order-sound.js?v=20261106-1"></script>
     <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261105-141"></script>
-    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261106-144"></script>
+    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261106-146"></script>
     <script type="text/javascript" src="/assets/libs/webprint.js?v=20261030"></script>
     <!-- Websocket library -->
     <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>
@@ -235,26 +236,29 @@
     <div style="margin:10px 0;">
         <button class="btn btn-sm btn-primary" onclick="if(WPOS.orders){WPOS.orders.loadOnlineOrders();}">Refresh</button>
     </div>
-    <table id="onlineorderstable" style="text-align: left; width:100%;" class="table table-striped table-bordered table-hover">
-        <thead class="table-header">
-        <tr>
-            <th>ID</th>
-            <th>Ref/External</th>
-            <th>Source</th>
-            <th>Customer</th>
-            <th>Phone</th>
-            <th>Items</th>
-            <th>Total</th>
-            <th>Payment</th>
-            <th>Status</th>
-            <th>Received</th>
-            <th>Actions</th>
+    <div style="max-height: 420px; overflow-y: auto; border:1px solid #ddd; border-top:none;">
+    <table id="onlineorderstable" style="text-align: left; width:100%; margin-bottom:0; font-size:12px;" class="table table-striped table-bordered table-hover cb-compact">
+        <thead style="position:sticky; top:0; z-index:5;">
+        <tr style="background:#f0f0f0;">
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">ID</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Ref/External</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Source</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Customer</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Phone</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Items</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Total</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Payment</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Status</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Received</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Actions</th>
         </tr>
         </thead>
         <tbody id="onlineordersbody">
         <tr><td colspan="11" class="center">Loading...</td></tr>
         </tbody>
     </table>
+    </div>
+    <style>.cb-compact td{padding:2px 6px !important; vertical-align:middle;} .cb-compact .btn-xs{padding:2px 6px; font-size:11px;}</style>
 </div>
 <div id="tabs-3">
     <div class="row">
@@ -948,9 +952,9 @@
             <button id="eftpospaybtn" class="btn btn-sm btn-success" onclick="WPOS.sales.startEftposPayment();">Start Eftpos</button>
         </div>
         <div style="margin-top: 20px;">
+            <button class="btn btn-xs btn-success" onclick="WPOS.sales.addPayment('mpesa');">MPESA</button>
             <button class="btn btn-xs btn-primary" onclick="WPOS.sales.addPayment('cash');">Cash</button>
             <button class="btn btn-xs btn-primary" onclick="WPOS.sales.addPayment('credit');">Credit</button>
-            <button class="btn btn-xs btn-primary" onclick="WPOS.sales.addPayment('mpesa');">MPESA</button>
             <button class="btn btn-xs btn-primary" onclick="WPOS.sales.addPayment('cheque');">Cheque</button>
             <button style="float: right;" class="btn btn-xs btn-primary" onclick="WPOS.sales.addAdditionalPayment();">Add Payment</button>
         </div>

@@ -25,6 +25,7 @@ function WPOSKitchen() {
     var WPOS = this;
     var initialsetup = false;
     this.initApp = function () {
+        try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e) {}
         // set cache default to true
         $.ajaxSetup({
             cache: true
@@ -1102,6 +1103,7 @@ function WPOSKitchen() {
     }
 
     function _reconcile(sales){
+        try { if (typeof checkNewOrders === 'function') checkNewOrders(sales, 'website'); } catch(e){}
         var activeRefs = {};
         for (var i = 0; i < sales.length; i++) {
             var s = sales[i];

@@ -609,6 +609,10 @@ function routeApiCall($action, $data, $result) {
             $statsMdl = new WposAdminStats($data);
             $result = $statsMdl->getTaxStats($result);
             break;
+        case "stats/dashboard": // rich POS + external orders dashboard aggregation
+            $statsMdl = new WposAdminStats($data);
+            $result = $statsMdl->getDashboardStats($result);
+            break;
 
         // GRAPH
         case "graph/general": // like the general stats, but in graph form/time.

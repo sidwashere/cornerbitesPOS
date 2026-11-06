@@ -300,6 +300,7 @@ function WPOSAdmin(){
         WPOS.util.hideLoader();
     };
     this.initAdmin = function(){
+        try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e) {}
         // hide unallowed sections
         hidePermSections();
         // Load needed config

@@ -140,6 +140,99 @@ class WposAdminStats {
     }
 
     /**
+     * Rich dashboard aggregation: POS sales + external orders (website / Glovo /
+     * Uber Eats / phone) in one paginated-friendly payload for the Admin
+     * dashboard and Reports page.
+     * Range is driven by $data->stime/$data->etime (ms). `dt` is used for the
+     * time-window filter so seconds- and ms-based `processdt` rows both match.
+     */
+    public function getDashboardStats($result){
+        $salesMdl = new TransactionsModel();
+        $stime = isset($this->data->stime) ? (int)$this->data->stime : (strtotime('-1 day') * 1000);
+        $etime = isset($this->data->etime) ? (int)$this->data->etime : (time() * 1000);
+        $stimeDt = date('Y-m-d H:i:s', max(0, (int)($stime / 1000)));
+        $etimeDt = date('Y-m-d H:i:s', max(0, (int)($etime / 1000)));
+        $typeFilter = $this->data->type; // null | sale | invoice
+        $typeCond = '';
+        $params = [':stime' => $stimeDt, ':etime' => $etimeDt];
+        if (!empty($typeFilter) && $typeFilter !== 'all') {
+            $typeCond = ' AND type = :type';
+            $params[':type'] = $typeFilter;
+        }
+
+        $q = function($sql) use ($salesMdl, $params) {
+            $rows = $salesMdl->select($sql, $params);
+            return is_array($rows) ? $rows : [];
+        };
+
+        // --- KPIs ---
+        $kpiRows = $q("SELECT COUNT(*) AS total_orders, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status=0 THEN 1 ELSE 0 END) AS queued, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(AVG(CASE WHEN status=1 THEN total END),0) AS avg_order FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond);
+        $kpi = isset($kpiRows[0]) ? $kpiRows[0] : ['total_orders'=>0,'completed'=>0,'queued'=>0,'revenue'=>0,'avg_order'=>0];
+        $revenue = (float)$kpi['revenue'];
+        $orders = (int)$kpi['total_orders'];
+        $completed = (int)$kpi['completed'];
+        $avg = $completed > 0 ? round($revenue / $completed, 2) : 0;
+        $completionRate = $orders > 0 ? round(($completed / $orders) * 100, 1) : 0;
+
+        // --- Breakdowns ---
+        $bySourceRows = $q("SELECT COALESCE(NULLIF(source,''),'unknown') AS k, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(SUM(total),0) AS gross FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
+        $bySource = [];
+        foreach ($bySourceRows as $r) {
+            $bySource[$r['k']] = ['orders'=>(int)$r['orders'], 'revenue'=>(float)$r['revenue'], 'gross'=>(float)$r['gross']];
+        }
+        $byTypeRows = $q("SELECT COALESCE(NULLIF(order_type,''),'unknown') AS k, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
+        $byType = [];
+        foreach ($byTypeRows as $r) {
+            $byType[$r['k']] = ['orders'=>(int)$r['orders'], 'revenue'=>(float)$r['revenue']];
+        }
+        $payRows = $q("SELECT p.method AS k, COUNT(*) AS payments, COALESCE(SUM(p.amount),0) AS revenue FROM sale_payments p JOIN sales s ON s.id = p.saleid WHERE s.dt >= :stime AND s.dt <= :etime AND s.status = 1" . (empty($typeFilter) || $typeFilter === 'all' ? '' : ' AND s.type = :type') . " GROUP BY p.method ORDER BY revenue DESC");
+        $byPayment = [];
+        foreach ($payRows as $r) {
+            $byPayment[$r['k']] = ['payments'=>(int)$r['payments'], 'revenue'=>(float)$r['revenue']];
+        }
+        $hourRows = $q("SELECT HOUR(dt) AS h, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY h ORDER BY h");
+        $byHour = [];
+        $maxHourRev = 0;
+        foreach ($hourRows as $r) {
+            $h = (int)$r['h'];
+            $byHour[$h] = ['orders'=>(int)$r['orders'], 'revenue'=>(float)$r['revenue']];
+            if ((float)$r['revenue'] > $maxHourRev) $maxHourRev = (float)$r['revenue'];
+        }
+
+        // --- Top items (completed sales only) ---
+        $itemRows = $q("SELECT i.name AS name, SUM(i.qty) AS qty, COALESCE(SUM(i.price),0) AS revenue FROM sale_items i JOIN sales s ON s.id = i.saleid WHERE s.dt >= :stime AND s.dt <= :etime AND s.status = 1" . (empty($typeFilter) || $typeFilter === 'all' ? '' : ' AND s.type = :type') . " GROUP BY i.name ORDER BY qty DESC, revenue DESC LIMIT 8");
+        $topItems = [];
+        foreach ($itemRows as $r) {
+            $topItems[] = ['name'=>$r['name'], 'qty'=>(int)$r['qty'], 'revenue'=>(float)$r['revenue']];
+        }
+
+        // --- Recent orders (detailed, newest first) ---
+        $recent = $q("SELECT id, ref, source, external_ref, order_type, total, status, customer, delivery_address, table_number, orderstatus, received_at FROM (SELECT id, ref, source, external_ref, order_type, total, status, JSON_UNQUOTE(JSON_EXTRACT(data,'$.customer.name')) AS customer, delivery_address, JSON_EXTRACT(data,'$.table_number') AS table_number, JSON_UNQUOTE(JSON_EXTRACT(data,'$.orderstatus')) AS orderstatus, received_at FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . ") t ORDER BY id DESC LIMIT 10");
+        // Items detail is fetched lazily by the UI via poll.php; keep this payload light.
+
+        $out = new stdClass();
+        $out->range = ['stime'=>$stime, 'etime'=>$etime, 'stime_dt'=>$stimeDt, 'etime_dt'=>$etimeDt];
+        $out->kpis = [
+            'revenue' => $revenue,
+            'orders' => $orders,
+            'completed' => $completed,
+            'queued' => (int)$kpi['queued'],
+            'avg_order' => $avg,
+            'completion_rate' => $completionRate,
+        ];
+        $out->by_source = $bySource;
+        $out->by_type = $byType;
+        $out->by_payment = $byPayment;
+        $out->by_hour = $byHour;
+        $out->max_hour_revenue = $maxHourRev;
+        $out->top_items = $topItems;
+        $out->recent = $recent;
+
+        $result['data'] = $out;
+        return $result;
+    }
+
+    /**
      * Get payment method totals from the current range
      * @param $result
      * @return mixed

@@ -3,7 +3,7 @@ Options -MultiViews
 RewriteEngine on
 RewriteBase /api/
 # Allow direct access to specific endpoint scripts (no wpos.php routing)
-RewriteCond %{REQUEST_URI} (webhooks|poll|process_inbox|process_whatsapp|setup_tables|import_items|save_whatsapp_config|save_website_content|website_content|get_whatsapp_config|menu|serve_logo)\.php
+RewriteCond %{REQUEST_URI} (webhooks|poll|process_inbox|process_whatsapp|setup_tables|import_items|save_whatsapp_config|save_website_content|website_content|get_whatsapp_config|menu|serve_logo|table_qr)\.php
 RewriteRule ^ - [L]
 # Route everything else to wpos.php
 RewriteCond %{REQUEST_URI} !wpos.php

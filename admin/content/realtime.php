@@ -334,6 +334,8 @@ function populateOnlineDevices(devices) {
 }
 
 function processIncomingSale(saleobj) {
+    // Soft ding for genuinely new online/website orders (deduped by checkNewOrders).
+    try { if (typeof checkNewOrders === 'function') checkNewOrders([saleobj], saleobj.source || 'new'); } catch(e){}
     updateSalesTable(saleobj);
     // if sale is an old offline sale, continue no further
     if (isSaleToday(saleobj)) {
@@ -614,6 +616,7 @@ $(function () {
     chart.on('plotclick', clickgraph);
     chart.css({'width': '100%', 'height': '220px'});
     // load data
+    try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e) {}
     WPOS.startSocket();
     var data = WPOS.sendJsonData("multi", JSON.stringify({"sales/get":{stime: stoday, etime: etime}, "stats/general":{"stime":stoday, "etime":etime}, "graph/general":{"stime": stime, "etime": etime, "interval": 1800000}}));
     if (data!==false) {

@@ -590,7 +590,7 @@ function WPOSSales() {
     this.generateQuickItemsGrid = function(){ return WPOS.items && WPOS.items.generateQuickItemsGrid ? WPOS.items.generateQuickItemsGrid() : null; };
     this.toggleQuickItem = function(itemId){ return false; };
     this.showQuickItemPicker = function(){ return false; };
-    var paymentMethods = ['eftpos', 'credit', 'cash', 'cheque', 'deposit'];
+    var paymentMethods = ['mpesa', 'cash', 'eftpos', 'credit', 'cheque', 'deposit'];
     var cursubtotal = 0.00;
     var curtaxtotal = 0.00;
     var curtotal = 0.00;
@@ -923,14 +923,14 @@ function WPOSSales() {
                     inteftbtn.hide();
                 }
             } catch(e) {}
-            // Default to cash so the operator can collect change from the total while still keeping the amount editable.
+            // Default to M-Pesa (Lipa na M-Pesa) so operators collect mobile payments by default.
             try {
                 if ($("#paymentstable").children('tr').length == 0) {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
                     var amountValue = amt.toFixed ? amt.toFixed(2) : amt;
                     if (typeof addPaymentRow === 'function') {
-                        addPaymentRow('cash', amountValue, amountValue, 0.00);
+                        addPaymentRow('mpesa', amountValue, amountValue, 0.00);
                     }
                     if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
@@ -952,7 +952,7 @@ function WPOSSales() {
     };
 
     this.addAdditionalPayment = function(){
-        addPaymentRow('cash', 0, 0, 0);
+        addPaymentRow('mpesa', 0, 0, 0);
     };
 
     this.removePayment = function(pitem){
@@ -1069,6 +1069,7 @@ function WPOSSales() {
 
         var payrow =  '<tr '+data+'><td>' +
             '<select class="paymethod" onchange="WPOS.sales.onPaymentMethodChange(this);">' +
+            '<option value="mpesa" '+(method=='mpesa'?'selected':'')+'>MPESA</option>' +
             '<option value="eftpos" '+(method=='eftpos'?'selected':'')+'>Eftpos</option>' +
             '<option value="credit" '+(method=='credit'?'selected':'')+'>Credit</option>' +
             '<option value="cash" '+(method=='cash'?'selected':'')+'>Cash</option>' +
@@ -1235,7 +1236,7 @@ function WPOSSales() {
                     var amt = (typeof curgrandtotal !== 'undefined' && curgrandtotal > 0) ? curgrandtotal : ((typeof curtotal !== 'undefined' && curtotal > 0) ? curtotal : ((typeof cursubtotal !== 'undefined' && cursubtotal > 0) ? cursubtotal : 0));
                     if (!amt || isNaN(amt)) amt = 0;
                     var amts = amt.toFixed ? amt.toFixed(2) : amt;
-                    addPaymentRow('cash', amts, amts, 0.00);
+                    addPaymentRow('mpesa', amts, amts, 0.00);
                     if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
                 }
             } catch(e){ console.error('payerr:', e); }
@@ -1264,7 +1265,7 @@ function WPOSSales() {
                 var amts = amt.toFixed ? amt.toFixed(2) : amt;
                 try {
                     if (typeof addPaymentRow === 'function') {
-                        addPaymentRow('cash', amts, amts, 0.00);
+                        addPaymentRow('mpesa', amts, amts, 0.00);
                     }
                 } catch(e) {}
             }
@@ -1292,7 +1293,7 @@ function WPOSSales() {
                 } catch(e) {}
                 if (!amt || isNaN(amt)) amt = 0;
                 var amts = amt.toFixed ? amt.toFixed(2) : amt;
-                if (typeof addPaymentRow === 'function') addPaymentRow('cash', amts, amts, 0.00);
+                if (typeof addPaymentRow === 'function') addPaymentRow('mpesa', amts, amts, 0.00);
                 if (typeof this.updatePaymentSums === 'function') this.updatePaymentSums();
             }
         } catch(e) {}

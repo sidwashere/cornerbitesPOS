@@ -4,6 +4,7 @@
         Reports
     </h1>
     <select id="reptype" onchange="generateReport();" style="vertical-align: middle; margin-right: 20px; margin-bottom: 5px;">
+        <option value="stats/dashboard">POS + Online (Rich)</option>
         <option value="stats/general">Summary</option>
         <option value="stats/takings">Takings Count</option>
         <option value="stats/itemselling">Item Sales</option>
@@ -57,6 +58,9 @@
         repdata = WPOS.sendJsonData(type, JSON.stringify({"stime":stime, "etime":etime, "type":$("#reptranstype").val()}));
         // populate the report using the correct function
         switch (type){
+            case "stats/dashboard":
+                populateRichDashboard();
+                break;
             case "stats/general":
                 populateSummary();
                 break;
@@ -100,6 +104,37 @@
         var timestamp = new Date();
         timestamp = timestamp.getTime();
         return "<div id='#repheader' style='text-align: center; margin-bottom: 5px;'><h3>"+heading+"</h3><h5>"+WPOS.util.getDateFromTimestamp(timestamp)+"</h5>";
+    }
+
+    function populateRichDashboard(){
+        var html = getReportHeader("POS + Online — Rich Report");
+        var k = (repdata && repdata.kpis) ? repdata.kpis : {revenue:0, orders:0, completed:0, queued:0, avg_order:0, completion_rate:0};
+        html += "<table class='table table-stripped' style='width:100%'><thead><tr><td>Metric</td><td>Value</td></tr></thead><tbody>";
+        html += "<tr><td>Collected revenue (completed)</td><td>"+WPOS.util.currencyFormat(k.revenue)+"</td></tr>";
+        html += "<tr><td>Total orders (POS + online)</td><td>"+(k.orders||0)+"</td></tr>";
+        html += "<tr><td>Completed / Queued</td><td>"+(k.completed||0)+" / "+(k.queued||0)+"</td></tr>";
+        html += "<tr><td>Average order value (completed)</td><td>"+WPOS.util.currencyFormat(k.avg_order)+"</td></tr>";
+        html += "<tr><td>Completion rate</td><td>"+(k.completion_rate||0)+"%</td></tr>";
+        html += "</tbody></table>";
+        html += "<h4>By Source</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>Source</td><td>Orders</td><td>Collected</td><td>Gross (incl. queued)</td></tr></thead><tbody>";
+        for (var s in (repdata.by_source || {})) { var r = repdata.by_source[s]; html += '<tr><td>'+s+'</td><td>'+r.orders+'</td><td>'+WPOS.util.currencyFormat(r.revenue)+'</td><td>'+WPOS.util.currencyFormat(r.gross)+'</td></tr>'; }
+        html += "</tbody></table>";
+        html += "<h4>By Order Type</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>Type</td><td>Orders</td><td>Collected</td></tr></thead><tbody>";
+        for (var t in (repdata.by_type || {})) { var r2 = repdata.by_type[t]; html += '<tr><td>'+t+'</td><td>'+r2.orders+'</td><td>'+WPOS.util.currencyFormat(r2.revenue)+'</td></tr>'; }
+        html += "</tbody></table>";
+        html += "<h4>By Payment</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>Method</td><td>Payments</td><td>Collected</td></tr></thead><tbody>";
+        for (var p in (repdata.by_payment || {})) { var r3 = repdata.by_payment[p]; html += '<tr><td>'+p+'</td><td>'+r3.payments+'</td><td>'+WPOS.util.currencyFormat(r3.revenue)+'</td></tr>'; }
+        html += "</tbody></table>";
+        html += "<h4>Hourly</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>Hour</td><td>Orders</td><td>Collected</td></tr></thead><tbody>";
+        for (var h in (repdata.by_hour || {})) { var r4 = repdata.by_hour[h]; html += '<tr><td>'+h+':00</td><td>'+r4.orders+'</td><td>'+WPOS.util.currencyFormat(r4.revenue)+'</td></tr>'; }
+        html += "</tbody></table>";
+        html += "<h4>Top Items</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>Item</td><td>Qty</td><td>Revenue</td></tr></thead><tbody>";
+        (repdata.top_items || []).forEach(function(it){ html += '<tr><td>'+it.name+'</td><td>'+it.qty+'</td><td>'+WPOS.util.currencyFormat(it.revenue)+'</td></tr>'; });
+        html += "</tbody></table>";
+        html += "<h4>Recent (detailed)</h4><table class='table table-stripped' style='width:100%'><thead><tr><td>ID</td><td>Ref</td><td>Source</td><td>Type</td><td>Total</td><td>Status</td><td>Customer</td><td>Received</td></tr></thead><tbody>";
+        (repdata.recent || []).forEach(function(o){ html += '<tr><td>'+o.id+'</td><td>'+o.ref+'</td><td>'+(o.source||'-')+'</td><td>'+(o.order_type||'-')+'</td><td>'+o.total+'/=</td><td>'+o.status+'</td><td>'+(o.customer||'-')+'</td><td>'+(o.received_at||o.dt||'')+'</td></tr>'; });
+        html += "</tbody></table>";
+        $("#reportcontain").html(html);
     }
 
     function populateSummary(){

@@ -51,4 +51,4 @@ echo "  POS      ->  http://localhost:$PHP_PORT/"
 echo "  Admin    ->  http://localhost:$PHP_PORT/admin/   (login: admin / admin)"
 echo "  Kitchen  ->  http://localhost:$PHP_PORT/kitchen/"
 echo ""
-exec php -S 127.0.0.1:"$PHP_PORT" -d date.timezone=Africa/Nairobi router.php
+exec php -S 127.0.0.1:"$PHP_PORT" -d date.timezone=Africa/Nairobi -d session.gc_maxlifetime=43200 -d session.cookie_lifetime=43200 -d session.gc_probability=1 -d session.gc_divisor=1000 router.php

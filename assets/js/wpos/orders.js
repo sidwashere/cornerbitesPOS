@@ -153,6 +153,7 @@ function WPOSOrders(){
                 if (!data) { tbody.html('<tr><td colspan="11" class="center text-danger">no data</td></tr>'); return; }
                 if (data === false) { tbody.html('<tr><td colspan="11" class="center text-danger">request failed</td></tr>'); return; }
                 var sales = Array.isArray(data) ? data : (data && data.data ? data.data : []);
+                try { if (typeof checkNewOrders === 'function') checkNewOrders(Array.isArray(sales) ? sales : Object.values(sales || {}), 'website'); } catch(e){}
                 var rows = '';
                 (Array.isArray(sales)?sales:Object.values(sales||{})).forEach(function(s){
                     var items = '';

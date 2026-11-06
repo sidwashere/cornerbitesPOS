@@ -18,29 +18,144 @@
             <li><a href="#dashKitchenOrders" data-toggle="tab" onclick="loadDashboardOrders('kitchen');"><i class="icon-fire"></i> Kitchen Orders</a></li>
             <li><a href="#dashWebsiteOrders" data-toggle="tab" onclick="loadDashboardOrders('website');"><i class="icon-globe"></i> Website Orders</a></li>
         </ul>
-        <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 8px 12px; font-weight: bold;">
+        <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 6px 12px; font-weight: bold; font-size:13px;">
             <i class="icon-list"></i> <span id="dashOrderTabTitle">Recent Orders (All Sources)</span>
+            <span id="dashOrdersCount" style="float:right; font-weight:normal; font-size:11px; color:#999;"></span>
         </div>
-        <table class="table table-striped table-bordered table-hover" style="width:100%; margin-bottom: 0;">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Source</th>
-                    <th>Customer</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Time</th>
-                    <th>Actions</th>
+        <div style="max-height: 300px; overflow-y: auto; border:1px solid #ddd; border-top:none;">
+        <table class="table table-striped table-bordered table-hover cb-compact" style="width:100%; margin-bottom: 0; font-size:12px;">
+            <thead style="position: sticky; top:0; z-index:5;">
+                <tr style="background:#f0f0f0;">
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">ID</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Source</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Customer</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Items</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Total</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Status</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Time</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Actions</th>
                 </tr>
             </thead>
             <tbody id="dashOrdersBody">
                 <tr><td colspan="8" class="center">Loading orders...</td></tr>
             </tbody>
         </table>
+        </div>
+        <style>.cb-compact td{padding:2px 6px !important; vertical-align:middle;} .cb-compact .btn-xs{padding:1px 5px; font-size:11px;}</style>
     </div>
 </div>
 <!-- END ALL ORDERS OVERVIEW -->
+<!-- LIVE SALES TRACKER: POS + website/other, live -> completed, with View -->
+<div class="row" style="margin-bottom: 16px;">
+    <div class="col-xs-12">
+        <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 6px 12px; font-weight: bold; font-size:13px;">
+            <i class="icon-random"></i> Live Sales Tracker — POS &amp; Website (live → completed)
+            <span style="float:right; font-weight:normal; font-size:12px;">
+                <select id="trackerStatus" onchange="loadLiveTracker();" style="color:#333; padding:2px 4px;">
+                    <option value="all">All statuses</option>
+                    <option value="live">Live (queued/preparing/ready)</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <select id="trackerSource" onchange="loadLiveTracker();" style="color:#333; padding:2px 4px;">
+                    <option value="all">All sources</option>
+                    <option value="pos">POS</option>
+                    <option value="website">Website</option>
+                    <option value="glovo">Glovo</option>
+                    <option value="ubereats">Uber Eats</option>
+                    <option value="phone">Phone</option>
+                </select>
+                <input id="trackerSearch" type="text" placeholder="Ref / customer…" onkeypress="if(event.keyCode==13){loadLiveTracker();}" style="width:130px; color:#333; padding:2px 6px;" />
+                <button class="btn btn-xs btn-default" onclick="loadLiveTracker();" title="Refresh tracker"><i class="icon-refresh"></i></button>
+                <span id="trackerCount" style="font-size:11px; color:#999;"></span>
+            </span>
+        </div>
+        <div style="max-height: 320px; overflow-y: auto; border:1px solid #ddd; border-top:none;">
+        <table class="table table-striped table-bordered table-hover cb-compact" style="width:100%; margin-bottom:0; font-size:12px;">
+            <thead style="position:sticky; top:0; z-index:5;">
+                <tr style="background:#f0f0f0;">
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">ID</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Ref</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Source</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Type</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Customer</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Items</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Total</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Status</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Time</th>
+                    <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">View</th>
+                </tr>
+            </thead>
+            <tbody id="liveTrackerBody">
+                <tr><td colspan="10" class="center">Loading live sales...</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+<!-- RICH REPORTING: POS + external orders (website / Glovo / Uber Eats / phone) -->
+<div class="row" style="margin-bottom: 16px;">
+    <div class="col-xs-12">
+        <div class="table-header" style="background: #1a1a1a; color: #84cc16; padding: 8px 12px; font-weight: bold;">
+            <i class="icon-bar-chart"></i> Rich Reporting — POS &amp; Online Orders
+            <span style="float:right; font-weight:normal;">
+                <select id="dashRange" onchange="loadRichDashboard();" style="color:#333; padding:2px 6px;">
+                    <option value="today">Today</option>
+                    <option value="week" selected>Last 7 days</option>
+                    <option value="month">Last 30 days</option>
+                </select>
+                <button class="btn btn-xs btn-default" onclick="loadRichDashboard();" title="Refresh"><i class="icon-refresh"></i></button>
+                <button class="btn btn-xs btn-default" onclick="if(typeof setOrderSoundMuted==='function') setOrderSoundMuted(!isOrderSoundMuted());" data-order-sound-toggle title="Toggle new-order ding">🔊 Sound: On</button>
+                <span id="dashUpdated" style="font-size:11px; color:#999;"></span>
+            </span>
+        </div>
+        <div id="richKpis" style="display:flex; flex-wrap:wrap; gap:10px; padding:12px; background:#f7f7f5;">
+            <div style="flex:1; min-width:150px; background:#fff; border:1px solid #e5e5e5; border-radius:8px; padding:10px;">
+                <div style="color:#777; font-size:11px; text-transform:uppercase;">Collected (completed)</div>
+                <div id="kpiRevenue" style="font-size:20px; font-weight:800;">-</div>
+                <div style="font-size:11px; color:#999;">AOV <span id="kpiAov">-</span></div>
+            </div>
+            <div style="flex:1; min-width:150px; background:#fff; border:1px solid #e5e5e5; border-radius:8px; padding:10px;">
+                <div style="color:#777; font-size:11px; text-transform:uppercase;">Orders</div>
+                <div id="kpiOrders" style="font-size:20px; font-weight:800;">-</div>
+                <div style="font-size:11px; color:#999;">Completed <span id="kpiCompleted">-</span> · Queued <span id="kpiQueued">-</span></div>
+            </div>
+            <div style="flex:1; min-width:150px; background:#fff; border:1px solid #e5e5e5; border-radius:8px; padding:10px;">
+                <div style="color:#777; font-size:11px; text-transform:uppercase;">Completion rate</div>
+                <div id="kpiCompletion" style="font-size:20px; font-weight:800;">-</div>
+                <div style="font-size:11px; color:#999;">completed ÷ all</div>
+            </div>
+            <div style="flex:1; min-width:150px; background:#fff; border:1px solid #e5e5e5; border-radius:8px; padding:10px;">
+                <div style="color:#777; font-size:11px; text-transform:uppercase;">Online pipeline (queued gross)</div>
+                <div id="kpiPipeline" style="font-size:20px; font-weight:800;">-</div>
+                <div style="font-size:11px; color:#999;">website / Glovo / Uber Eats / phone</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-sm-4">
+        <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-signal"></i> By Source</h4></div>
+            <div class="widget-body"><table class="table table-striped" style="margin:0; font-size:12px;"><thead><tr><th>Source</th><th>Orders</th><th>Collected</th><th>Share</th></tr></thead><tbody id="richBySource"><tr><td colspan="4" class="center">Loading...</td></tr></tbody></table></div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-map-marker"></i> By Order Type</h4></div>
+            <div class="widget-body"><table class="table table-striped" style="margin:0; font-size:12px;"><thead><tr><th>Type</th><th>Orders</th><th>Collected</th></tr></thead><tbody id="richByType"><tr><td colspan="3" class="center">Loading...</td></tr></tbody></table></div></div>
+    </div>
+    <div class="col-sm-4">
+        <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-credit-card"></i> By Payment</h4></div>
+            <div class="widget-body"><table class="table table-striped" style="margin:0; font-size:12px;"><thead><tr><th>Method</th><th>Payments</th><th>Collected</th></tr></thead><tbody id="richByPayment"><tr><td colspan="3" class="center">Loading...</td></tr></tbody></table></div></div>
+    </div>
+</div>
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-sm-7">
+        <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-time"></i> Sales by Hour</h4></div>
+            <div class="widget-body"><div id="richByHour" style="display:flex; align-items:flex-end; gap:4px; height:140px; padding:8px; background:#fafafa; overflow-x:auto;"><span style="color:#999; font-size:12px;">Loading...</span></div></div></div>
+    </div>
+    <div class="col-sm-5">
+        <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-star orange"></i> Top Items (detailed)</h4></div>
+            <div class="widget-body"><table class="table table-striped" style="margin:0; font-size:12px;"><thead><tr><th>Item</th><th>Qty</th><th>Revenue</th></tr></thead><tbody id="richTopItems"><tr><td colspan="3" class="center">Loading...</td></tr></tbody></table></div></div>
+    </div>
+</div>
 <div class="row">
     <div class="space-6"></div>
 
@@ -737,6 +852,7 @@ function loadDashboardOrders(filter){
     $.get('/api/poll.php?last=0' + (_dashFilter === 'website' ? '&source=website' : ''), function(data){
         if (data.error) { tbody.html('<tr><td colspan="8" class="center text-danger">'+data.error+'</td></tr>'); return; }
         var sales = (data.result && data.result.sales) ? data.result.sales : [];
+        try { if (typeof checkNewOrders === 'function') checkNewOrders(sales, _dashFilter === 'website' ? 'website' : 'new'); } catch(e){}
         if (_dashFilter === 'kitchen') sales = sales.filter(function(s){ return (s.source || 'pos') !== 'website'; });
         var rows = '';
         var sourceColors = {website:'success', pos:'primary', glovo:'warning', ubereats:'info', phone:'default', dinein:'success'};
@@ -768,6 +884,7 @@ function loadDashboardOrders(filter){
         });
         if (!rows) rows = '<tr><td colspan="8" class="center">No orders yet.</td></tr>';
         tbody.html(rows);
+        try { var c = $('#dashOrdersCount'); if (c.length) c.text((sales||[]).length + ' shown'); } catch(e){}
     }, 'json').fail(function(){ tbody.html('<tr><td colspan="8" class="center text-danger">Failed to load orders.</td></tr>'); });
 }
 function updateDashboardOrderStatus(ref, status){
@@ -778,10 +895,175 @@ function updateDashboardOrderStatus(ref, status){
 function deleteDashboardOrder(ref){
     if (!confirm('Delete this order permanently?')) return;
     WPOS.sendJsonData("orders/remove", JSON.stringify({ref: ref}), function(r){
-        if (r !== false) loadDashboardOrders(_dashFilter);
+        if (r !== false) { loadDashboardOrders(_dashFilter); loadLiveTracker(); }
     });
 }
+
+// --- Live Sales Tracker: POS + website/other, live -> completed ---
+var _trackerCache = {};
+function trackerStatusOf(s){
+    if (s.orderstatus) return String(s.orderstatus).toLowerCase();
+    if (s.hasOwnProperty('voiddata') && s.voiddata) return 'void';
+    if (s.hasOwnProperty('refunddata') && s.refunddata) return 'refunded';
+    if (s.hasOwnProperty('isorder') && s.isorder) return 'queued';
+    return 'completed';
+}
+function trackerStatusLabel(st){
+    var map = {'queued':'Queued','preparing':'Preparing','ready':'Ready','completed':'Completed','void':'Void','refunded':'Refunded','cancelled':'Cancelled'};
+    return map[st] || (st ? st.charAt(0).toUpperCase()+st.slice(1) : 'Unknown');
+}
+function trackerStatusClass(st){
+    var map = {'queued':'warning','preparing':'info','ready':'success','completed':'default','void':'danger','refunded':'warning','cancelled':'danger'};
+    return map[st] || 'default';
+}
+function loadLiveTracker(){
+    var body = $('#liveTrackerBody');
+    if (!body.length) return;
+    var vals = dashRangeVals();
+    var statusFilter = ($('#trackerStatus').val() || 'all');
+    var sourceFilter = ($('#trackerSource').val() || 'all');
+    var search = ($('#trackerSearch').val() || '').toLowerCase().trim();
+    WPOS.sendJsonDataAsync('sales/get', JSON.stringify({stime: vals[0], etime: vals[1]}), function(data){
+        var sales = data || {};
+        if (WPOS.transactions && typeof WPOS.transactions.setTransactions === 'function') {
+            try { WPOS.transactions.setTransactions(sales); } catch(e){}
+        }
+        _trackerCache = sales || {};
+        var list = [];
+        for (var ref in sales) {
+            var s = sales[ref];
+            if (!s) continue;
+            s.ref = s.ref || ref;
+            var st = trackerStatusOf(s);
+            var src = String(s.source || s.channel || 'pos').toLowerCase();
+            var isLive = ['queued','preparing','ready'].indexOf(st) !== -1;
+            if (statusFilter === 'live' && !isLive) continue;
+            if (statusFilter === 'completed' && st !== 'completed') continue;
+            if (sourceFilter !== 'all' && src !== sourceFilter) continue;
+            if (search) {
+                var hay = (String(s.ref) + ' ' + String(s.external_ref || '') + ' ' + (s.customer && s.customer.name ? s.customer.name : '') + ' ' + (s.customer && s.customer.phone ? s.customer.phone : '')).toLowerCase();
+                if (hay.indexOf(search) === -1) continue;
+            }
+            list.push({s: s, st: st, src: src});
+        }
+        list.sort(function(a,b){
+            var ta = parseInt(a.s.processdt || a.s.dt || 0), tb = parseInt(b.s.processdt || b.s.dt || 0);
+            // processdt may be ms (POS) or mixed; fall back to id (higher = newer)
+            if (ta && tb && Math.abs(ta - tb) > 1000) return tb - ta;
+            return (b.s.id || 0) - (a.s.id || 0);
+        });
+        var total = list.length;
+        list = list.slice(0, 50);
+        var sourceLabels = {website:'Website', pos:'POS', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone'};
+        var sourceColors = {website:'success', pos:'primary', glovo:'warning', ubereats:'info', phone:'default'};
+        var rows = '';
+        list.forEach(function(entry){
+            var s = entry.s, st = entry.st;
+            var items = '';
+            if (s.items) {
+                if (Array.isArray(s.items)) items = s.items.map(function(it){ return (it.qty||1)+'x '+it.name; }).join(', ');
+                else { var parts = []; for (var k in s.items) parts.push((s.items[k].qty||1)+'x '+(s.items[k].name||'')); items = parts.join(', '); }
+            }
+            if (items.length > 48) items = items.substring(0, 48) + '...';
+            if (s.table_number) items = '[T' + s.table_number + '] ' + items;
+            var cust = s.customer ? (s.customer.name || '-') : '-';
+            var time = s.received_at || s.dt || (s.processdt ? new Date(s.processdt < 1e11 ? s.processdt : s.processdt).toLocaleString() : '');
+            var srcLabel = sourceLabels[entry.src] || entry.src;
+            var srcColor = sourceColors[entry.src] || 'default';
+            rows += '<tr>'
+                + '<td>'+(s.id||'-')+'</td>'
+                + '<td title="'+String(s.ref).replace(/"/g,'&quot;')+'">'+String(s.ref).substring(0,22)+'</td>'
+                + '<td><span class="label label-'+srcColor+'">'+srcLabel+'</span></td>'
+                + '<td>'+(s.order_type||'-')+'</td>'
+                + '<td>'+cust+'</td>'
+                + '<td style="font-size:11px;">'+items+'</td>'
+                + '<td>'+(s.total||0)+'/=</td>'
+                + '<td><span class="label label-'+trackerStatusClass(st)+'">'+trackerStatusLabel(st)+'</span></td>'
+                + '<td style="font-size:11px;">'+time+'</td>'
+                + '<td><button class="btn btn-xs btn-primary" onclick="WPOS.transactions.openTransactionDialog(\''+s.ref+'\');">View</button></td>'
+                + '</tr>';
+        });
+        if (!rows) rows = '<tr><td colspan="10" class="center">No sales in this view.</td></tr>';
+        body.html(rows);
+        try { $('#trackerCount').text(total + ' total · ' + list.length + ' shown'); } catch(e){}
+    });
+}
+
+// --- Rich Reporting (POS + online) ---
+function dashRangeVals(){
+    var r = ($('#dashRange').val() || 'week');
+    var etime = new Date().getTime();
+    var stime = etime;
+    if (r === 'today') {
+        var d = new Date(); d.setHours(0,0,0,0); stime = d.getTime();
+    } else if (r === 'month') {
+        stime = etime - 30*24*3600*1000;
+    } else {
+        stime = etime - 7*24*3600*1000;
+    }
+    return [stime, etime];
+}
+function renderRichDashboard(d){
+    if (!d || !d.kpis) return;
+    var fmt = function(v){ return WPOS.util.currencyFormat(v, true); };
+    var rev = parseFloat(d.kpis.revenue || 0);
+    $('#kpiRevenue').text(fmt(rev));
+    $('#kpiAov').text(fmt(d.kpis.avg_order || 0));
+    $('#kpiOrders').text(d.kpis.orders || 0);
+    $('#kpiCompleted').text(d.kpis.completed || 0);
+    $('#kpiQueued').text(d.kpis.queued || 0);
+    $('#kpiCompletion').text((d.kpis.completion_rate || 0) + '%');
+    // Online pipeline = queued gross (website + glovo + ubereats + phone)
+    var pipeline = 0;
+    var bsHtml = '', btHtml = '', bpHtml = '';
+    var totalRev = rev || 0;
+    var srcKeys = Object.keys(d.by_source || {});
+    srcKeys.sort(function(a,b){ return (d.by_source[b].revenue||0) - (d.by_source[a].revenue||0); });
+    if (!srcKeys.length) bsHtml = '<tr><td colspan="4" class="center">No sales in range.</td></tr>';
+    srcKeys.forEach(function(k){
+        var row = d.by_source[k];
+        var share = totalRev > 0 ? Math.round((row.revenue / totalRev) * 100) : 0;
+        if (k !== 'pos' && row.gross) pipeline += row.gross;
+        bsHtml += '<tr><td>'+k+'</td><td>'+row.orders+'</td><td>'+fmt(row.revenue)+'</td><td>'+share+'%</td></tr>';
+    });
+    $('#richBySource').html(bsHtml);
+    $('#kpiPipeline').text(fmt(pipeline));
+    var typeKeys = Object.keys(d.by_type || {});
+    if (!typeKeys.length) btHtml = '<tr><td colspan="3" class="center">No sales in range.</td></tr>';
+    typeKeys.forEach(function(k){ var r = d.by_type[k]; btHtml += '<tr><td>'+k+'</td><td>'+r.orders+'</td><td>'+fmt(r.revenue)+'</td></tr>'; });
+    $('#richByType').html(btHtml);
+    var payKeys = Object.keys(d.by_payment || {});
+    if (!payKeys.length) bpHtml = '<tr><td colspan="3" class="center">No completed payments in range.</td></tr>';
+    payKeys.forEach(function(k){ var r = d.by_payment[k]; bpHtml += '<tr><td>'+k+'</td><td>'+r.payments+'</td><td>'+fmt(r.revenue)+'</td></tr>'; });
+    $('#richByPayment').html(bpHtml);
+    // Hourly bars
+    var hourHtml = '';
+    var maxRev = parseFloat(d.max_hour_revenue || 0) || 1;
+    for (var h = 0; h < 24; h++) {
+        var rec = (d.by_hour && d.by_hour[String(h)]) ? d.by_hour[String(h)] : (d.by_hour && d.by_hour[h] ? d.by_hour[h] : null);
+        var hh = rec ? parseFloat(rec.revenue || 0) : 0;
+        var pct = Math.round((hh / maxRev) * 100);
+        var label = (h < 10 ? '0' + h : h) + ':00';
+        hourHtml += '<div style="flex:1 0 28px; text-align:center;" title="'+label+' — '+fmt(hh)+' ('+(rec?rec.orders:0)+' orders)">'
+            + '<div style="height:' + Math.max(4, pct) + '%; max-width:22px; margin:0 auto; background:#84cc16; border-radius:3px 3px 0 0; min-height:4px;"></div>'
+            + '<div style="font-size:9px; color:#888;">'+label+'</div></div>';
+    }
+    $('#richByHour').html(hourHtml);
+    var topHtml = '';
+    (d.top_items || []).forEach(function(it){
+        topHtml += '<tr><td>'+it.name+'</td><td>'+it.qty+'</td><td>'+fmt(it.revenue)+'</td></tr>';
+    });
+    $('#richTopItems').html(topHtml || '<tr><td colspan="3" class="center">No items sold in range.</td></tr>');
+    var now = new Date();
+    $('#dashUpdated').text('Updated ' + now.toLocaleTimeString());
+}
+function loadRichDashboard(){
+    var vals = dashRangeVals();
+    var data = WPOS.sendJsonData('stats/dashboard', JSON.stringify({stime: vals[0], etime: vals[1]}));
+    if (data) renderRichDashboard(data);
+}
 $(document).ready(function(){ setTimeout(loadDashboardOrders, 500); setInterval(loadDashboardOrders, 15000); });
+$(document).ready(function(){ try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e){} setTimeout(loadRichDashboard, 800); setInterval(loadRichDashboard, 30000); setTimeout(loadLiveTracker, 1200); setInterval(loadLiveTracker, 15000); });
 // --- End Dashboard Orders Overview ---
 
 </script>

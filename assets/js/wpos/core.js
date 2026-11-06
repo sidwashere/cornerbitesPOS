@@ -25,6 +25,7 @@ function WPOS() {
 
     var initialsetup = false;
     this.initApp = function () {
+        try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e) {}
         // set cache default to true
         $.ajaxSetup({
             cache: true
@@ -1532,7 +1533,7 @@ function WPOS() {
                 },
                 addAdditionalPayment: function(){
                     if ($('#paymentstable').length) {
-                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="cash" selected>Cash</option><option value="mpesa">MPESA</option><option value="credit">Credit</option><option value="cheque">Cheque</option></select></td><td><input class="payamount numpad" value="0.00" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
+                        $('#paymentstable').append('<tr><td><select class="paymethod"><option value="mpesa" selected>MPESA</option><option value="cash">Cash</option><option value="credit">Credit</option><option value="cheque">Cheque</option></select></td><td><input class="payamount numpad" value="0.00" /></td><td><button class="btn btn-xs btn-danger" onclick="WPOS.sales.removePayment($(this));">X</button></td></tr>');
                     }
                 },
                 addPayment: function(method){

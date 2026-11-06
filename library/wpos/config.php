@@ -2,10 +2,13 @@
 /*
  * WallacePOS API configuration file
  */
-// Extend session lifetime to 30 minutes (1800 seconds)
-ini_set('session.gc_maxlifetime', 1800);
+// Extend session lifetime to 12 hours (43200 seconds) so Admin/POS stay logged in for a full shift
+ini_set('session.gc_maxlifetime', 43200);
+ini_set('session.cookie_lifetime', 43200);
+ini_set('session.gc_probability', 1);
+ini_set('session.gc_divisor', 1000);
 if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params(1800, '/');
+    session_set_cookie_params(43200, '/');
 }
 $wposConfig = [];
 
