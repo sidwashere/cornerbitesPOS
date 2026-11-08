@@ -25,7 +25,6 @@ function addCol($pdo, $tbl, $col, $ddl) {
     }
 }
 
-// 1. Extended supplier profile
 $cols = [
     'email' => "VARCHAR(128) DEFAULT ''",
     'phone' => "VARCHAR(66) DEFAULT ''",
@@ -44,10 +43,8 @@ foreach ($cols as $col => $ddl) {
     try { addCol($pdo, 'stored_suppliers', $col, $ddl); } catch (Exception $e) { echo "ERR stored_suppliers.$col: " . $e->getMessage() . "\n"; }
 }
 
-// 2. Category images
 try { addCol($pdo, 'stored_categories', 'image', "VARCHAR(512) NOT NULL DEFAULT ''"); } catch (Exception $e) { echo "ERR stored_categories.image: " . $e->getMessage() . "\n"; }
 
-// 3. Supplier credit ledger
 $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_purchases (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   supplierid INT NOT NULL,
@@ -77,7 +74,6 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_payments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 echo "OK supplier_payments\n";
 
-// 4. Accounts (cash book)
 $pdo->exec("CREATE TABLE IF NOT EXISTS accounts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(80) NOT NULL,
@@ -112,4 +108,3 @@ $pdo->exec("INSERT IGNORE INTO accounts (name, type, sortorder) VALUES ('Cash (T
 echo "OK seeded accounts\n";
 
 echo "MIGRATION DONE\n";
-PY
