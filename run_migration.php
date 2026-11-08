@@ -45,6 +45,16 @@ foreach ($cols as $col => $ddl) {
 
 try { addCol($pdo, 'stored_categories', 'image', "VARCHAR(512) NOT NULL DEFAULT ''"); } catch (Exception $e) { echo "ERR stored_categories.image: " . $e->getMessage() . "\n"; }
 
+// Customer credit columns
+$ccols = [
+    'credit_limit' => "DECIMAL(12,2) NOT NULL DEFAULT 0",
+    'credit_due_days' => "INT NOT NULL DEFAULT 7",
+    'credit_enabled' => "TINYINT NOT NULL DEFAULT 0",
+];
+foreach ($ccols as $col => $ddl) {
+    try { addCol($pdo, 'customers', $col, $ddl); } catch (Exception $e) { echo "ERR customers.$col: " . $e->getMessage() . "\n"; }
+}
+
 $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_purchases (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   supplierid INT NOT NULL,
