@@ -10,9 +10,27 @@ class WposAccounts {
     private $data;
     function __construct($data = null) { $this->data = $data !== null ? $data : new stdClass(); }
     private function db() { return (new DbConfig())->_db; }
+    private static $_tablesOk = null;
+    private function tablesOk() {
+        if (self::$_tablesOk !== null) return self::$_tablesOk;
+        try {
+            $r = $this->db()->query("SHOW TABLES LIKE 'accounts'")->fetchColumn();
+            return self::$_tablesOk = ((bool)$r);
+        } catch (Exception $e) { return self::$_tablesOk = false; }
+    }
+    private function missing($result) {
+        $result['error'] = 'Accounts module not installed on this server — run the production migration (setup/migrate_all.sql)';
+        return $result;
+    }
+    private function zeroTotals($result) {
+        $result['data'] = ['accounts' => [], 'balance' => 0, 'total_in' => 0, 'total_out' => 0, 'net' => 0];
+        return $result;
+    }
     private function uid() { return isset($_SESSION['userId']) ? (int)$_SESSION['userId'] : null; }
 
     private function balances() {
+        if (!$this->tablesOk()) return [];
+        try {
         $pdo = $this->db();
         $out = [];
         $rows = $pdo->query(
@@ -33,14 +51,17 @@ class WposAccounts {
             $out[] = $r;
         }
         return $out;
+        } catch (Exception $e) { return []; }
     }
 
     public function list($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $result['data'] = $this->balances();
         return $result;
     }
 
     public function add($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $name = trim((string)($this->data->name ?? ''));
         $type = (string)($this->data->type ?? 'cash');
         if ($name === '') { $result['error'] = 'Account name required'; return $result; }
@@ -76,6 +97,7 @@ class WposAccounts {
 
     /** Manual entry: deposit (in), withdrawal (out) or transfer (sweep). */
     public function entry($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $kind = (string)($this->data->kind ?? 'deposit');
         $amount = round((float)($this->data->amount ?? 0), 2);
         $desc = (string)($this->data->description ?? '');
@@ -118,6 +140,7 @@ class WposAccounts {
     }
 
     public function movements($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $accId = isset($this->data->accountid) ? (int)$this->data->accountid : 0;
         $source = isset($this->data->source) ? (string)$this->data->source : '';
         $dirFilter = isset($this->data->direction) ? (string)$this->data->direction : '';
@@ -142,6 +165,7 @@ class WposAccounts {
 
     /** Rich aggregates for the Accounts page: totals by source, daily flow, filters. */
     public function stats($result) {
+        if (!$this->tablesOk()) { $result['data'] = ['totals'=>['in'=>0,'out'=>0,'net'=>0,'moves'=>0],'by_source'=>[],'daily_14d'=>[],'accounts'=>[]]; return $result; }
         $pdo = $this->db();
         $from = isset($this->data->from) ? (int)$this->data->from : 0;
         $to = isset($this->data->to) ? (int)$this->data->to : 0;
@@ -192,6 +216,7 @@ class WposAccounts {
 
     /** Dashboard-ready summary: per-account balances + grand totals. */
     public function summary($result) {
+        if (!$this->tablesOk()) return $this->zeroTotals($result);
         $bals = $this->balances();
         $in = 0; $out = 0; $bal = 0;
         foreach ($bals as $b) { $in += $b['total_in']; $out += $b['total_out']; $bal += $b['balance']; }

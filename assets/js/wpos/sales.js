@@ -648,7 +648,7 @@ function WPOSSales() {
         });
         return sum;
     }
-    function hasCreditPayment(){ return getCreditAmount() > 0.005 || $("#paymentstable .paymethod option:selected[value='credit']").length > 0; }
+    function hasCreditPayment(){ return getCreditAmount() > 0.005; } // amount-driven only: a deselected/empty credit row must never trigger credit logic
     function refreshCreditPreview(){
         var strip = $("#creditstrip");
         if (!strip.length) return;
@@ -2279,40 +2279,76 @@ function WPOSSales() {
         return uploadOfflineRecords();
     };
     function uploadOfflineRecords() {
-        if (localStorage.getItem("wpos_osales") !== null) {
-            var jsonosales = $.parseJSON(localStorage.getItem("wpos_osales"));
-            var jsonresponse;
-            var uploadcount = 1;
-            var totalcount = Object.keys(jsonosales).length;
-            for (var key in jsonosales){
-                // update status
-                WPOS.setStatusBar(2, "Uploading record "+uploadcount+" of "+totalcount);
-                // what action to perform to the offline record is kept in the a var
-                var action = jsonosales[key].a;
-                if (action=="sales/void"){
-                    action = (jsonosales[key].data.hasOwnProperty("id")?"sales/void":"sales/add"); // if sale is completely offline, use addsale method.
+        // Replay queued offline sales quietly: business-rule rejections (e.g. customer no longer
+        // credit-approved) are parked for review instead of alerting mid-shift, forever.
+        var heldReason = null;
+        var origAlert = window.alert;
+        var silenced = [];
+        window.alert = function(m){
+            silenced.push(String(m));
+            try { console.warn('Offline replay issue (held):', String(m).slice(0,120)); } catch(e){}
+        };
+        function parkSale(ref, reason){
+            try {
+                var held = {};
+                try { held = $.parseJSON(localStorage.getItem("wpos_heldsales") || "{}"); } catch(e) {}
+                var os = $.parseJSON(localStorage.getItem("wpos_osales") || "{}");
+                if (os.hasOwnProperty(ref)) {
+                    held[ref] = { data: os[ref].data, a: os[ref].a, reason: reason, dt: new Date().toISOString() };
+                    delete os[ref];
+                    localStorage.setItem("wpos_heldsales", JSON.stringify(held));
+                    localStorage.setItem("wpos_osales", JSON.stringify(os));
                 }
-                jsonresponse = WPOS.sendJsonData(action, JSON.stringify(jsonosales[key].data));
-                if (jsonresponse !== false && jsonresponse !== null) {
-                    // remove from offline temp
-                    removeOfflineSale(jsonosales[key].data.ref);
-                    // add json response to todays records
-                    addSalesRecord(jsonresponse);
-                }
-                uploadcount++;
-            }
-            var count = WPOS.sales.getOfflineSalesNum();
-            if (count > 0){
-                // damn so close, go back into offline mode
-                if (WPOS.switchToOffline()) {
+            } catch(e) {}
+        }
+        try {
+            if (localStorage.getItem("wpos_osales") !== null) {
+                var jsonosales = $.parseJSON(localStorage.getItem("wpos_osales"));
+                var jsonresponse;
+                var uploadcount = 1;
+                var totalcount = Object.keys(jsonosales).length;
+                for (var key in jsonosales){
                     // update status
-                    WPOS.setStatusBar(3, "WPOS is offline ("+count+" offline records)");
-                    return false;
+                    WPOS.setStatusBar(2, "Uploading record "+uploadcount+" of "+totalcount);
+                    // what action to perform to the offline record is kept in the a var
+                    var action = jsonosales[key].a;
+                    if (action=="sales/void"){
+                        action = (jsonosales[key].data.hasOwnProperty("id")?"sales/void":"sales/add"); // if sale is completely offline, use addsale method.
+                    }
+                    jsonresponse = WPOS.sendJsonData(action, JSON.stringify(jsonosales[key].data));
+                    if (jsonresponse !== false && jsonresponse !== null && !(jsonresponse && jsonresponse.errorCode && jsonresponse.errorCode !== 'OK')) {
+                        // remove from offline temp
+                        removeOfflineSale(jsonosales[key].data.ref);
+                        // add json response to todays records
+                        addSalesRecord(jsonresponse);
+                    } else if (jsonresponse === false || jsonresponse === null
+                        || (jsonresponse && jsonresponse.errorCode && jsonresponse.errorCode !== 'OK'
+                            && jsonresponse.errorCode !== 'OK' && String(jsonresponse.errorCode) !== 'undefined')) {
+                        var errTxt = (silenced.length ? silenced[silenced.length-1] : 'server rejected the record');
+                        parkSale(jsonosales[key].data.ref, errTxt);
+                        heldReason = heldReason || errTxt;
+                    }
+                    uploadcount++;
                 }
-            } else {
-                $("#backup_btn").hide();
-                return true;
+                silenced = [];
+                var count = WPOS.sales.getOfflineSalesNum();
+                if (count > 0){
+                    // damn so close, go back into offline mode
+                    if (WPOS.switchToOffline()) {
+                        // update status
+                        WPOS.setStatusBar(3, "WPOS is offline ("+count+" offline records)");
+                        return false;
+                    }
+                } else {
+                    $("#backup_btn").hide();
+                    return true;
+                }
             }
+        } finally {
+            try { window.alert = origAlert; } catch(e) {}
+        }
+        if (heldReason) {
+            try { WPOS.setStatusBar(3, "Some records need review (held)", "A queued sale failed validation: " + String(heldReason).slice(0,80), 0); } catch(e) {}
         }
         return true;
     }

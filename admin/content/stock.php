@@ -35,31 +35,31 @@
 <div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #e3e3d8;">
     <div id="stockKpis" style="margin-bottom:2px;"></div>
 </div>
-<div class="row" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #e3e3d8;">
-    <div class="col-sm-4">
+<div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #e3e3d8;">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-bar-chart"></i> Stock value by supplier</h4></div>
             <div class="widget-body"><div class="cb-scroll" style="max-height:210px;"><table class="table table-striped cb-compact" style="margin:0; font-size:12px; min-width:400px;"><thead><tr><th>Supplier</th><th style="text-align:right;">Value</th><th style="text-align:right;">Units</th><th style="text-align:center;">SKUs</th></tr></thead><tbody id="bySupplierBody"><tr><td colspan="4"><div class="cb-skel-row"></div></td></tr></tbody></table></div></div></div>
     </div>
-    <div class="col-sm-4">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-exchange"></i> Stock movements</h4></div>
             <div class="widget-body"><div class="cb-scroll" style="max-height:210px;"><table class="table table-striped cb-compact" style="margin:0; font-size:12px; min-width:400px;"><thead><tr><th>Period</th><th style="text-align:right;">Units in</th><th style="text-align:right;">Units out</th><th style="text-align:center;">Moves</th></tr></thead><tbody id="movesBody"><tr><td colspan="4"><div class="cb-skel-row"></div></td></tr></tbody></table></div></div></div>
     </div>
-    <div class="col-sm-4">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-warning-sign orange"></i> Low stock (&le; alert level)</h4></div>
             <div class="widget-body"><div class="cb-scroll" style="max-height:210px;"><table class="table table-striped cb-compact" style="margin:0; font-size:12px; min-width:420px;"><thead><tr><th>Item</th><th>Supplier</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Alert &le;</th><th></th></tr></thead><tbody id="lowStockBody"><tr><td colspan="5"><div class="cb-skel-row"></div></td></tr></tbody></table></div></div></div>
     </div>
 </div>
 
-<div class="row" style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #e3e3d8;">
-    <div class="col-sm-4">
+<div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #e3e3d8;">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-map-marker"></i> Value by location</h4></div>
             <div class="widget-body"><div id="byLocChart" style="padding:8px;"></div></div></div>
     </div>
-    <div class="col-sm-4">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-trophy"></i> Top 5 items by stock value</h4></div>
             <div class="widget-body"><div id="topValueChart" style="padding:8px;"></div></div></div>
     </div>
-    <div class="col-sm-4">
+    <div style="flex:1 1 280px; min-width:280px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-time"></i> Recent movements</h4></div>
             <div class="widget-body"><div class="cb-scroll" style="max-height:210px;"><table class="table table-striped cb-compact" style="margin:0; font-size:12px; min-width:420px;"><thead><tr><th>When</th><th>Item</th><th>Type</th><th style="text-align:right;">Qty</th><th>Loc</th></tr></thead><tbody id="recentMovesBody"><tr><td colspan="5"><div class="cb-skel-row"></div></td></tr></tbody></table></div></div></div>
     </div>

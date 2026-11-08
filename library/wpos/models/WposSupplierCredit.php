@@ -8,6 +8,19 @@ class WposSupplierCredit {
     private $data;
     function __construct($data = null) { $this->data = $data !== null ? $data : new stdClass(); }
     private function db() { return (new DbConfig())->_db; }
+    private static $_tablesOk = null;
+    /** Tables-installed guard so missing migrations degrade instead of crashing. */
+    private function tablesOk() {
+        if (self::$_tablesOk !== null) return self::$_tablesOk;
+        try {
+            $r = $this->db()->query("SHOW TABLES LIKE 'supplier_purchases'")->fetchColumn();
+            return self::$_tablesOk = ((bool)$r);
+        } catch (Exception $e) { return self::$_tablesOk = false; }
+    }
+    private function missing($result) {
+        $result['error'] = 'Supplier ledger not installed on this server — run the production migration (setup/migrate_all.sql)';
+        return $result;
+    }
 
     private function supRow($id) {
         $pdo = $this->db();
@@ -22,6 +35,8 @@ class WposSupplierCredit {
     }
 
     private function purchaseBalances($supid) {
+        if (!$this->tablesOk()) return [];
+        try {
         $pdo = $this->db();
         $st = $pdo->prepare(
             "SELECT p.id, p.ref, p.total, p.paid_immediate, p.balance, p.status, p.processdt, p.duedt, p.notes, p.dt, p.items_json,
@@ -56,9 +71,11 @@ class WposSupplierCredit {
             $r['overdue'] = ($r['owed'] > 0.005 && $r['duedt'] < $now);
         }
         return $out;
+        } catch (Exception $e) { return []; }
     }
 
     public function statement($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $id = isset($this->data->supplierid) ? (int)$this->data->supplierid : (isset($this->data->id) ? (int)$this->data->id : 0);
         if ($id <= 0) { $result['error'] = 'supplierid required'; return $result; }
         $sup = $this->supRow($id);
@@ -93,6 +110,7 @@ class WposSupplierCredit {
     }
 
     public function report($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $pdo = $this->db();
         $rows = $pdo->query("SELECT id, name, phone, email, credit_limit, credit_due_days, credit_enabled FROM stored_suppliers ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as &$r) {
@@ -126,6 +144,7 @@ class WposSupplierCredit {
     }
 
     public function search($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $q = isset($this->data->q) ? trim((string)$this->data->q) : '';
         $pdo = $this->db();
         if ($q === '') {
@@ -147,6 +166,7 @@ class WposSupplierCredit {
 
     /** Create a purchase (credit and/or immediate pay) + adjust stock. */
     public function purchase($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $supid = isset($this->data->supplierid) ? (int)$this->data->supplierid : 0;
         $items = isset($this->data->items) && is_array($this->data->items) ? $this->data->items : [];
         $paidImmediate = isset($this->data->paid_immediate) ? (float)$this->data->paid_immediate : 0;
@@ -221,6 +241,7 @@ class WposSupplierCredit {
 
     /** Record payment against purchases (FIFO or specific ref). */
     public function pay($result) {
+        if (!$this->tablesOk()) return $this->missing($result);
         $supid = isset($this->data->supplierid) ? (int)$this->data->supplierid : 0;
         $amount = isset($this->data->amount) ? (float)$this->data->amount : 0;
         $method = isset($this->data->method) ? (string)$this->data->method : 'mpesa';
@@ -270,6 +291,7 @@ class WposSupplierCredit {
 
     /** Dashboard tallies: total owed, overdue, due-7d, purchase volume (all-time + range). */
     public function dashboard($result) {
+        if (!$this->tablesOk()) { $result['data'] = ['owed'=>0,'overdue'=>0,'due_7d'=>0,'debtors'=>0,'purchases_total'=>0,'paid_30d'=>0,'purchases_30d'=>0,'top_suppliers'=>[]]; return $result; }
         $pdo = $this->db();
         $sups = $pdo->query("SELECT id FROM stored_suppliers")->fetchAll(PDO::FETCH_COLUMN);
         $owed = 0; $overdue = 0; $due7 = 0; $debtors = 0; $top = [];
