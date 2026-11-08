@@ -1605,8 +1605,10 @@ function WPOSSales() {
             try { WPOS.setStatusBar(2, "Uploading Record..."); } catch(e){}
             try {
                 WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){
-
                     try {
+                        if (data && data.error && data.error !== 'OK') {
+                            alert('Sale failed: ' + data.error);
+                        }
                         if (data && WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref);
                     } catch(e){}
                 });
@@ -1615,11 +1617,13 @@ function WPOSSales() {
             // Try to switch online and retry
             try { if (typeof WPOS.switchToOnline === 'function') WPOS.switchToOnline(); } catch(e){}
             try { WPOS.sendJsonDataAsync("sales/add", JSON.stringify(salesobj), function(data){
-                try { alert('upload resp2: ' + JSON.stringify(data)); } catch(e){}
                 try {
+                    if (data && data.error && data.error !== 'OK') {
+                        alert('Sale failed: ' + data.error);
+                    }
                     if (data && WPOS.sales && WPOS.sales.postSaleUpload) WPOS.sales.postSaleUpload(data, salesobj.ref);
                 } catch(e){}
-            }); } catch(e) { alert('upload err2: ' + e); console.error(e); }
+            }); } catch(e) { console.error(e); }
         }
         var recemailed = false;
         try { recemailed = $("#emailreceipt").is(":checked"); } catch(e) {}
