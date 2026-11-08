@@ -51,7 +51,7 @@
 </div>
 
 <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #e3e3d8;">
-    <div style="flex:1 1 100%; min-width:280px;">
+    <div style="flex:1 1 420px; min-width:280px; max-width:520px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-time"></i> Recent movements</h4></div>
             <div class="widget-body"><div class="cb-scroll" style="max-height:210px;"><table class="table table-striped cb-compact" style="margin:0; font-size:12px; min-width:420px;"><thead><tr><th>When</th><th>Item</th><th>Type</th><th style="text-align:right;">Qty</th><th>Loc</th></tr></thead><tbody id="recentMovesBody"><tr><td colspan="5"><div class="cb-skel-row"></div></td></tr></tbody></table></div></div></div>
     </div>
