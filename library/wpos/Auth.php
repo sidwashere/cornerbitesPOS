@@ -123,9 +123,39 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
      */
     public function isLoggedIn(){
         if (isset($_SESSION['username'])) {
+            $this->touchSession();
             return true;
         }
         return false;
+    }
+
+    /**
+     * Sliding 12h idle: extend the browser cookie + server GC on every
+     * authenticated request so active users never age out mid-shift.
+     * Expire only after 43200s of true inactivity.
+     */
+    private function touchSession(){
+        try {
+            $now = time();
+            $last = isset($_SESSION['last_activity']) ? (int)$_SESSION['last_activity'] : 0;
+            if ($last > 0 && ($now - $last) > 43200) {
+                // truly idle > 12h — expire
+                $_SESSION = array();
+                @session_destroy();
+                return;
+            }
+            $_SESSION['last_activity'] = $now;
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $p = session_get_cookie_params();
+                $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+                @setcookie(session_name(), session_id(), $now + 43200, '/', '', $secure, true);
+            }
+        } catch (Exception $e) {}
+        // (12h ini values are set once in config.php before session_start — not here)
+        // Csrf is set once per PHP session on login; never rotate on renew (breaks sibling tabs)
+        if (empty($_SESSION['csrf_token'])) {
+            try { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32)); } catch (Exception $e) {}
+        }
     }
 
     /**
@@ -200,12 +230,13 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
             $_SESSION['isadmin']  = ($username === 'staff') ? 1 : $user['admin'];
             $_SESSION['permissions']  = json_decode($user['permissions'], true);
 
-            // CSRF Token
+            // CSRF Token (stable for the life of this PHP session — never rotate on renew)
             if (function_exists('mcrypt_create_iv')) {
                 $_SESSION['csrf_token'] = bin2hex(mcrypt_create_iv(32, MCRYPT_DEV_URANDOM));
             } else {
                 $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
             }
+            $_SESSION['last_activity'] = time();
 
             if ($getToken!==false)
                 $this->setNewSessionToken($user['id'], $user['hash']);
@@ -249,9 +280,13 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
                 Logger::write("Session renew failed for ".$username.", the user has been disabled.", "AUTH");
                 return -1; // the user is disabled
             }
-            // check tokens
+            // check tokens: prefer this session's token so concurrent
+            // devices (and tabs) for the same user stay logged in.
+            $sessionToken = isset($_SESSION['auth_token']) ? $_SESSION['auth_token'] : null;
+            $sessionHash = $sessionToken !== null ? hash('sha256', $user['hash'].$sessionToken) : null;
             $validation_hash = hash('sha256', $user['hash'].$user['token']);
-            if ($auth_hash==$validation_hash){
+            $tokenOk = ($sessionHash !== null && $auth_hash==$sessionHash) || ($auth_hash==$validation_hash);
+            if ($tokenOk){
                 // set session values
                 $_SESSION['username'] = $username;
                 $_SESSION['userId']   = $user['id'];
@@ -259,15 +294,23 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
             $_SESSION['isadmin']  = ($username === 'staff') ? 1 : $user['admin'];
                 $_SESSION['permissions']  = json_decode($user['permissions'], true);
 
-                // CSRF Token
-                if (function_exists('mcrypt_create_iv')) {
-                    $_SESSION['csrf_token'] = bin2hex(mcrypt_create_iv(32, MCRYPT_DEV_URANDOM));
-                } else {
-                    $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
+                // CSRF: keep the existing token (rotating here kicks sibling tabs with their in-flight token)
+                if (empty($_SESSION['csrf_token'])) {
+                    try { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32)); } catch (Exception $e) {}
                 }
+                $_SESSION['last_activity'] = time();
 
-                //$this->hash = $user['hash'];
-                $this->setNewSessionToken($user['id'], $user['hash']);
+                // Keep the same token for the life of this session (no rotation
+                // on renew) so concurrent logins are never kicked out.
+                if (isset($_SESSION['auth_token']) && $_SESSION['auth_token'] !== '') {
+                    $this->reuseSessionToken($user['id'], $user['hash']);
+                } else {
+                    // Resumed session (no session token): adopt DB token as-is.
+                    $_SESSION['auth_token'] = $user['token'];
+                    $hash = hash('sha256', $user['hash'].$user['token']);
+                    $_SESSION['auth_hash'] = $hash;
+                    $this->authTokens = ['token'=>$user['token'], 'auth_hash'=>$hash];
+                }
                 // log data
                 Logger::write("Authentication successful for user:".$username, "AUTH");
 
@@ -295,13 +338,31 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
      * @param $password_hash
      */
     private function setNewSessionToken($id, $password_hash){
-        // create unique token
+        // create unique token per session (allows multiple concurrent logins
+        // for the same user on different browsers/devices)
         $tokens = ['token'=>WposAdminUtilities::getToken()];
         // create auth_hash
         $tokens['auth_hash'] = hash('sha256', $password_hash.$tokens['token']);
-        // save tokens
+        // Persist in the DB for resumed-session fallback, and in the PHP
+        // session so renew validates against THIS session (not the DB's
+        // single shared token which would kick other devices out).
         $this->authMdl->setAuthToken($id, $tokens['token']);
+        $_SESSION['auth_token'] = $tokens['token'];
+        $_SESSION['auth_hash'] = $tokens['auth_hash'];
         $this->authTokens = $tokens;
+    }
+    private function reuseSessionToken($id, $password_hash){
+        // Reuse the existing session token on renew (no DB rotation) so
+        // other devices/tabs for the same user are never invalidated.
+        $token = isset($_SESSION['auth_token']) ? $_SESSION['auth_token'] : null;
+        if (empty($token)) {
+            $this->setNewSessionToken($id, $password_hash);
+            return;
+        }
+        $hash = hash('sha256', $password_hash.$token);
+        $_SESSION['auth_token'] = $token;
+        $_SESSION['auth_hash'] = $hash;
+        $this->authTokens = ['token'=>$token, 'auth_hash'=>$hash];
     }
     // Customer Authentication methods
     /**

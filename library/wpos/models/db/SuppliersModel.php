@@ -74,12 +74,21 @@ class SuppliersModel extends DbConfig
      * @param $name
      * @return bool|int Returns false on an unexpected failure or number of affected rows
      */
-    public function edit($id, $name)
+    public function edit($id, $name, $extra = null)
     {
-
-        $sql = "UPDATE stored_suppliers SET name= :name WHERE id= :id;";
+        $sql = "UPDATE stored_suppliers SET name= :name";
         $placeholders = [":id"=>$id, ":name"=>$name];
-
+        // extended supplier profile (contact + credit) — only columns that exist (post-migration)
+        if (is_array($extra)) {
+            $allowed = ['email','phone','mobile','address','suburb','postcode','state','country','notes','credit_limit','credit_due_days','credit_enabled'];
+            foreach ($allowed as $col) {
+                if (array_key_exists($col, $extra) && $extra[$col] !== null) {
+                    $sql .= ", $col= :$col";
+                    $placeholders[":$col"] = $extra[$col];
+                }
+            }
+        }
+        $sql .= " WHERE id= :id;";
         return $this->update($sql, $placeholders);
     }
 

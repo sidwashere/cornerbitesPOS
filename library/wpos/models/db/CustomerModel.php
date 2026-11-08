@@ -91,19 +91,14 @@ class CustomerModel extends DbConfig
     {
         $sql          = 'SELECT * FROM customers';
         $placeholders = [];
+        // Named placeholders (concatenated values + numeric bind keys broke PDO bind)
         if ($customerId !== null) {
-            if (empty($placeholders)) {
-                $sql .= ' WHERE';
-            }
-            $sql .= ' id = '.$customerId;
-            $placeholders[] = $customerId;
+            $sql .= (empty($placeholders) ? ' WHERE' : ' AND') . ' id = :cid';
+            $placeholders[':cid'] = (int)$customerId;
         }
         if ($email !== null) {
-            if (empty($placeholders)) {
-                $sql .= ' WHERE';
-            }
-            $sql .= ' email = '.$email;
-            $placeholders[] = $email;
+            $sql .= (empty($placeholders) ? ' WHERE' : ' AND') . ' email = :mail';
+            $placeholders[':mail'] = $email;
         }
         if ($limit !== 0 && is_int($limit)) {
             $sql .= ' LIMIT :limit';
@@ -130,25 +125,16 @@ class CustomerModel extends DbConfig
         $sql          = 'SELECT * FROM customer_contacts';
         $placeholders = [];
         if ($contactId !== null) {
-            if (empty($placeholders)) {
-                $sql .= ' WHERE';
-            }
-            $sql .= ' id = '.$contactId;
-            $placeholders[] = $contactId;
+            $sql .= (empty($placeholders) ? ' WHERE' : ' AND') . ' id = :cid';
+            $placeholders[':cid'] = (int)$contactId;
         }
         if ($custId !== null) {
-            if (empty($placeholders)) {
-                $sql .= ' WHERE';
-            }
-            $sql .= ' customerid = '.$custId;
-            $placeholders[] = $custId;
+            $sql .= (empty($placeholders) ? ' WHERE' : ' AND') . ' customerid = :cust';
+            $placeholders[':cust'] = (int)$custId;
         }
         if ($email !== null) {
-            if (empty($placeholders)) {
-                $sql .= ' WHERE';
-            }
-            $sql .= ' email = '.$email;
-            $placeholders[] = $email;
+            $sql .= (empty($placeholders) ? ' WHERE' : ' AND') . ' email = :mail';
+            $placeholders[':mail'] = $email;
         }
         if ($limit !== 0 && is_int($limit)) {
             $sql .= ' LIMIT :limit';
@@ -178,7 +164,7 @@ class CustomerModel extends DbConfig
      * @param string $gid
      * @return bool|int Returns false on an unexpected failure or the number of rows affected by the update operation
      */
-    public function edit($id, $email, $name, $phone, $mobile, $address, $suburb, $postcode, $state, $country, $notes=null, $gid=null)
+    public function edit($id, $email, $name, $phone, $mobile, $address, $suburb, $postcode, $state, $country, $notes=null, $gid=null, $creditLimit=null, $creditDueDays=null, $creditEnabled=null)
     {
 
         $sql = "UPDATE customers SET email= :email, name= :name, phone= :phone, mobile= :mobile, address= :address, suburb= :suburb, postcode= :postcode, state= :state, country= :country";
@@ -187,6 +173,16 @@ class CustomerModel extends DbConfig
             $sql.= ", notes= :notes";
             $placeholders[':notes'] = $notes;
         }
+        // credit fields only when columns exist (migrated) and values provided
+        try {
+            $pdo = $this->_db;
+            $hasCredit = (bool)$pdo->query("SHOW COLUMNS FROM customers LIKE 'credit_limit'")->fetch();
+            if ($hasCredit) {
+                if ($creditLimit !== null) { $sql .= ", credit_limit= :climit"; $placeholders[':climit'] = max(0, (float)$creditLimit); }
+                if ($creditDueDays !== null) { $sql .= ", credit_due_days= :cdays"; $placeholders[':cdays'] = max(0, (int)$creditDueDays); }
+                if ($creditEnabled !== null) { $sql .= ", credit_enabled= :cen"; $placeholders[':cen'] = (int)(bool)$creditEnabled; }
+            }
+        } catch (Exception $e) {}
         if ($gid!==null){
             $sql.= ", googleid= :googleid";
             $placeholders[':googleid'] = $gid;

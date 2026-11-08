@@ -1102,6 +1102,22 @@ function WPOSKitchen() {
             .catch(function () { /* ignore transient poll errors */ });
     }
 
+    function _updateKitchenBrief(sales){
+        try {
+            var q = 0, prep = 0, ready = 0, oldest = null;
+            var now = Date.now();
+            (sales || []).forEach(function(s){
+                var st = s.orderstatus || (s.status === 0 ? 'queued' : 'completed');
+                if (st === 'completed') return;
+                if (st === 'preparing') prep++; else if (st === 'ready') ready++; else q++;
+                var ts = s.processdt || (s.received_at ? Date.parse(s.received_at) : 0);
+                if (st !== 'ready' && ts && (oldest === null || ts < oldest)) oldest = ts;
+            });
+            var set = function(id, v){ var el = document.getElementById(id); if (el && el.textContent !== String(v)) el.textContent = v; };
+            set('kQueued', q); set('kPreparing', prep); set('kReady', ready);
+            set('kOldest', oldest ? Math.max(0, Math.round((now - oldest) / 60000)) + ' min' : '—');
+        } catch(e) {}
+    }
     function _reconcile(sales){
         try { if (typeof checkNewOrders === 'function') checkNewOrders(sales, 'website'); } catch(e){}
         var activeRefs = {};
@@ -1134,6 +1150,7 @@ function WPOSKitchen() {
                 $(this).remove();
             }
         });
+        _updateKitchenBrief(sales);
     }
 
     function _updateKitchenBadge(ref, status){
@@ -1231,7 +1248,17 @@ function WPOSKitchenMod(){
         elem.find('.orderbox_customer').text(custStr);
         var addr = saleobj.delivery_address || null;
         if (addr && typeof addr === 'object') addr = (addr.address || addr.text || JSON.stringify(addr));
-        elem.find('.orderbox_address').text(addr || '');
+        elem.find('.orderbox_address').text(addr ? String(addr) : '');
+        var tab = saleobj.table_number || null;
+        try {
+            var _tabEl = elem.find('.orderbox_table');
+            if (_tabEl && _tabEl.length) _tabEl.text(tab ? 'Table ' + tab : '');
+            else if (tab) {
+                var _addrEl = elem.find('.orderbox_address');
+                var _cur = _addrEl.text() || '';
+                _addrEl.text((_cur ? _cur + ' · ' : '') + 'Table ' + tab);
+            }
+        } catch(e) {}
         elem.find('.orderbox_channel').text(saleobj.source || '');
         elem.find('.orderbox_notes').text(saleobj.notes || '');
         elem.find('.orderbox_orderdt').text(WPOS.util.getDateFromTimestamp(order.processdt));

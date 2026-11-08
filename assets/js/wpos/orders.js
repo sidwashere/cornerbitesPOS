@@ -3,8 +3,17 @@ function WPOSOrders(){
     try {
         setInterval(function(){
             try {
+                if (document.hidden) return; // keep stale in background — no flash on return
                 if ($("#onlineordersbody").length && $("#wrapper").tabs('option','active') == 2) {
                     if(typeof self.loadOnlineOrders === 'function'){ self.loadOnlineOrders(); }
+                } else if (document.getElementById('posBrief')) {
+                    // Keep the Till brief fresh even off the Online tab
+                    if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
+                        WPOS.sendJsonDataAsync('orders/get', JSON.stringify({limit: 100}), function(data){
+                            var sales = Array.isArray(data) ? data : (data && data.data ? data.data : []);
+                            try { updatePosBrief(Array.isArray(sales) ? sales : Object.values(sales || {})); } catch(e) {}
+                        }, function(){});
+                    }
                 }
             } catch(e){}
         }, 15000);
@@ -147,7 +156,11 @@ function WPOSOrders(){
     this.loadOnlineOrders = function(){
         var tbody = $("#onlineordersbody");
         if (tbody.length == 0) return;
-        tbody.html('<tr><td colspan="11" class="center">Loading...</td></tr>');
+        if (document.hidden) return; // keep stale while tab is in background — no flash on return
+        // First paint only shows a loader; refreshes keep stale rows until data changes
+        if (!tbody.attr('data-cb-sig') && tbody.text().trim() === '') {
+            tbody.html('<tr><td colspan="12" class="center">Loading...</td></tr>');
+        }
         if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
             WPOS.sendJsonDataAsync("orders/get", JSON.stringify({limit: 100}), function(data){
                 if (!data) { tbody.html('<tr><td colspan="11" class="center text-danger">no data</td></tr>'); return; }
@@ -164,6 +177,7 @@ function WPOSOrders(){
                     var statusClass = {'queued':'warning','preparing':'info','ready':'success','completed':'default','received':'warning'}[status] || 'default';
                     var custName = s.customer ? (s.customer.name || s.customer.first_name || '') : '-';
                     var custPhone = s.customer ? (s.customer.phone || s.customer.telephone || '') : '-';
+                    var locText = s.delivery_address || (s.table_number ? 'Table ' + s.table_number : (s.order_type ? s.order_type : '-'));
                     var payMethod = s.payment_method || 'mpesa till';
                     rows += '<tr>'
                         + '<td>'+(s.id||'-')+'</td>'
@@ -171,6 +185,7 @@ function WPOSOrders(){
                         + '<td>'+(s.source||'pos')+'</td>'
                         + '<td>'+custName+'</td>'
                         + '<td>'+custPhone+'</td>'
+                        + '<td style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis;" title="'+String(locText).replace(/"/g,'&quot;')+'">'+String(locText).replace(/</g,'&lt;')+'</td>'
                         + '<td>'+items+'</td>'
                         + '<td>'+(s.total||0)+'/=</td>'
                         + '<td>'+payMethod+'</td>'
@@ -185,13 +200,50 @@ function WPOSOrders(){
                         + '</td>'
                         + '</tr>';
                 });
-                if (!rows) rows = '<tr><td colspan="11" class="center">No online orders yet.</td></tr>';
-                tbody.html(rows);
-            });
+                if (!rows) rows = '<tr><td colspan="12" class="center">No online orders yet.</td></tr>';
+                // Flicker-free: only write when the rendered list actually changed
+                if (typeof WPOS !== 'undefined' && WPOS.util && typeof WPOS.util.patchIfChanged === 'function') {
+                    WPOS.util.patchIfChanged(tbody, rows);
+                } else { tbody.html(rows); }
+                try { updatePosBrief(Array.isArray(sales) ? sales : Object.values(sales || {})); } catch(e) {}
+            }, function(){ /* keep stale rows on transient errors; never alert from a background refresh */ });
         } else {
-            tbody.html('<tr><td colspan="11" class="center text-danger">WPOS not ready</td></tr>');
+            tbody.html('<tr><td colspan="12" class="center text-danger">WPOS not ready</td></tr>');
         }
     };
+
+    function updatePosBrief(sales){
+        var q = 0, prep = 0, ready = 0, today = 0, oldest = null;
+        var now = Date.now();
+        (sales || []).forEach(function(s){
+            var st = s.orderstatus || (s.status == 1 ? 'completed' : (s.status == 0 ? 'queued' : ''));
+            if (st === 'queued') q++;
+            else if (st === 'preparing') prep++;
+            else if (st === 'ready') ready++;
+            else if (st === 'completed') today += parseFloat(s.total || 0);
+            var ts = s.processdt || (s.received_at ? Date.parse(s.received_at) : 0);
+            if ((st === 'queued' || st === 'preparing') && ts && (oldest === null || ts < oldest)) oldest = ts;
+        });
+        var setText = function(id, v){ var el = document.getElementById(id); if (el && el.textContent !== String(v)) el.textContent = v; };
+        setText('bQueued', q); setText('bPreparing', prep); setText('bReady', ready);
+        setText('bOldest', oldest ? Math.max(0, Math.round((now - oldest) / 60000)) + ' min' : '—');
+        setText('bToday', (typeof WPOS !== 'undefined' && WPOS.util && WPOS.util.money) ? WPOS.util.money(today) : ('KSh ' + today.toFixed(2)));
+    }
+    var _lowTick = null;
+    function refreshLowStockBrief(){
+        try {
+            if (typeof WPOS !== 'undefined' && WPOS.sendJsonDataAsync) {
+                WPOS.sendJsonDataAsync('stock/stats', JSON.stringify({}), function(res){
+                    var el = document.getElementById('bLow');
+                    if (el && res && res.kpis) el.textContent = (res.kpis.low_stock || 0) + ' items';
+                }, function(){ /* silent background poll */ });
+            }
+        } catch(e) {}
+    }
+    try {
+        refreshLowStockBrief();
+        if (!_lowTick) _lowTick = setInterval(function(){ if (!document.hidden) refreshLowStockBrief(); }, 60000);
+    } catch(e) {}
 
     this.updateOnlineStatus = function(ref, status){
         if (typeof WPOS !== 'undefined' && WPOS.sendJsonData){

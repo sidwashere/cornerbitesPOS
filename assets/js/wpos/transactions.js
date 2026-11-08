@@ -56,7 +56,7 @@ function WPOSTransactions() {
                         loadLocalTransactions();
                         try { if (datatable && datatable.api) datatable.api().fnDraw(false); } catch(e2){}
                     }
-                });
+                }, function(){ /* silent background poll */ });
             }
         } catch(e){}
     };
@@ -132,11 +132,20 @@ function WPOSTransactions() {
         return record;
     }
 
+    var _salesSig = '';
     function loadIntoTable(sales){
         tableData = [];
         for (var key in sales){
             tableData.push(normalizeTransactionRecord(sales[key]));
         }
+        // Flicker-free: skip the full DataTables rebuild when nothing meaningful changed
+        try {
+            var sig = WPOS.util.sig(tableData.map(function(r){ return (r.ref||r.id) + ':' + (r.total||0) + ':' + getTransactionStatus(r.ref); }).join('|'));
+            // include offline/sync markers so pending states update
+            sig += ':' + Object.keys(WPOS.getSalesTable ? WPOS.getSalesTable() : {}).length;
+            if (sig === _salesSig) return;
+            _salesSig = sig;
+        } catch(e) {}
         datatable.fnClearTable(false);
         datatable.fnAddData(tableData, false);
         datatable.api().draw(false);
@@ -221,6 +230,15 @@ function WPOSTransactions() {
 
     function populateTransactionInfo(ref){
         var record = getTransactionRecord(ref);
+        try {
+            if (record && !Array.isArray(record.items)) {
+                var _map = record.items && typeof record.items === 'object' ? Object.keys(record.items).map(function(k){ return record.items[k]; }) : [];
+                record.items = _map.map(function(it){ var q=parseInt(it.qty||1,10)||1; var pr=parseFloat(it.price||0)||0; return {id:it.id||0,qty:q,name:it.name||'Item',unit:pr,price:q*pr,tax:{values:{}},mod:{items:[]}}; });
+            }
+            if (record && !Array.isArray(record.payments)) record.payments = [];
+            if (record && (record.subtotal === undefined || record.subtotal === null)) record.subtotal = record.total || 0;
+            if (record && !record.hasOwnProperty('salenotes') && record.hasOwnProperty('notes')) record.salenotes = record.notes;
+        } catch(e) {}
         var status = getTransactionStatus(ref);
         if (record===false){
             alert("Could not find the transaction record!");
@@ -235,6 +253,18 @@ function WPOSTransactions() {
         $("#transuser").text((config.users.hasOwnProperty(record.userid) ? config.users[record.userid].username : 'NA'));
         $("#transdev").text((config.devices.hasOwnProperty(record.devid) ? config.devices[record.devid].name : 'NA'));
         $("#transloc").text((config.locations.hasOwnProperty(record.locid) ? config.locations[record.locid].name : 'NA'));
+        try {
+            var srcLabel = record.source || record.channel || 'pos';
+            var srcNames = {website:'Website', pos:'POS', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone', dinein:'Dine In', delivery:'Delivery', pickup:'Pickup'};
+            if ($('#transsource').length) $("#transsource").text((srcNames[String(srcLabel).toLowerCase()] || srcLabel) + (record.orderstatus ? ' (' + record.orderstatus + ')' : ''));
+            if ($('#transordertype').length) $("#transordertype").text(record.order_type || '-');
+            var deliv = record.delivery_address || '';
+            if (typeof deliv === 'object' && deliv) deliv = deliv.address || deliv.text || JSON.stringify(deliv);
+            if ($('#transdelivery').length) $("#transdelivery").text(deliv || '-');
+            if ($('#transtable').length) $("#transtable").text(record.table_number ? 'Table ' + record.table_number : '-');
+            if ($('#transexternal').length) $("#transexternal").text(record.external_ref || '-');
+            if ($('#transcustomer').length && record.customer) $("#transcustomer").text((record.customer.name||'') + (record.customer.phone ? ' ('+record.customer.phone+')' : ''));
+        } catch(e) {}
         $("#transnotes").val(record.salenotes);
 
         $("#transsubtotal").text(WPOS.util.currencyFormat(record.subtotal));
@@ -286,12 +316,15 @@ function WPOSTransactions() {
     function populateItemsTable(items){
         var itemtable = $("#transitemtable");
         $(itemtable).html('');
+        if (!items) return;
+        if (!Array.isArray(items)) { try { items = Object.keys(items).map(function(k){ return items[k]; }).map(function(it){ var q=parseInt(it.qty||1,10)||1; var pr=parseFloat(it.price||0)||0; return {id:it.id||0,qty:q,name:it.name||'Item',unit:pr,price:q*pr,tax:{values:{}},mod:{items:[]}}; }); } catch(e){ return; } }
         var taxitems = WPOS.getTaxTable().items;
         for (var i = 0; i<items.length; i++){
             // tax details
             var taxStr = "";
-            for (var x in items[i].tax.values){
-                taxStr += WPOS.util.currencyFormat(items[i].tax.values[x]) + " (" + taxitems[x].name + " " + taxitems[x].value + "%) <br/>";
+            var _tvals = (items[i].tax && items[i].tax.values) ? items[i].tax.values : {};
+            for (var x in _tvals){
+                taxStr += WPOS.util.currencyFormat(_tvals[x]) + " (" + taxitems[x].name + " " + taxitems[x].value + "%) <br/>";
             }
             if (taxStr == "")
                 taxStr = WPOS.util.currencyFormat(0.00);
@@ -310,6 +343,8 @@ function WPOSTransactions() {
     function populatePaymentsTable(payments){
         var paytable =$("#transpaymenttable");
         $(paytable).html('');
+        if (!payments) return;
+        if (!Array.isArray(payments)) { try { payments = Object.keys(payments).map(function(k){ return payments[k]; }); } catch(e){ return; } }
         var method, amount;
         for (var i = 0; i<payments.length; i++){
             // catch extras

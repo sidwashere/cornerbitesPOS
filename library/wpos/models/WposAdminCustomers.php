@@ -48,6 +48,8 @@ class WposAdminCustomers {
      */
     public function addCustomer($result)
     {
+        // Walk-in customers often have no postcode (Kenya) — allow blank, normalize to "0"
+        if (!isset($this->data->postcode) || trim((string)$this->data->postcode) === '') $this->data->postcode = '0';
         $jsonval = new JsonValidate($this->data, '{"postcode":""}');
         if (($errors = $jsonval->validate()) !== true) {
             $result['error'] = $errors;
@@ -68,6 +70,10 @@ class WposAdminCustomers {
      * @return bool|string
      */
     public static function addCustomerData($data){
+        if (!isset($data->postcode) || trim((string)$data->postcode) === '') $data->postcode = '0';
+        // Mobile/Postcode inputs removed from UI (phone suffices) — default missing to empty
+        if (!isset($data->mobile)) $data->mobile = '';
+        if (!isset($data->email)) $data->email = ''; if (!isset($data->name)) $data->name = ''; if (!isset($data->phone)) $data->phone = ''; if (!isset($data->address)) $data->address = ''; if (!isset($data->suburb)) $data->suburb = ''; if (!isset($data->state)) $data->state = ''; if (!isset($data->country)) $data->country = ''; if (!isset($data->notes)) $data->notes = '';
         $settings = WposAdminSettings::getSettingsObject('general');
         $gid = '';
         if ($settings->gcontact==1){
@@ -119,6 +125,10 @@ class WposAdminCustomers {
      * @return bool|string
      */
     public static function updateCustomerData($data){
+        // tolerate UI that no longer sends mobile/postcode
+        if (isset($data->postcode) && trim((string)$data->postcode) === '') $data->postcode = '0';
+        if (!isset($data->mobile)) $data->mobile = '';
+        if (!isset($data->email)) $data->email = ''; if (!isset($data->name)) $data->name = ''; if (!isset($data->phone)) $data->phone = ''; if (!isset($data->address)) $data->address = ''; if (!isset($data->suburb)) $data->suburb = ''; if (!isset($data->state)) $data->state = ''; if (!isset($data->country)) $data->country = '';
         $settings = WposAdminSettings::getSettingsObject('general');
         $custMdl = new CustomerModel();
         $gid = null;
@@ -136,7 +146,10 @@ class WposAdminCustomers {
                 $gid = $gres[1];
             }
         }
-        $qresult = $custMdl->edit($data->id, $data->email, $data->name, $data->phone, $data->mobile, $data->address, $data->suburb, $data->postcode, $data->state, $data->country, $data->notes, $gid);
+        $climit = isset($data->credit_limit) ? $data->credit_limit : (isset($data->creditLimit) ? $data->creditLimit : null);
+        $cdays = isset($data->credit_due_days) ? $data->credit_due_days : (isset($data->creditDueDays) ? $data->creditDueDays : null);
+        $cen = isset($data->credit_enabled) ? $data->credit_enabled : (isset($data->creditEnabled) ? $data->creditEnabled : (isset($data->credit_enabled_) ? $data->credit_enabled_ : null));
+        $qresult = $custMdl->edit($data->id, $data->email, $data->name, $data->phone, $data->mobile, $data->address, $data->suburb, $data->postcode, $data->state, $data->country, $data->notes, $gid, $climit, $cdays, $cen);
         if ($qresult === false) {
             return "Could not edit the customer: ".$custMdl->errorInfo;
         } else {

@@ -320,6 +320,83 @@ function routeApiCall($action, $data, $result) {
             $adminMdl = new WposAdminItems($data);
             $result = $adminMdl->deleteSupplier($result);
             break;
+        case "suppliers/credit":
+            $c = new WposSupplierCredit($data);
+            $result = $c->statement($result);
+            break;
+        case "suppliers/credit_report":
+            $c = new WposSupplierCredit($data);
+            $result = $c->report($result);
+            break;
+        case "suppliers/credit_pay":
+            $c = new WposSupplierCredit($data);
+            $result = $c->pay($result);
+            break;
+        case "suppliers/search":
+            $c = new WposSupplierCredit($data);
+            $result = $c->search($result);
+            break;
+        case "suppliers/purchase":
+            $c = new WposSupplierCredit($data);
+            $result = $c->purchase($result);
+            break;
+        case "suppliers/dashboard":
+            $c = new WposSupplierCredit($data);
+            $result = $c->dashboard($result);
+            break;
+        // accounts / cash book
+        case "accounts/list":
+            $ac = new WposAccounts($data);
+            $result = $ac->list($result);
+            break;
+        case "accounts/add":
+            $ac = new WposAccounts($data);
+            $result = $ac->add($result);
+            break;
+        case "accounts/entry":
+            $ac = new WposAccounts($data);
+            $result = $ac->entry($result);
+            break;
+        case "accounts/movements":
+            $ac = new WposAccounts($data);
+            $result = $ac->movements($result);
+            break;
+        case "accounts/summary":
+            $ac = new WposAccounts($data);
+            $result = $ac->summary($result);
+            break;
+        case "accounts/stats":
+            $ac = new WposAccounts($data);
+            $result = $ac->stats($result);
+            break;
+        case "items/setSupplier":
+            $ss = new WposStockStats($data);
+            $result = $ss->setSupplier($result);
+            break;
+        case "items/setCost":
+            $ss = new WposStockStats($data);
+            $result = $ss->setCost($result);
+            break;
+        case "stock/stats":
+            $ss = new WposStockStats($data);
+            $result = $ss->stats($result);
+            break;
+        case "items/setDetails":
+            $ss = new WposStockStats($data);
+            $result = $ss->setDetails($result);
+            break;
+        case "categories/images":
+            $ss = new WposStockStats($data);
+            $result = $ss->categoryImages($result);
+            break;
+        case "categories/setImage":
+            $ss = new WposStockStats($data);
+            $result = $ss->setCategoryImage($result);
+            break;
+        case "items/createFromMenu":
+            $ss = new WposStockStats($data);
+            $result = $ss->createFromMenu($result);
+            break;
         // categories
         case "categories/get":
             $jsondata = new WposPosData();
@@ -374,6 +451,22 @@ function routeApiCall($action, $data, $result) {
         case "customers/delete":
             $custMdl = new WposAdminCustomers($data);
             $result = $custMdl->deleteCustomer($result);
+            break;
+        case "customers/credit":
+            $c = new WposCredit($data);
+            $result = $c->statement($result);
+            break;
+        case "customers/credit_report":
+            $c = new WposCredit($data);
+            $result = $c->report($result);
+            break;
+        case "customers/credit_pay":
+            $c = new WposCredit($data);
+            $result = $c->pay($result);
+            break;
+        case "customers/search":
+            $c = new WposCredit($data);
+            $result = $c->search($result);
             break;
         case "customers/contacts/add":
             $custMdl = new WposAdminCustomers($data);

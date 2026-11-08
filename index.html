@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" sizes="72x72" href="/assets/images/apple-touch-icon-72x72.png">
     <link rel="apple-touch-icon" sizes="114x114" href="/assets/images/apple-touch-icon-114x114.png">
     <!-- UI FRAMEWORK STYLES -->
-    <link type="text/css" rel="stylesheet" href="assets/css/wpos.css?v=20261106-144"/>
+    <link type="text/css" rel="stylesheet" href="assets/css/wpos.css?v=20261107-211"/>
     <link rel="stylesheet" href="/assets/css/jquery-ui-1.10.3.full.min.css?v=20261030"/>
     <link href="/assets/css/bootstrap.min.css?v=20261030" rel="stylesheet"/>
     <link rel="stylesheet" href="/assets/css/font-awesome.min.css?v=20261030"/>
@@ -45,14 +45,14 @@
 
     
     <!-- Wpos Libraries -->
-    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261106-167"></script>
-    <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261105-143"></script>
+    <script type="text/javascript" src="/assets/js/wpos/sales.js?v=20261108-305"></script>
+    <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261106-202"></script>
     <script type="text/javascript" src="/assets/js/wpos/reports.js?v=20261105-141"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261105-141"></script>
-    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261106-142"></script>
+    <script type="text/javascript" src="/assets/js/wpos/orders.js?v=20261106-201"></script>
     <script type="text/javascript" src="/assets/js/wpos/order-sound.js?v=20261106-1"></script>
     <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261105-141"></script>
-    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261106-146"></script>
+    <script type="text/javascript" src="/assets/js/wpos/core.js?v=20261107-211"></script>
     <script type="text/javascript" src="/assets/libs/webprint.js?v=20261030"></script>
     <!-- Websocket library -->
     <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>
@@ -66,13 +66,29 @@
 
 </head>
 <body>
-<div id="ibox" class="widget-body">
+<div id="ibox-scrim" hidden></div>
+<div id="ibox" class="widget-body" role="dialog" aria-modal="false" aria-label="Products">
+    <div class="ibox-header">
+        <span class="ibox-title"><i class="icon icon-th"></i> Products</span>
+        <button type="button" class="ibox-close btn btn-sm btn-default" aria-label="Close products" onclick="if(typeof toggleItemBox==='function'){toggleItemBox(false);}"><i class="icon icon-remove"></i></button>
+        <span class="ibox-grab" aria-hidden="true"></span>
+    </div>
     <div id="iboxitem_contain">
         <div class="row">
         <div id="iboxitems">
         </div>
         </div>
     </div>
+</div>
+<div id="posBrief" style="display:flex; flex-wrap:wrap; gap:8px; padding:6px 10px; margin:4px 0 8px; background:#f7f8f5; border:1px solid #e3e3d8; border-radius:8px; font-size:12px;">
+    <span style="font-weight:700;">Brief:</span>
+    <span>Queued <b id="bQueued">0</b></span> ·
+    <span>Preparing <b id="bPreparing">0</b></span> ·
+    <span>Ready <b id="bReady">0</b></span> ·
+    <span>Oldest wait <b id="bOldest">—</b></span> ·
+    <span>Completed today <b id="bToday">KSh 0.00</b></span> ·
+    <span>Low stock <b id="bLow">—</b></span>
+    <span id="bSync" style="margin-left:auto; color:#888;">live</span>
 </div>
 <div id="wrapper">
 <ul class="navbar overflow-hidden">
@@ -139,21 +155,21 @@
                     <div class="totalsbox">
                         <div>
                             <div class="totalslabel">Subtotal:</div>
-                            <div class="totalsval"><span id="subtotal">$0.00</span></div>
+                            <div class="totalsval"><span id="subtotal">KSh 0.00</span></div>
                         </div>
                         <div>
                             <div class="totalslabel">Discount:</div>
-                            <div class="totalsval"><input onChange="WPOS.sales.updateDiscount();" size="2" id="salediscount" type="text" class="numpad" value="0" autocomplete="off"/><strong>%</strong>&nbsp;<span id="discounttxt">($0.00)</span></div>
+                            <div class="totalsval"><input onChange="WPOS.sales.updateDiscount();" size="2" id="salediscount" type="text" class="numpad" value="0" autocomplete="off"/><strong>%</strong>&nbsp;<span id="discounttxt">(KSh 0.00)</span></div>
                         </div>
                     </div>
                     <div class="totalsbox">
                         <div>
                             <div class="totalslabel">Tax:</div>
-                            <div class="totalsval"><span id="totaltax">$0.00</span></div>
+                            <div class="totalsval"><span id="totaltax">KSh 0.00</span></div>
                         </div>
                         <div>
                             <div class="totalslabel">Total:</div>
-                            <div class="totalsval"><span id="total">$0.00</span></div>
+                            <div class="totalsval"><span id="total">KSh 0.00</span></div>
                         </div>
                     </div>
                     <div class="order_terminal_options" style="margin-top: 10px;">
@@ -245,6 +261,7 @@
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Source</th>
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Customer</th>
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Phone</th>
+            <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Location</th>
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Items</th>
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Total</th>
             <th style="position:sticky; top:0; background:#f0f0f0; padding:4px 6px;">Payment</th>
@@ -254,7 +271,7 @@
         </tr>
         </thead>
         <tbody id="onlineordersbody">
-        <tr><td colspan="11" class="center">Loading...</td></tr>
+        <tr><td colspan="12" class="center">Loading...</td></tr>
         </tbody>
     </table>
     </div>
@@ -273,7 +290,6 @@
             <div class="widget-body" style="padding-top: 10px; text-align: center;">
                 <div style="text-align: left;">
                     <div id="reportbuttons" class="inline hide">
-                        <button class="btn btn-primary btn-sm" onclick="WPOS.reports.generateTakingsReport();">Takings Count</button>
                         <button class="btn btn-primary btn-sm" onclick="WPOS.reports.generateWhatsSellingReport();">What's Selling</button>
                         <button class="btn btn-primary btn-sm" onclick="WPOS.reports.generateSellerReport();">Seller Report</button>
                     </div>
@@ -356,64 +372,7 @@
             </div>
         </div>
         <hr>
-        <div class="widget-box transparent">
-            <div class="widget-header widget-header-flat">
-                <h4 class="lighter">
-                    <i class="icon-check"></i>
-                    Cash Reconciliation
-                </h4>
-            </div>
-            <div class="widget-body" style="padding-top: 10px; text-align: center;">
-                <table class="table">
-                    <tbody>
-                    <tr>
-                        <td style="text-align: right;">$100:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom100" value="0"/></td>
-                        <td style="text-align: right;">$50:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom50" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right;">$20:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom20" value="0"/></td>
-                        <td style="text-align: right;">$10:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom10" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right;">$5:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom5" value="0"/></td>
-                        <td style="text-align: right;">$2:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom2" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right;">$1:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom1" value="0"/></td>
-                        <td style="text-align: right;">50c:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom50c" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right;">20c:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom20c" value="0"/></td>
-                        <td style="text-align: right;">10c:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom10c" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td style="text-align: right;">5c:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recdenom5c" value="0"/></td>
-                        <td style="text-align: right;">Float:</td>
-                        <td><input onchange="WPOS.reports.calcReconcil();" type="text" size="4" id="recfloat" value="0"/></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="text-align: right;">Takings - Float:</td>
-                        <td colspan="2"><span id="rectakings"></span></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="text-align: right;">Balance:</td>
-                        <td colspan="2"><span id="recbalance"></span></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+
     </div>
     </div>
 </div>
@@ -925,6 +884,22 @@
     </div>
 </div>
 <div id="paymentsdiv" style="display:none; padding:5px;" title="Complete Sale">
+    <div id="creditstrip" style="display:none; margin:0 0 10px; padding:10px; border:1px solid #f0ad4e; border-radius:8px; background:#fff8ec;">
+        <div style="font-weight:700; color:#a35c00; margin-bottom:6px;"><i class="icon icon-credit-card"></i> Credit — choose who owes</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <input id="credit-search" type="text" placeholder="Search name / phone / email…" style="flex:1 1 200px; padding:6px; border:1px solid #ccc; border-radius:6px;" />
+            <button type="button" class="btn btn-xs btn-primary" onclick="if(typeof WPOS!=='undefined' && WPOS.sales && WPOS.sales.openCreditCustomerPicker){WPOS.sales.openCreditCustomerPicker();}">Find</button>
+            <button type="button" class="btn btn-xs btn-default" onclick="if(typeof WPOS!=='undefined' && WPOS.sales && WPOS.sales.openCreditNewCustomer){WPOS.sales.openCreditNewCustomer();}">+ New</button>
+        </div>
+        <div id="credit-customer-results" style="max-height:120px; overflow:auto; margin-top:6px;"></div>
+        <div id="credit-preview" style="margin-top:8px; font-size:13px; line-height:1.5;">
+            <div>Customer: <strong id="credit-custname">— select a customer —</strong> <span id="credit-custphone" style="color:#666;"></span></div>
+            <div>Owes now: <strong id="credit-current">KSh 0.00</strong> &nbsp;·&nbsp; This sale (credit): <strong id="credit-this">KSh 0.00</strong> &nbsp;·&nbsp; <span style="font-size:15px;">New owed: <strong id="credit-new">KSh 0.00</strong></span></div>
+            <div>Limit: <span id="credit-limit">—</span> &nbsp;·&nbsp; Available: <strong id="credit-available">—</strong> &nbsp;·&nbsp; Due: <span id="credit-due">—</span></div>
+            <div id="credit-limitbar" style="height:8px; background:#eee; border-radius:4px; margin-top:6px; overflow:hidden;"><div id="credit-limitfill" style="height:100%; width:0%; background:#5cb85c;"></div></div>
+            <div id="credit-warning" style="color:#c00; font-weight:700; margin-top:6px;"></div>
+        </div>
+    </div>
     <table width="100%" class="ui-widget-content">
         <tr>
             <td><strong style="width: 60px; display: inline-block;">Total:</strong><span id="salestotal">KSh0.00</span></td>
@@ -968,13 +943,12 @@
     <form id="custform">
     <label style="width: 80px;">Name:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custname"/><br/>
     <label style="width: 80px;">Phone:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custphone"/><br/>
-    <label style="width: 80px;">Mobile:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custmobile"/><br/>
     <label style="width: 80px;">Address:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custaddress"/><br/>
     <label style="width: 80px;">Suburb:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custsuburb"/><br/>
-    <label style="width: 80px;">Postcode:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custpostcode"/><br/>
     <label style="width: 80px;">Country:</label><input onchange="WPOS.sales.setUpdateCust();" type="text" id="custcountry"/><br/>
     </form>
     <div style="text-align: center; margin-top: 10px;">
+        <button class="btn btn-success" onclick="if(typeof WPOS!=='undefined' && WPOS.sales && WPOS.sales.saveTillCustomer){WPOS.sales.saveTillCustomer();}">Save Customer</button>
         <button class="btn btn-primary" onclick="$('#custdiv').dialog('close');">Close</button>
     </div>
 </div>
@@ -992,6 +966,11 @@
                 <label class="fixedlabel">User:</label> <span id="transuser"></span><br/>
                 <label class="fixedlabel">Device:</label> <span id="transdev"></span><br/>
                 <label class="fixedlabel">Location:</label> <span id="transloc"></span><br/>
+                <label class="fixedlabel">Source:</label> <span id="transsource"></span><br/>
+                <label class="fixedlabel">Order Type:</label> <span id="transordertype"></span><br/>
+                <label class="fixedlabel">Delivery:</label> <span id="transdelivery"></span><br/>
+                <label class="fixedlabel">Table:</label> <span id="transtable"></span><br/>
+                <label class="fixedlabel">External:</label> <span id="transexternal"></span><br/>
             </div>
             <div class="col-sm-6">
                 <label style="vertical-align: top;" class="fixedlabel">Notes:

@@ -99,33 +99,57 @@
 							</a>
 						</li>
 
-                        <li id="menukitchen" class="privmenuitem">
-                            <a href="/kitchen/" target="_blank">
-                                <i class="icon-fire"></i>
-                                <span class="menu-text"> Kitchen Display </span>
-                            </a>
-                        </li>
-
                         <li id="menureports" class="privmenuitem">
-                            <a href="#!reports" class="dropdown-toggle">
+                            <a href="#!reports">
                                 <i class="icon-list-alt"></i>
                                 <span class="menu-text"> Reports </span>
                             </a>
                         </li>
 
+                        <li id="menuaccounts" class="privmenuitem">
+                            <a href="#!accounts">
+                                <i class="icon-money"></i>
+                                <span class="menu-text"> Accounts </span>
+                            </a>
+                        </li>
+
+                        <li id="menuinventory" class="privmenuitem">
+                            <a href="#!stock">
+                                <i class="icon-truck"></i>
+                                <span class="menu-text"> Inventory </span>
+                            </a>
+                        </li>
+
+                        <li id="menusuppliers" class="privmenuitem">
+                            <a href="#!suppliers">
+                                <i class="icon-truck"></i>
+                                <span class="menu-text"> Suppliers </span>
+                            </a>
+                        </li>
+
+                        <li id="menuwebsitecms" class="privmenuitem">
+                            <a href="#!websitecms">
+                                <i class="icon-globe"></i>
+                                <span class="menu-text"> Website CMS </span>
+                            </a>
+                        </li>
+
                         <li id="menusales" class="privmenuitem">
-                            <a href="#!sales" class="dropdown-toggle">
+                            <a href="#!sales">
                                 <i class="icon-shopping-cart"></i>
                                 <span class="menu-text"> POS Sales </span>
+                            </a>
+                        </li>
+
                         <li id="menuinvoices" class="privmenuitem">
-                            <a href="#!invoices" class="dropdown-toggle">
+                            <a href="#!invoices">
                                 <i class="icon-dollar"></i>
                                 <span class="menu-text"> Invoices </span>
                             </a>
                         </li>
 
                         <li id="menucustomers" class="privmenuitem">
-                            <a href="#!customers" class="dropdown-toggle">
+                            <a href="#!customers">
                                 <i class="icon-male"></i>
                                 <span class="menu-text"> Customers </span>
                             </a>
@@ -147,24 +171,10 @@
                                     </a>
                                 </li>
 
-                                <li id="menustock" class="privmenuitem">
-                                    <a  href="#!stock">
-                                        <i class="icon-double-angle-right"></i>
-                                        Inventory
-                                    </a>
-                                </li>
-
                                 <li id="menucategories" class="privmenuitem">
                                     <a href="#!categories">
                                         <i class="icon-double-angle-right"></i>
                                         Categories
-                                    </a>
-                                </li>
-
-                                <li id="menusuppliers" class="privmenuitem">
-                                    <a href="#!suppliers">
-                                        <i class="icon-double-angle-right"></i>
-                                        Suppliers
                                     </a>
                                 </li>
 
@@ -372,6 +382,11 @@
                         </a>
                     </li>
                     <li class="">
+                        <a href="#credit" data-toggle="tab">
+                            Credit
+                        </a>
+                    </li>
+                    <li class="">
                         <a href="#options" data-toggle="tab">
                             Options
                         </a>
@@ -394,20 +409,12 @@
                                 <td><input id="custphone" type="text"/></td>
                             </tr>
                             <tr>
-                                <td style="text-align: right;"><label>Mobile:&nbsp;</label></td>
-                                <td><input id="custmobile" type="text"/></td>
-                            </tr>
-                            <tr>
                                 <td style="text-align: right;"><label>Address:&nbsp;</label></td>
                                 <td><input id="custaddress" type="text"/></td>
                             </tr>
                             <tr>
                                 <td style="text-align: right;"><label>Suburb:&nbsp;</label></td>
                                 <td><input id="custsuburb" type="text"/></td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: right;"><label>Postcode:&nbsp;</label></td>
-                                <td><input id="custpostcode" type="text"/></td>
                             </tr>
                             <tr>
                                 <td style="text-align: right;"><label>State:&nbsp;</label></td>
@@ -439,6 +446,20 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="tab-pane" id="credit">
+                        <div style="padding:8px;">
+                            <label><input id="cust-credit-enabled" type="checkbox"/> Approved for credit</label><br/>
+                            <label>Credit limit (KSh): </label><input id="cust-credit-limit" type="text" style="width:110px;"/> <small>(0 = no limit / review manually)</small><br/>
+                            <label>Due in (days): </label><input id="cust-credit-days" type="text" style="width:80px;"/>
+                            <hr/>
+                            <div id="cust-credit-summary" style="font-size:12px; color:#555;">Open balance: —</div>
+                            <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-xs btn-primary" onclick="if(window.WPOS&&WPOS.customers.creditStatementPDF){WPOS.customers.creditStatementPDF($('#custid').val());}">Statement PDF</button>
+                                <button type="button" class="btn btn-xs btn-success" onclick="if(window.WPOS&&WPOS.customers.creditPayDialog){WPOS.customers.creditPayDialog($('#custid').val());}">Record Payment</button>
+                            </div>
+                            <div id="cust-credit-entries" style="max-height:150px; overflow:auto; margin-top:8px; font-size:12px;"></div>
+                        </div>
+                    </div>
                     <div class="tab-pane" id="options" style="text-align: center;">
                         <button id="custdisbtn" class="btn btn-primary" onclick="WPOS.customers.setOnlineAccess();">Disable Customer Access</button>
                         <div class="space-10"></div>
@@ -466,20 +487,12 @@
                     <td><input id="newcustphone" type="text"/></td>
                 </tr>
                 <tr>
-                    <td style="text-align: right;"><label>Mobile:&nbsp;</label></td>
-                    <td><input id="newcustmobile" type="text"/></td>
-                </tr>
-                <tr>
                     <td style="text-align: right;"><label>Address:&nbsp;</label></td>
                     <td><input id="newcustaddress" type="text"/></td>
                 </tr>
                 <tr>
                     <td style="text-align: right;"><label>Suburb:&nbsp;</label></td>
                     <td><input id="newcustsuburb" type="text"/></td>
-                </tr>
-                <tr>
-                    <td style="text-align: right;"><label>Postcode:&nbsp;</label></td>
-                    <td><input id="newcustpostcode" type="text"/></td>
                 </tr>
                 <tr>
                     <td style="text-align: right;"><label>State:&nbsp;</label></td>
@@ -513,10 +526,6 @@
                         <td><input id="contphone" type="text"/></td>
                     </tr>
                     <tr>
-                        <td style="text-align: right;"><label>Mobile:&nbsp;</label></td>
-                        <td><input id="contmobile" type="text"/></td>
-                    </tr>
-                    <tr>
                         <td style="text-align: right;"><label>Receives Invoices:&nbsp;</label></td>
                         <td><input id="contrecinv" type="checkbox"/></td>
                     </tr>
@@ -537,6 +546,11 @@
                 <label class="fixedlabel">User:</label> <span id="transuser"></span><br/>
                 <label class="fixedlabel">Device:</label> <span id="transdev"></span><br/>
                 <label class="fixedlabel">Location:</label> <span id="transloc"></span><br/>
+                <label class="fixedlabel">Source:</label> <span id="transsource"></span><br/>
+                <label class="fixedlabel">Order Type:</label> <span id="transordertype"></span><br/>
+                <label class="fixedlabel">Delivery:</label> <span id="transdelivery"></span><br/>
+                <label class="fixedlabel">Table:</label> <span id="transtable"></span><br/>
+                <label class="fixedlabel">External:</label> <span id="transexternal"></span><br/>
             </div>
             <div style="display: inline-block; margin: 0; width: 49%; min-width: 250px; max-width: 300px; padding: 0 10px 5px 10px; vertical-align: top;">
                 <label class="fixedlabel">Notes:</label><textarea style="width: 100%;" id="transnotes"></textarea>
@@ -623,11 +637,10 @@
                             <h4>Customer Details:</h4>
                             <span id="tcustname"></span><br/>
                             <span id="tcustaddress"></span><br/>
-                            <span id="tcustsuburb"></span>, &nbsp;<span id="icustpostcode"></span><br/>
+                            <span id="tcustsuburb"></span><br/>
                             <span id="tcustcountry"></span>
                             <div class="space-4"></div>
                             P: <span id="tcustphone"></span><br/>
-                            M: <span id="tcustmobile"></span><br/>
                             E: <span id="tcustemail"></span><br/>
                             <input type="hidden" id="tcustid"/>
                             <button id="transcustdtlbtn" class="btn btn-xs btn-primary" onclick="WPOS.customers.openCustomerDialog($('#tcustid').val());">Details</button>
@@ -883,9 +896,10 @@
         <script src="assets/js/bootbox.min.js?v=20261030"></script>
 
         <script src="/assets/js/wpos/order-sound.js?v=20261106-1"></script>
-        <script src="assets/wpos/wpos.js?v=20261105"></script>
+        <script src="assets/wpos/flicker-free.js?v=20261107-1"></script>
+        <script src="assets/wpos/wpos.js?v=20261108-407"></script>
         <script src="assets/wpos/customers.js?v=20261030"></script>
-        <script src="assets/wpos/transactions.js?v=20261030"></script>
+        <script src="assets/wpos/transactions.js?v=20261106-203"></script>
 
         <!-- Websocket library -->
         <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>

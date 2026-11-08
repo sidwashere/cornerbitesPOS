@@ -94,7 +94,7 @@ function WPOS() {
                 hideLogin();
                 initData(true);
                 setTimeout(function(){
-                    $("#ibox").css('width', '450px');
+                    (function(){ var m = window.matchMedia ? window.matchMedia('(min-width: 1200px)') : null; if (m && !m.matches) { $("#ibox").css('width', ''); } else { $("#ibox").css('width', '450px'); } })();
                     if (WPOS.items && WPOS.items.generateItemGridCategories) {
                         WPOS.items.generateItemGridCategories();
                     }
@@ -228,9 +228,13 @@ function WPOS() {
     }
 
     function sessionRenew(){
-        // send request to server
+        // send request to server (retry twice — single blip must not log the till out)
         if (!currentuser) return false;
-        var response = WPOS.sendJsonData("authrenew", JSON.stringify({username:currentuser.username, auth_hash:currentuser.auth_hash}));
+        var response = false, tries = 0;
+        while (tries < 3 && response === false) {
+            try { response = WPOS.sendJsonData("authrenew", JSON.stringify({username:currentuser.username, auth_hash:currentuser.auth_hash})); } catch(e) {}
+            tries++;
+        }
         if (response !== false) {
             // set current user will possibly get passed additional data from server in the future but for now just username and pass is enough
             setCurrentUser(response);
@@ -439,14 +443,14 @@ function WPOS() {
     function initDataSuccess(loginloader){
         if (loginloader){
             setLoadingBar(100, "Massaging the data...");
-            $("title").text("Cornerbites POS - Your POS in the cloud");
+            $("title").text("Cornerbites POS - Tasty Meals, Every Time!");
             // Non-critical plugins (print/scan) must never block the till from coming up.
             try { WPOS.initPlugins(); } catch(e){ console.error("initPlugins failed:", e); }
             try { populateDeviceInfo(); } catch(e){ console.error("populateDeviceInfo failed:", e); }
             // Always reveal the till and populate the product grid, even if a plugin above threw.
             setTimeout(hideLogin, 500);
             setTimeout(function(){
-                $("#ibox").css('width', '450px');
+                (function(){ var m = window.matchMedia ? window.matchMedia('(min-width: 1200px)') : null; if (m && !m.matches) { $("#ibox").css('width', ''); } else { $("#ibox").css('width', '450px'); } })();
                 try {
                     if (WPOS.items && WPOS.items.generateItemGridCategories) {
                         WPOS.items.generateItemGridCategories();
@@ -1807,7 +1811,8 @@ $(function () {
             $(this).css("maxWidth", "370px");
         }
     });
-    // item box — keep it collapsible and avoid obscuring the main footer action buttons
+    // item box — desktop push drawer (>=1200); tablet overlay drawer + phone bottom-sheet (<1200)
+    // Never in-flow at the top on small screens: overlay modes use a scrim + scroll lock.
     var ibox = $("#ibox");
     var iboxhandle = $("#iboxhandle");
     var isDesktopViewport = function(){
@@ -1815,15 +1820,39 @@ $(function () {
     };
     var iboxopen = isDesktopViewport();
     window.syncTrayLayout = function(){
+        var overlay = iboxopen && !isDesktopViewport();
         $('body').toggleClass('tray-open', iboxopen && isDesktopViewport());
+        $('body').toggleClass('ibox-overlay-open', overlay);
+        $('body').toggleClass('ibox-locked', overlay);
+        $('#ibox-scrim').prop('hidden', !overlay);
+        $('#ibox').attr('aria-modal', overlay ? 'true' : 'false');
     };
+    /* Return focus to the Products toggle when the overlay closes */
+    var lastToggle = null;
     toggleItemBox = function(show){
+        var wasOpen = iboxopen;
         iboxopen = !!show;
         ibox.toggleClass('ibox-open', iboxopen);
+        if (lastToggle === null && document.querySelector('.toggle-product-grid')) lastToggle = document.querySelector('.toggle-product-grid');
         window.syncTrayLayout();
+        if (iboxopen && !isDesktopViewport()) {
+            var closeBtn = $('#ibox .ibox-close').first();
+            if (closeBtn.length) closeBtn.focus && closeBtn.focus();
+        } else if (!iboxopen && wasOpen && !isDesktopViewport() && lastToggle) {
+            try { lastToggle.focus && lastToggle.focus(); } catch(e) {}
+        }
     };
     toggleItemBox(iboxopen);
-    $(window).on('resize.itembox', window.syncTrayLayout);
+    var _resizeTick = false;
+    $(window).on('resize.itembox', function(){
+        if (_resizeTick) return;
+        _resizeTick = true;
+        window.requestAnimationFrame(function(){ _resizeTick = false; window.syncTrayLayout(); });
+    });
+    $('#ibox-scrim').on('click.itembox', function(){ toggleItemBox(false); });
+    $(document).on('keydown.itembox', function(event){
+        if (event.key === 'Escape' && iboxopen) toggleItemBox(false);
+    });
     $(document).on('click.itembox', function(event){
         var target = $(event.target);
         if (target.closest('.toggle-product-grid').length) {
@@ -1942,7 +1971,7 @@ $(function () {
                     WPOS.sales.addPayment('cash');
                     break;
                 case 88:
-                    WPOS.sales.addPayment('credit');
+                    // (credit shortcut removed — credit must be an explicit choice)
                     break;
                 case 67:
                     WPOS.sales.addPayment('eftpos');

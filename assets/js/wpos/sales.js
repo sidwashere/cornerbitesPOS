@@ -121,9 +121,17 @@ function WPOSItems() {
             items = WPOS.getItemsTable();
         }
 
+        var thumbCount = 0;
         for (var i in items){
             price = (items[i].price==""?"??.??":parseFloat(items[i].price).toFixed(2));
+            var itemImg = items[i].image || '';
+            var thumb = '';
+            if (itemImg) {
+                thumbCount++;
+                thumb = '<div style="height:72px; border-radius:6px; overflow:hidden; margin-bottom:6px; background:#f5f5f5;"><img loading="lazy" src="' + String(itemImg).replace(/"/g,'&quot;') + '" alt="" onerror=\"this.parentNode.style.display=\'none\'\" style="width:100%; height:100%; object-fit:cover; display:block;"></div>';
+            }
             iboxitems.append('<div class="iboxitem" onclick="WPOS.items.addItemFromId('+items[i].id+');">' +
+                                thumb +
                                 '<h6>'+items[i].name+'</h6>'+
                                 '<h5>'+WPOS.util.currencyFormat(price)+'</h5>'+
                             '</div>');
@@ -142,7 +150,22 @@ function WPOSItems() {
         try { categories = WPOS.getConfigTable().item_categories || {}; } catch(e) {}
         //console.log(catindex);
         for (var i in categories){
+            var catImg = categories[i].image || '';
+            var catThumb = '';
+            if (!catImg) {
+                // Fall back to the top-selling product image derivation already applied server-side;
+                // here pick the first item in this category that has an image
+                try {
+                    var idx = catindex[i] || [];
+                    var table = WPOS.getItemsTable() || {};
+                    for (var k = 0; k < idx.length; k++) { if (table[idx[k]] && table[idx[k]].image) { catImg = table[idx[k]].image; break; } }
+                } catch(e) {}
+            }
+            if (catImg) {
+                catThumb = '<div style="height:72px; border-radius:6px; overflow:hidden; margin-bottom:6px; background:#f5f5f5;"><img loading="lazy" src="' + String(catImg).replace(/"/g,'&quot;') + '" alt="" onerror=\"this.parentNode.style.display=\'none\'\" style="width:100%; height:100%; object-fit:cover; display:block;"></div>';
+            }
             iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid('+i+');">' +
+                catThumb +
                 '<h5>'+categories[i].name+'</h5>'+
                 '<h6>('+(catindex.hasOwnProperty(i)?catindex[i].length:0)+' items)</h6>'+
                 '</div>');
@@ -437,16 +460,15 @@ function WPOSItems() {
 
     this.searchCustomers = function(query){
         var results = [];
-        var customers = WPOS.getCustTable();
-        query.trim();
-        query = query.toLowerCase();
+        var customers = WPOS.getCustTable() || {};
+        query = (query || '').trim().toLowerCase();
+        if (!query) return results;
         for (var key in customers){
-            if (customers[key].email.toLowerCase().indexOf(query) != -1){
-                results.push(customers[key]);
-            }
+            var c = customers[key];
+            var hay = ((c.name||'') + ' ' + (c.phone||'') + ' ' + (c.email||'')).toLowerCase();
+            if (hay.indexOf(query) != -1) results.push(c);
         }
-        //this.processNewEmail();
-        return results;
+        return results.slice(0, 8);
     };
 
     this.loadCustomerDetails = function(custid, email){ // triggered on autocomplete click
@@ -455,16 +477,26 @@ function WPOSItems() {
     };
 
     function loadCustomerIfExists(custid){
-        var custdata = WPOS.getCustTable()[custid];
+        if (!custid || custid <= 0) return false;
+        var custdata = WPOS.getCustTable() && WPOS.getCustTable()[custid];
+        if (!custdata) {
+            // Local cache missed (new server customer) — fetch once via customers/search
+            try {
+                var found = null;
+                WPOS.sendJsonDataAsync('customers/search', JSON.stringify({q: String(custid)}), function(res){
+                    if (res && res.length) found = res[0];
+                    if (found) loadCustomerIfExists(found.id);
+                });
+            } catch(e) {}
+            return false;
+        }
         if (custdata!=null){
             $("#custid").val(custdata.id);
             $("#custname").val(custdata.name);
             //$("#custemail").val(custdata.email);
             $("#custphone").val(custdata.phone);
-            $("#custmobile").val(custdata.mobile);
             $("#custaddress").val(custdata.address);
             $("#custsuburb").val(custdata.suburb);
-            $("#custpostcode").val(custdata.postcode);
             $("#custcountry").val(custdata.country);
             return true;
         } else {
@@ -477,16 +509,30 @@ function WPOSItems() {
     };
 
     this.processNewEmail = function(){ // triggered while the user is typing
-        var email = $('#custemail').val();
+        var email = ($('#custemail').val() || '').trim();
         if (validateEmail(email)==true){
-            if (loadCustomerIfExists(WPOS.getCustId(email))){
+            var cid = WPOS.getCustId(email);
+            if (cid && loadCustomerIfExists(cid)){
+                // keep Till email in sync so the sale carries the same address
                 return;
             }
+            // No match: this is a NEW customer. Do NOT wipe the Details fields —
+            // setUpdateCust() flag stays so the sale creates the customer.
+            // Only unlink the old custid.
+            var prevName = $('#custname').val(), prevPhone = $('#custphone').val();
+            if (parseInt($('#custid').val() || 0, 10) > 0) {
+                $('#custid').val(0);
+                // keep name/phone if user already entered them for the new customer
+                if (!prevName && !prevPhone) WPOS.sales.clearCustUpdate();
+            }
+            return;
         }
-        // clear old forms/flags if no account loaded
-        $('#custid').val(0);
-        WPOS.sales.clearCustUpdate();
-        $('#custform').trigger('reset');
+        // Blank/invalid email: if the user typed Details (name/phone), keep them for a walk-in;
+        // only detach custid (do not reset the form).
+        if (parseInt($('#custid').val() || 0, 10) > 0 && !($('#custname').val() || $('#custphone').val())) {
+            $('#custid').val(0);
+            WPOS.sales.clearCustUpdate();
+        }
     };
 
     function validateEmail(email){
@@ -591,6 +637,135 @@ function WPOSSales() {
     this.toggleQuickItem = function(itemId){ return false; };
     this.showQuickItemPicker = function(){ return false; };
     var paymentMethods = ['mpesa', 'cash', 'eftpos', 'credit', 'cheque', 'deposit'];
+    // --- Credit (POS): customer-owned debt, preview current/new owed ---
+    var _creditStmt = null; // cached statement for selected customer
+    function getCreditAmount(){
+        var sum = 0;
+        $("#paymentstable").children('tr').each(function(i, el){
+            if ($(el).find('.paymethod option:selected').val() === 'credit') {
+                sum += parseFloat($(el).find('.payamount').val() || 0) || 0;
+            }
+        });
+        return sum;
+    }
+    function hasCreditPayment(){ return getCreditAmount() > 0.005 || $("#paymentstable .paymethod option:selected[value='credit']").length > 0; }
+    function refreshCreditPreview(){
+        var strip = $("#creditstrip");
+        if (!strip.length) return;
+        var needCredit = hasCreditPayment();
+        strip.toggle(needCredit);
+        if (!needCredit) return;
+        var thisAmt = getCreditAmount();
+        var custid = parseInt($("#custid").val() || 0, 10) || 0;
+        var custName = $("#custname").val() || $("#custemail").val() || '';
+        $("#credit-custname").text(custid > 0 ? (custName || ('Customer #'+custid)) : '— select a customer —');
+        $("#credit-this").text(WPOS.util.currencyFormat(thisAmt.toFixed(2)));
+        var current = _creditStmt && _creditStmt.open_balance ? parseFloat(_creditStmt.open_balance) : 0;
+        var limit = _creditStmt && _creditStmt.customer ? parseFloat(_creditStmt.customer.credit_limit || 0) : 0;
+        var dueDays = _creditStmt && _creditStmt.customer ? parseInt(_creditStmt.customer.credit_due_days || 7, 10) : 7;
+        var newOwed = current + thisAmt;
+        $("#credit-current").text(WPOS.util.currencyFormat(current.toFixed(2)));
+        $("#credit-new").text(WPOS.util.currencyFormat(newOwed.toFixed(2)));
+        $("#credit-limit").text(limit > 0 ? WPOS.util.currencyFormat(limit.toFixed(2)) : 'No limit set');
+        $("#credit-available").text(limit > 0 ? WPOS.util.currencyFormat(Math.max(0, limit - newOwed).toFixed(2)) : '—');
+        var due = new Date(Date.now() + (dueDays || 7) * 86400000);
+        $("#credit-due").text(due.toLocaleDateString() + (limit > 0 ? '' : ' (net terms)'));
+        var pct = limit > 0 ? Math.min(100, (newOwed / limit) * 100) : 0;
+        $("#credit-limitfill").css('width', pct + '%').css('background', pct > 100 ? '#c00' : (pct > 80 ? '#f0ad4e' : '#5cb85c'));
+        var warn = $('#credit-warning');
+        if (custid <= 0) { warn.text('Select a customer to give credit to.'); $('#endsalebtn').prop('disabled', true); }
+        else if (limit > 0 && newOwed > limit + 0.005) { warn.text('Over limit by ' + WPOS.util.currencyFormat((newOwed - limit).toFixed(2)) + ' — reduce the credit amount or raise the limit.'); $('#endsalebtn').prop('disabled', true); }
+        else { warn.text(''); $('#endsalebtn').prop('disabled', false); }
+    }
+    function fetchCreditStatement(custid){
+        if (!custid || custid <= 0) { _creditStmt = null; refreshCreditPreview(); return; }
+        try {
+            WPOS.sendJsonDataAsync('customers/credit', JSON.stringify({custid: custid}), function(res){
+                _creditStmt = res || null;
+                refreshCreditPreview();
+            });
+        } catch(e) {}
+    }
+    this.openCreditCustomerPicker = function(){
+        var q = ($('#credit-search').val() || '').trim();
+        var box = $('#credit-customer-results');
+        box.html('<div style="color:#888;">Searching…</div>');
+        try {
+            WPOS.sendJsonDataAsync('customers/search', JSON.stringify({q: q}), function(res){
+                var rows = res || [];
+                if (!rows.length) { box.html('<div style="color:#888;">No customers found — use + New.</div>'); return; }
+                var html = '<table style="width:100%;" class="table table-striped table-bordered"><tbody>';
+                rows.forEach(function(c){
+                    var bal = c.open_balance || 0;
+                    html += '<tr><td>' + (c.name || '') + '<br/><small>' + (c.phone || '') + '<br/>' + (c.email || '') + '</small></td>' +
+                        '<td style="text-align:right;white-space:nowrap;">Owes <strong>' + WPOS.util.currencyFormat((bal||0).toFixed ? bal.toFixed(2) : bal) + '</strong><br/><button type="button" class="btn btn-xs btn-success" data-cid="'+c.id+'">Select</button></td></tr>';
+                });
+                html += '</tbody></table>';
+                box.html(html);
+                box.find('button[data-cid]').on('click', function(){ WPOS.sales.selectCreditCustomer(parseInt($(this).attr('data-cid'),10)); });
+            });
+        } catch(e) { box.html(''); }
+    };
+    this.openCreditNewCustomer = function(){
+        // open Details with credit focus; "Save Customer" creates the record immediately
+        $('#custdiv').dialog('open');
+    };
+    this.saveTillCustomer = function(){
+        var data = {
+            id: parseInt($('#custid').val() || 0, 10) || 0,
+            name: ($('#custname').val() || '').trim(),
+            email: ($('#custemail').val() || '').trim(),
+            phone: ($('#custphone').val() || '').trim(),
+            mobile: '',
+            address: ($('#custaddress').val() || '').trim(),
+            suburb: ($('#custsuburb').val() || '').trim(),
+            postcode: '0',
+            state: $('#custstate') && $('#custstate').val() ? $('#custstate').val() : '',
+            country: ($('#custcountry').val() || '').trim(),
+        };
+        if (!data.name && !data.phone && !data.email) { alert('Enter a name, phone or email first'); return; }
+        try { WPOS.sales.setUpdateCust(); } catch(e) {}
+        if (data.id > 0) {
+            var r = WPOS.sendJsonData('customers/edit', JSON.stringify(data));
+            if (r !== false) {
+                try { WPOS.updateCustTable(r); } catch(e) {}
+                $('#custid').val(data.id);
+            } else { alert('Could not update customer'); return; }
+        } else {
+            var r2 = WPOS.sendJsonData('customers/add', JSON.stringify(data));
+            if (r2 !== false && r2 && r2.id) {
+                $('#custid').val(r2.id);
+                try { WPOS.updateCustTable(r2); } catch(e) {}
+                fetchCreditStatement(r2.id);
+            } else {
+                // fallback: fetch id via search (add response shape may vary)
+                try {
+                    WPOS.sendJsonDataAsync('customers/search', JSON.stringify({q: data.phone || data.email || data.name}), function(res){
+                        if (res && res.length) { $('#custid').val(res[0].id); fetchCreditStatement(res[0].id); refreshCreditPreview(); }
+                    });
+                } catch(e) {}
+            }
+        }
+        $('#custdiv').dialog('close');
+        refreshCreditPreview();
+    };
+    this.selectCreditCustomer = function(custid){
+        $('#custid').val(custid);
+        // load customer into till fields + email (receipt + sale custid)
+        try {
+            if (WPOS.getCustTable && WPOS.getCustTable()[custid]) {
+                var c = WPOS.getCustTable()[custid];
+                $('#custemail').val(c.email || $('#custemail').val());
+                $('#custname').val(c.name || ''); $('#custphone').val(c.phone || '');
+                $('#custaddress').val(c.address || '');
+                $('#credit-search').val(c.name || c.email || '');
+                $('#credit-customer-results').html('');
+            }
+        } catch(e) {}
+        // keep Till email in sync so the sale carries the same custid
+        fetchCreditStatement(custid);
+        refreshCreditPreview();
+    };
     var cursubtotal = 0.00;
     var curtaxtotal = 0.00;
     var curtotal = 0.00;
@@ -743,6 +918,8 @@ function WPOSSales() {
         $("#saleschange").text(WPOS.util.currencyFormat((balance>=0?totalchange.toFixed(2):0.00)));
         salebalanced = balance == 0;
         curbalance = balance;
+        // credit strip lives/dies with payment rows
+        try { if (typeof refreshCreditPreview === 'function') refreshCreditPreview(); } catch(e) {}
         //console.log("GT:"+ curgrandtotal + "\nPAID:" + totalpaid+ "\nBALANCE:"+ balance + "\nROUNDCENTS:"+ roundcents + "\nROUNDCENTS:"+ curround);
     };
 
@@ -945,7 +1122,15 @@ function WPOSSales() {
             } catch(e) {
                 try { $("#paymentsdiv").removeClass('hide').show(); } catch(e2) {}
             }
-            try { $("#endsalebtn").prop("disabled", false); } catch(e) {}
+            try {
+                _creditStmt = null;
+                var _cid = parseInt($("#custid").val() || 0, 10) || 0;
+                var _cs = $('#credit-search');
+                if (_cs.length) _cs.val($("#custname").val() || $("#custemail").val() || '');
+                if (_cid > 0) fetchCreditStatement(_cid);
+                refreshCreditPreview();
+                $("#endsalebtn").prop("disabled", false);
+            } catch(e) {}
         } else {
             alert("Please add some valid items to the sale before proceeding!");
         }
@@ -1041,6 +1226,15 @@ function WPOSSales() {
             $(elem).parent().find('.cashvals').hide();
         }
         WPOS.sales.updatePaymentSums();
+        // credit selected → suggest existing Till customer as the debtor
+        try {
+            if ($(elem).find(':selected').val() === 'credit') {
+                var cid = parseInt($("#custid").val() || 0, 10) || 0;
+                if (cid > 0 && !_creditStmt) fetchCreditStatement(cid);
+                var cs = $('#credit-search');
+                if (cs.length && !cs.val()) cs.val($("#custname").val() || $("#custemail").val() || '');
+            }
+        } catch(e) {}
     };
 
     function addPaymentRow(method, value, tender, change, extraData){
@@ -1187,10 +1381,8 @@ function WPOSSales() {
                 var custdata = salesobj.custdata;
                 $("#custname").val(custdata.name);
                 $("#custphone").val(custdata.phone);
-                $("#custmobile").val(custdata.mobile);
                 $("#custaddress").val(custdata.address);
                 $("#custsuburb").val(custdata.suburb);
-                $("#custpostcode").val(custdata.postcode);
                 $("#custcountry").val(custdata.country);
                 WPOS.sales.setUpdateCust();
             }
@@ -1221,6 +1413,22 @@ function WPOSSales() {
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
     var printReceiptAfterSale = false;
     this.processSale = function (printReceipt) {
+        // Credit guard: must name the debtor and stay within limit; rest of flow unchanged
+        try {
+            if (hasCreditPayment()) {
+                var _camt = getCreditAmount();
+                var _cid = parseInt($("#custid").val() || 0, 10) || 0;
+                if (_cid <= 0) { alert('Credit sale needs a customer. Search in the Credit panel and select who owes.'); return false; }
+                if (_creditStmt && _creditStmt.customer) {
+                    var _lim = parseFloat(_creditStmt.customer.credit_limit || 0);
+                    var _cur = parseFloat(_creditStmt.open_balance || 0);
+                    if (_lim > 0 && (_cur + _camt) > _lim + 0.005) {
+                        alert('Credit limit exceeded. Owes now ' + WPOS.util.currencyFormat(_cur.toFixed(2)) + ' of ' + WPOS.util.currencyFormat(_lim.toFixed(2)) + '; this sale would add ' + WPOS.util.currencyFormat(_camt.toFixed(2)) + '. Reduce the credit amount or raise the limit in Customers.');
+                        return false;
+                    }
+                }
+            }
+        } catch(e) {}
         printReceiptAfterSale = !!printReceipt;
         var salebtn = $("#endsalebtn");
         try { salebtn.prop("disabled", true); } catch(e) {}
@@ -1676,10 +1884,10 @@ function WPOSSales() {
         custdata.name = $('#custname').val();
         custdata.email = $('#custemail').val();
         custdata.phone = $('#custphone').val();
-        custdata.mobile = $('#custmobile').val();
+        custdata.mobile = '';
         custdata.address = $('#custaddress').val();
         custdata.suburb = $('#custsuburb').val();
-        custdata.postcode = $('#custpostcode').val();
+        custdata.postcode = '0';
         custdata.country = $('#custcountry').val();
 
         return custdata;

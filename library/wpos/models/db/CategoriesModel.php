@@ -87,6 +87,19 @@ class CategoriesModel extends DbConfig
      * @param null $id
      * @return bool|int Returns false on an unexpected failure or number of affected rows
      */
+    /**
+     * Set a category image (single source shared by POS tray + website).
+     * @param int $id
+     * @param string $image
+     * @return bool|int
+     */
+    public function setImage($id, $image)
+    {
+        $sql = "UPDATE stored_categories SET image = :image WHERE id = :id;";
+        $placeholders = [":id"=>$id, ":image"=>substr((string)$image, 0, 512)];
+        return $this->update($sql, $placeholders);
+    }
+
     public function remove($id = null)
     {
         $placeholders = [];

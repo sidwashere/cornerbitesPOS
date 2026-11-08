@@ -42,14 +42,18 @@ function WPOSCustomers() {
         $("#custemail").val(cust.email);
         $("#custname").val(cust.name);
         $("#custphone").val(cust.phone);
-        $("#custmobile").val(cust.mobile);
         $("#custaddress").val(cust.address);
         $("#custsuburb").val(cust.suburb);
-        $("#custpostcode").val(cust.postcode);
         $("#custstate").val(cust.state);
         $("#custcountry").val(cust.country);
         $("#custnotes").val(cust.notes);
         $("#custdisbtn").text((cust.disabled==1?"Enable":"Disable")+" Customer Access");
+        try {
+            $("#cust-credit-enabled").prop("checked", !!cust.credit_enabled);
+            $("#cust-credit-limit").val(cust.credit_limit || 0);
+            $("#cust-credit-days").val(cust.credit_due_days || 7);
+            refreshCreditSummary(id);
+        } catch(e) {}
         curcustid = id;
         populateContactsTable();
         $("#editcustdialog").dialog("open");
@@ -104,10 +108,10 @@ function WPOSCustomers() {
             customer.email = $("#newcustemail").val();
             customer.name = $("#newcustname").val();
             customer.phone = $("#newcustphone").val();
-            customer.mobile = $("#newcustmobile").val();
+            customer.mobile = '';
             customer.address = $("#newcustaddress").val();
             customer.suburb = $("#newcustsuburb").val();
-            customer.postcode = $("#newcustpostcode").val();
+            customer.postcode = '0';
             customer.state = $("#newcuststate").val();
             customer.country = $("#newcustcountry").val();
             result = WPOS.sendJsonData("customers/add", JSON.stringify(customer));
@@ -122,13 +126,18 @@ function WPOSCustomers() {
             customer.email = $("#custemail").val();
             customer.name = $("#custname").val();
             customer.phone = $("#custphone").val();
-            customer.mobile = $("#custmobile").val();
+            customer.mobile = '';
             customer.address = $("#custaddress").val();
             customer.suburb = $("#custsuburb").val();
-            customer.postcode = $("#custpostcode").val();
+            customer.postcode = '0';
             customer.state = $("#custstate").val();
             customer.country = $("#custcountry").val();
             customer.notes = $("#custnotes").val();
+            try {
+                customer.credit_enabled = $("#cust-credit-enabled").is(":checked") ? 1 : 0;
+                customer.credit_limit = parseFloat($("#cust-credit-limit").val() || 0) || 0;
+                customer.credit_due_days = parseInt($("#cust-credit-days").val() || 7, 10) || 7;
+            } catch(e) {}
             result = WPOS.sendJsonData("customers/edit", JSON.stringify(customer));
             if (result !== false) {
                 customers[result.id] = result;
@@ -138,6 +147,47 @@ function WPOSCustomers() {
         }
         // hide loader
         WPOS.util.hideLoader();
+    };
+
+    function refreshCreditSummary(id){
+        var sum = $("#cust-credit-summary"), ent = $("#cust-credit-entries");
+        if (!sum.length) return;
+        sum.text('Loading credit…');
+        try {
+            WPOS.sendJsonDataAsync('customers/credit', JSON.stringify({custid: id}), function(res){
+                if (!res || !res.entries) { sum.text('Open balance: KSh 0.00'); ent.html(''); return; }
+                var avail = res.available === null ? '—' : ('' + res.available).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                sum.html('Open balance: <b>KSh ' + ('' + res.open_balance).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</b> &nbsp;·&nbsp; Overdue: KSh ' + ('' + res.overdue).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' &nbsp;·&nbsp; Available: ' + avail);
+                if (!res.entries.length) { ent.html('<div style="color:#888;">No credit sales — nothing owed.</div>'); return; }
+                var html = '<table class="table table-striped table-bordered" style="font-size:12px;"><thead><tr><th>Ref</th><th>Credited</th><th>Due</th><th>Owed</th></tr></thead><tbody>';
+                res.entries.forEach(function(e2){
+                    html += '<tr><td>' + e2.ref + '</td><td>' + new Date(e2.processdt).toLocaleDateString() + '</td><td>' + new Date(e2.duedt).toLocaleDateString() + (e2.overdue ? ' ⚠' : '') + '</td><td>KSh ' + ('' + e2.owed).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                ent.html(html);
+            });
+        } catch(e) {}
+    }
+    this.creditStatementPDF = function(id){
+        id = id || curcustid;
+        if (!id || id <= 0) { alert('Open a customer first'); return; }
+        window.open('/api/credit_statement.php?custid=' + id, '_blank');
+    };
+    this.creditPayDialog = function(id){
+        id = id || curcustid;
+        if (!id || id <= 0) { alert('Open a customer first'); return; }
+        var amt = prompt('Repayment amount (KSh) — oldest debt first:');
+        if (amt === null) return;
+        amt = parseFloat(amt);
+        if (!amt || amt <= 0) { alert('Enter an amount greater than 0'); return; }
+        var method = prompt('Method (mpesa/cash/eftpos/cheque):', 'mpesa') || 'mpesa';
+        WPOS.util.showLoader();
+        var r = WPOS.sendJsonData('customers/credit_pay', JSON.stringify({custid: id, amount: amt, method: method}));
+        WPOS.util.hideLoader();
+        if (r === false) { alert('Payment failed — check balance/network'); return; }
+        alert('Recorded ' + amt + ' via ' + method);
+        refreshCreditSummary(id);
+        reloadCustomerTables();
     };
 
     this.setOnlineAccess = function(){
@@ -215,7 +265,6 @@ function WPOSCustomers() {
             $("#contposition").val(cont.position);
             $("#contemail").val(cont.email);
             $("#contphone").val(cont.phone);
-            $("#contmobile").val(cont.mobile);
             $("#contrecinv").prop("checked", (cont.receivesinv == "1"));
             contdialog.dialog('option', "title", "Edit Contact");
         }
@@ -229,7 +278,7 @@ function WPOSCustomers() {
         contact.position = $("#contposition").val();
         contact.email = $("#contemail").val();
         contact.phone = $("#contphone").val();
-        contact.mobile = $("#contmobile").val();
+        contact.mobile = "";
         contact.receivesinv = $("#contrecinv").prop("checked") == true ? 1 : 0;
         var a, id = $("#contid").val();
         if (id == 0) {

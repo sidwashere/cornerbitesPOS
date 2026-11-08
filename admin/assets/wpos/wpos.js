@@ -91,13 +91,24 @@ function WPOSAdmin(){
             }
         }
     };
-    var timerId;
+    var timerId = null;
     this.startPageLoader = function(){
-        timerId = setInterval("WPOS.checkAnchor();", 300);
+        // Event-driven (no busy 300ms poll): hashchange + popstate drive navigation.
+        // Keep the 300ms fallback only for ancient browsers without hashchange.
+        if (timerId) return;
+        var onHash = function(){ try { WPOS.checkAnchor(); } catch(e){} };
+        window.addEventListener('hashchange', onHash, false);
+        if (!('onhashchange' in window)) {
+            timerId = setInterval("WPOS.checkAnchor();", 1000);
+        }
+        WPOS._hashHandler = onHash;
+        // fire once immediately so refresh/bookmark renders without waiting
+        onHash();
     };
     this.stopPageLoader = function(){
         currentAnchor = '0';
-        clearInterval(timerId);
+        if (timerId) { clearInterval(timerId); timerId = null; }
+        if (WPOS._hashHandler) { window.removeEventListener('hashchange', WPOS._hashHandler, false); WPOS._hashHandler = null; }
     };
     this.loadPageContent = function(query){
         var contenturl;
@@ -106,11 +117,23 @@ function WPOSAdmin(){
         } else {
             contenturl = "content/"+sec+".php";
         }
+        // Stale-while-revalidate: keep the old section on screen (no blank flash),
+        // swap only when the new HTML has fully arrived. Kill old pollers first
+        // so stale intervals cannot repaint over the new section (multi-flash bug).
+        try { if (window.CBClearPolls) window.CBClearPolls(); } catch(e){}
+        try { ['_p1','_p2','_p3'].forEach(function(k){ if (window[k]) { clearInterval(window[k]); window[k] = null; } }); } catch(e){}
+        var $main = $("#maincontent");
+        // aria-busy while loading; keep content visible (subtle top progress, not full blank)
+        $main.attr('aria-busy', 'true');
         $.get(contenturl, query, function(data){
             if (data=="AUTH"){
                 WPOS.sessionExpired();
             } else {
-                $("#maincontent").html(data);
+                // Single rAF paint; old scroll resets intentionally on section change
+                requestAnimationFrame(function(){
+                    $main.html(data);
+                    $main.attr('aria-busy', 'false');
+                });
             }
         }, "html");
     };
@@ -136,13 +159,43 @@ function WPOSAdmin(){
         }
     };
     var curuser = "";
-    // authentication
+    // authentication — refresh must NOT force re-login when the PHP session is still valid.
+    // Order: hello (session) → silent authrenew from persisted hash → only then show login.
     this.isLogged = function(){
-        // Always show login form - require password entry
-        $('#loadingdiv').hide();
-        $('#logindiv').show();
-        $("#loginbutton").removeAttr('disabled', 'disabled');
-        WPOS.util.hideLoader();
+        var showLogin = function(){
+            $('#loadingdiv').hide();
+            $('#logindiv').show();
+            $("#loginbutton").removeAttr('disabled', 'disabled');
+            $('#loginmodal').show();
+            $("#loguser").val('');
+            WPOS.util.hideLoader();
+        };
+        var adoptAndEnter = function(user){
+            try {
+                curuser = user;
+                $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader('anti-csrf-token', (curuser ? curuser.csrf_token : '')); } });
+                try {
+                    if (curuser.username && (curuser.auth_hash || curuser.token)) localStorage.setItem('cb_auth', JSON.stringify({username: curuser.username, auth_hash: curuser.auth_hash || curuser.token}));
+                } catch(e) {}
+                WPOS.initAdmin();
+                return true;
+            } catch(e) { return false; }
+        };
+        // 1. Existing PHP session? (refresh with valid 12h sliding cookie)
+        getLoginStatus(function(user){
+            if (user && user !== false && user.id) { if (adoptAndEnter(user)) return; }
+            // 2. Session gone (restart/expired)? Silent renew from persisted hash
+            var saved = null;
+            try { saved = JSON.parse(localStorage.getItem('cb_auth') || 'null'); } catch(e) {}
+            if (saved && saved.username && saved.auth_hash) {
+                try {
+                    var r = WPOS.sendJsonData('authrenew', JSON.stringify({username: saved.username, auth_hash: saved.auth_hash}));
+                    if (r && r.id) { if (adoptAndEnter(r)) return; }
+                } catch(e) {}
+            }
+            // 3. Truly logged out — show login
+            showLogin();
+        });
     };
     function getLoginStatus(callback){
         return WPOS.getJsonDataAsync("hello", callback);
@@ -151,17 +204,18 @@ function WPOSAdmin(){
     var _sessionFailures = 0;
     function startSessionCheck(){
         if (sessionTimer==null){
-            sessionTimer = setInterval(startSessionCheck, 300000);
+            sessionTimer = setInterval(startSessionCheck, 120000);
             return;
         }
         getLoginStatus(function(user){
+            // user===false also fires on network error; only logout on real auth expiry (2 consecutive hello=false)
             if (user==false) {
                 _sessionFailures++;
-                // tolerate a single transient failure before logging out
-                if (_sessionFailures >= 2) {
+                if (_sessionFailures >= 3) {
                     _sessionFailures = 0;
                     WPOS.sessionExpired();
                 }
+                // else: keep polling live (dashboard stays) — next 2m check retries
             } else {
                 _sessionFailures = 0;
             }
@@ -237,7 +291,7 @@ function WPOSAdmin(){
             return;
         }
         // authenticate
-        WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: hashed}), function(user){
+        WPOS.sendJsonDataAsync("auth", JSON.stringify({username: username, password: hashed, getsessiontokens: true}), function(user){
             try {
                 if (user !== false && user !== null && user !== undefined) {
                     if (user.isadmin==1 || (user.sections!=null && user.sections.access!='no')){
@@ -294,13 +348,39 @@ function WPOSAdmin(){
         WPOS.util.hideLoader();
     }
     this.sessionExpired = function(){
+        // Aggressive keep-alive: try silent auth renew from persisted hash before logging out.
+        // Transient failures (restart, blip) renew without ever flashing the login screen.
+        try {
+            var saved = null;
+            try { saved = JSON.parse(localStorage.getItem('cb_auth') || 'null'); } catch(e) {}
+            if (saved && saved.username && saved.auth_hash) {
+                var renewed = false;
+                try {
+                    var r = WPOS.sendJsonData('authrenew', JSON.stringify({username: saved.username, auth_hash: saved.auth_hash}));
+                    if (r !== false && r) {
+                        curuser = r;
+                        $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader('anti-csrf-token', (curuser ? curuser.csrf_token : '')); } });
+                        renewed = true;
+                    }
+                } catch(e) {}
+                if (renewed) { try { WPOS.initAdmin(); } catch(e) {} return; }
+            }
+        } catch(e) {}
         WPOS.stopPageLoader();
         WPOS.stopSocket();
+        stopSessionCheck();
         showLoginDiv("Your session has expired, please login again.");
         WPOS.util.hideLoader();
     };
     this.initAdmin = function(){
-        try { if (typeof initOrderSound === 'function') initOrderSound(); } catch(e) {}
+        try {
+            if (typeof initOrderSound === 'function') initOrderSound();
+            // Persist for silent auto-renew ( survives PHP restart / cookie expiry )
+            try {
+                var ah = curuser && (curuser.auth_hash || curuser.token);
+                if (curuser && curuser.username && ah) localStorage.setItem('cb_auth', JSON.stringify({username: curuser.username, auth_hash: ah}));
+            } catch(e) {}
+        } catch(e) {}
         // hide unallowed sections
         hidePermSections();
         // Load needed config
@@ -340,17 +420,17 @@ function WPOSAdmin(){
         }
         // hide/show sections
         curuser.sections.reports>0?$("#menureports").show():$("#menureports").hide();
+        curuser.sections.reports>0?$("#menuaccounts").show():$("#menuaccounts").hide();
+        curuser.sections.reports>0?$("#menuwebsitecms").show():$("#menuwebsitecms").hide();
         curuser.sections.graph>0?$("#menugraph").show():$("#menugraph").hide();
         curuser.sections.sales>0?$("#menusales").show():$("#menusales").hide();
-    $("#menukitchen").show();
-    $("#menukitchenembed").show();
         curuser.sections.invoices>0?$("#menuinvoices").show():$("#menuinvoices").hide();
         curuser.sections.items>0?$("#menuitems").show():$("#menuitems").hide();
-        curuser.sections.stock>0?$("#menustock").show():$("#menustock").hide();
+        curuser.sections.stock>0?$("#menuinventory").show():$("#menuinventory").hide();
         curuser.sections.suppliers>0?$("#menusuppliers").show():$("#menusuppliers").hide();
         curuser.sections.customers>0?$("#menucustomers").show():$("#menucustomers").hide();
         // hide parent items menu if no submenu items visible
-        if ((curuser.sections.items==0 && curuser.sections.stock==0) && (curuser.sections.suppliers==0 && curuser.sections.customers==0)){
+        if ((curuser.sections.items==0 && curuser.sections.categories==0) && (curuser.sections.suppliers==0 && curuser.sections.customers==0)){
             $("#menuparentitems").hide();
         } else {
             $("#menuparentitems").show();
@@ -728,11 +808,18 @@ function WPOSAdmin(){
 
     // CSV export functions
     this.initSave = function(filename, data){
+        // Neat, reliable download: Blob URL (data: URIs truncate on large files in some browsers)
         var dlelem = $('#dlelem');
-        dlelem.attr('href','data:text/csv;charset=utf8,' + encodeURIComponent(data)).attr('download', filename+'.csv');
-        $('#dlemem').ready(function() {
+        var fname = (filename || 'export').replace(/[^A-Za-z0-9._-]/g, '_') + '.csv';
+        try {
+            var blob = new Blob(["\ufeff" + data], {type: 'text/csv;charset=utf-8;'});
+            var url = window.URL && window.URL.createObjectURL ? window.URL.createObjectURL(blob) : ('data:text/csv;charset=utf8,' + encodeURIComponent(data));
+            dlelem.attr('href', url).attr('download', fname)[0].click();
+            setTimeout(function(){ try { window.URL && window.URL.revokeObjectURL(url); } catch(e) {} }, 4000);
+        } catch(e) {
+            dlelem.attr('href','data:text/csv;charset=utf8,' + encodeURIComponent(data)).attr('download', fname);
             $('#dlelem').get(0).click();
-        });
+        }
     };
 
     this.table2CSV = function(el) {

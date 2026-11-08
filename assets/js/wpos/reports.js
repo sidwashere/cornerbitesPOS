@@ -34,8 +34,6 @@ function WPOSReports() {
         $("#rtotaltakings").text(WPOS.util.currencyFormat(stats.totaltakings.toFixed(2)));
 
         showAdditionalReports();
-        // generate takings report
-        this.generateTakingsReport();
     };
 
     function showAdditionalReports(){
@@ -47,44 +45,7 @@ function WPOSReports() {
         }
     }
 
-    this.calcReconcil = function () {
-        var calcedtakings;
-        var balance;
-        var recdom100 = parseFloat($("#recdenom100").val()) * 100;
-        var recdom50 = parseFloat($("#recdenom50").val()) * 50;
-        var recdom20 = parseFloat($("#recdenom20").val()) * 20;
-        var recdom10 = parseFloat($("#recdenom10").val()) * 10;
-        var recdom5 = parseFloat($("#recdenom5").val()) * 5;
-        var recdom2 = parseFloat($("#recdenom2").val()) * 2;
-        var recdom1 = parseFloat($("#recdenom1").val());
-        var recdom50c = $("#recdenom50c").val() * 0.5;
-        var recdom20c = $("#recdenom20c").val() * 0.2;
-        var recdom10c = $("#recdenom10c").val() * 0.1;
-        var recdom5c = $("#recdenom5c").val() * 0.05;
-        var recfloat = parseFloat($("#recfloat").val());
-        var rectakings = $("#rectakings");
-        var recbalance = $("#recbalance");
-
-        calcedtakings = (recdom100 + recdom50 + recdom20 + recdom10 + recdom5 + recdom2 + recdom1 + recdom50c + recdom20c + recdom10c + recdom5c) - recfloat;
-        calcedtakings = calcedtakings.toFixed(2);
-        balance = (calcedtakings - curcashtakings).toFixed(2);
-        $(rectakings).text(WPOS.util.currencyFormat(calcedtakings));
-        $(recbalance).text(WPOS.util.currencyFormat(balance));
-        if (recbalance === -0.00) {
-            recbalance += 0.00;
-        }
-        // set status
-        if (balance < 0.00) {
-            $(recbalance).attr("class", "red");
-            $(rectakings).attr("class", "red");
-        } else {
-            $(recbalance).attr("class", "text-success");
-            $(rectakings).attr("class", "text-success");
-        }
-    };
-
     var curstats;
-    var curcashtakings;
 
     function getTodaysRecords(includerefunds) {
         var sales = WPOS.getSalesTable();
@@ -203,11 +164,7 @@ function WPOSReports() {
         }
         // calculate takings
         data.totaltakings = data.salestotal.toFixed(2) - data.refundtotal.toFixed(2);
-        if (data.methodtotals.hasOwnProperty('cash')) {
-            curcashtakings = (data.methodtotals.cash.hasOwnProperty('amount') ? data.methodtotals['cash'].amount : 0) - (data.methodtotals.cash.hasOwnProperty('refamount') ? data.methodtotals['cash'].refamount : 0);
-        } else {
-            curcashtakings = parseFloat(0).toFixed(2);
-        }
+        // (cash handling happens via the Accounts cash book — no drawer reconciliation needed)
         curstats = data;
         //alert(JSON.stringify(data));
         return data;
@@ -357,16 +314,7 @@ function WPOSReports() {
         return itemstats;
     }
 
-    this.generateTakingsReport = function () {
-        var html = reportheader("Takings Count Report") + '<table style="width:100%;" class="table table-stripped"><thead><tr><th>Method</th><th># Payments</th><th>Takings</th><th># Refunds</th><th>Refunds</th><th>Balance</th></tr></thead><tbody>';
-        var methdenoms = curstats.methodtotals;
-        for (var method in methdenoms) {
-            html += '<tr><td>' + WPOS.util.capFirstLetter(method) + '</td><td>' + methdenoms[method].qty + '</td><td>' + WPOS.util.currencyFormat(methdenoms[method].amount) + '</td><td>' + methdenoms[method].refqty + '</td><td>' + WPOS.util.currencyFormat(methdenoms[method].refamount) + '</td><td>' + WPOS.util.currencyFormat((parseFloat(methdenoms[method].amount) - parseFloat(methdenoms[method].refamount)).toFixed(2)) + '</td></tr>';
-        }
-        html += '</tbody></table>';
-        // put into report window
-        $("#reportcontain").html(html);
-    };
+
 
     this.generateWhatsSellingReport = function () {
         var html = reportheader("What's Selling Report") + '<table style="width:100%;" class="table table-stripped"><thead><tr><th>Item</th><th># Sold</th><th>Total</th></tr></thead><tbody>';

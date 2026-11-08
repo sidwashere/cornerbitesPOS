@@ -225,6 +225,12 @@ class WposPosSale {
         $this->jsonobj->orderstatus = 'queued';
         $this->jsonobj->source = $source;
         $this->jsonobj->order_type = $orderType;
+        if ($deliveryAddress !== null && $deliveryAddress !== '') {
+            $this->jsonobj->delivery_address = $deliveryAddress;
+        }
+        if ($externalRef !== null && empty($this->jsonobj->external_ref)) {
+            $this->jsonobj->external_ref = $externalRef;
+        }
         if ($tableNumber !== null) {
             $this->jsonobj->table_number = $tableNumber;
         }
@@ -320,6 +326,13 @@ class WposPosSale {
         $filtered = [];
         foreach ($orders as $order) {
             $json = json_decode($order['data']);
+            if ($json) {
+                if (!empty($order['delivery_address']) && empty($json->delivery_address)) $json->delivery_address = $order['delivery_address'];
+                if (!empty($order['source']) && empty($json->source)) $json->source = $order['source'];
+                if (!empty($order['external_ref']) && empty($json->external_ref)) $json->external_ref = $order['external_ref'];
+                if (!empty($order['order_type']) && empty($json->order_type)) $json->order_type = $order['order_type'];
+                if (!empty($order['received_at']) && empty($json->received_at)) $json->received_at = $order['received_at'];
+            }
             if ($orderStatus !== null && isset($json->orderstatus) && $json->orderstatus !== $orderStatus) {
                 continue;
             }
@@ -515,6 +528,39 @@ class WposPosSale {
         $orderid = (sizeof($sale)>0?$sale[0]['id']:0);
         // process customer data and get id
         $this->processCustomer();
+        // --- Credit enforcement: credit payment requires a customer; compute owed + due ---
+        try {
+            $creditAmt = 0; $paidNonCredit = 0;
+            foreach ((array)$this->jsonobj->payments as $pay) {
+                if (isset($pay->method) && $pay->method === 'credit') $creditAmt += (float)$pay->amount;
+                else $paidNonCredit += (float)$pay->amount;
+            }
+            if ($creditAmt > 0.005) {
+                $custid2 = (isset($this->jsonobj->custid) ? (int)$this->jsonobj->custid : 0);
+                if ($custid2 <= 0) { $result['error'] = 'Credit sale requires a customer — select or add the customer first'; return $result; }
+                $pdo = (new DbConfig())->_db;
+                $st = $pdo->prepare("SELECT credit_limit, credit_due_days, credit_enabled FROM customers WHERE id = :id");
+                $st->execute([':id' => $custid2]);
+                $custRow = $st->fetch(PDO::FETCH_ASSOC);
+                if (!$custRow) { $result['error'] = 'Credit customer not found'; return $result; }
+                if (!isset($custRow['credit_enabled']) || (int)$custRow['credit_enabled'] !== 1) { $result['error'] = 'This customer is not approved for credit — enable Credit in their profile'; return $result; }
+                $owedNow = 0;
+                foreach ($pdo->query("SELECT id,total FROM sales WHERE custid={$custid2} AND status=1") as $sr) {
+                    $paidQ = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM sale_payments WHERE saleid=:sid AND method<>'credit'");
+                    $paidQ->execute([':sid' => $sr['id']]);
+                    $owedNow += max(0, (float)$sr['total'] - (float)$paidQ->fetchColumn());
+                }
+                $limit = (float)($custRow['credit_limit'] ?? 0);
+                if ($limit > 0 && ($owedNow + $creditAmt) > $limit + 0.005) {
+                    $result['error'] = 'Credit limit exceeded — customer owes KSh ' . number_format($owedNow,2) . ' of KSh ' . number_format($limit,2) . ' limit (this sale adds KSh ' . number_format($creditAmt,2) . ')';
+                    return $result;
+                }
+                $dueDays = (int)($custRow['credit_due_days'] ?? 7);
+                if ($dueDays <= 0) $dueDays = 7;
+                $this->jsonobj->duedt = $this->jsonobj->processdt + $dueDays * 86400000;
+                $this->jsonobj->credit_due_days = $dueDays;
+            }
+        } catch (Exception $e) { /* never block sale on credit check failure except explicit errors above */ }
         // set email receipt flag
         $this->emailrec = isset($this->jsonobj->emailrec);
         unset($this->jsonobj->emailrec); // unset, we don't need to store this in the database
@@ -541,8 +587,16 @@ class WposPosSale {
             // add global id & dt stamp to json data and set updated response
             $this->jsonobj->id = $this->id;
             $this->jsonobj->dt = $this->dt;
-            $this->jsonobj->balance = 0; //TODO: Actually validate that balance is 0!
+            // Balance = total owed to this customer for THIS sale = total - non-credit paid
+            $balTotal = (float)$this->jsonobj->total; $balPaid = 0;
+            foreach ((array)$this->jsonobj->payments as $pay) { if (!isset($pay->method) || $pay->method !== 'credit') $balPaid += (float)$pay->amount; }
+            $this->jsonobj->balance = round(max(0, $balTotal - $balPaid), 2);
             $this->jsonobj->status = 1;
+            try {
+                $pdo2 = $this->salesMdl->_db;
+                $pdo2->prepare("UPDATE sales SET balance = :b" . (isset($this->jsonobj->duedt) ? ", duedt = :d" : "") . " WHERE id = :id")
+                     ->execute(isset($this->jsonobj->duedt) ? [':b' => $this->jsonobj->balance, ':d' => $this->jsonobj->duedt, ':id' => $this->id] : [':b' => $this->jsonobj->balance, ':id' => $this->id]);
+            } catch (Exception $e) {}
 
             // Create transaction history record
             WposTransactions::addTransactionHistory($this->id, $this->jsonobj->userid, "Created", "Sale created");
@@ -833,7 +887,8 @@ class WposPosSale {
             // if customer record (id) exists
             if ($this->jsonobj->custid > 0) {
 
-                if (WposAdminCustomers::updateCustomerData($this->custdata)===true){
+                $upd = WposAdminCustomers::updateCustomerData($this->custdata);
+                if ($upd !== false && $upd !== null){
                     unset($this->jsonobj->custdata); // unset customer data; we don't need to send this back
                     return true;
                 } else {
@@ -841,9 +896,11 @@ class WposPosSale {
                 }
 
             } else {
-                $id = WposAdminCustomers::addCustomerData($this->custdata);
+                $added = WposAdminCustomers::addCustomerData($this->custdata);
+                // addCustomerData returns the full record (array) or an id — handle both
+                $id = is_array($added) ? ($added['id'] ?? null) : (is_object($added) ? ($added->id ?? null) : $added);
                 if (is_numeric($id)) {
-                    $this->jsonobj->custid = $id;
+                    $this->jsonobj->custid = (int)$id;
                     unset($this->jsonobj->custdata); // unset customer data; we don't need to send this back
                     return true;
                 } else {

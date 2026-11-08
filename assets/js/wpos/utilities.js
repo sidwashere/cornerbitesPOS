@@ -365,6 +365,33 @@ function WPOSUtil() {
         }
         return formatted;
     };
+    // --- Flicker-free refresh: signature-diffed DOM patches (no 90s-system flash) ---
+    // sig(str): fast string hash to decide whether a re-render is needed at all.
+    this.sig = function(str){
+        var s = String(str == null ? '' : str), h = 0;
+        for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+        return s.length + ':' + h;
+    };
+    // patchIfChanged($el, html): write only when content changed; preserve scroll; rAF avoids layout thrash.
+    // Returns true if a write happened. Never blanks the element on error paths — callers keep stale on failure.
+    this.patchIfChanged = function($el, html){
+        if (!$el || !$el.length) return false;
+        var sig = WPOS.util.sig(html);
+        var key = $el.attr('data-cb-sig') || '';
+        if (key === sig) return false;
+        var scroller = $el.closest('div');
+        var st = scroller && scroller.length ? scroller.scrollTop() : 0;
+        $el.attr('data-cb-sig', sig);
+        requestAnimationFrame(function(){
+            $el.html(html);
+            if (scroller && scroller.length) scroller.scrollTop(st);
+        });
+        return true;
+    };
+    // Standard system-wide money display: KSh + comma thousands + 2 decimals. Use money(v) everywhere money is shown.
+    this.money = function(value){
+        return this.currencyFormat(value);
+    };
     // javascript equiv of php's number_format
     function number_format(number, decimals, dec_point, thousands_sep) {
         //  discuss at: http://phpjs.org/functions/number_format/

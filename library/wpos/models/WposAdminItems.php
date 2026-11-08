@@ -470,7 +470,16 @@ class WposAdminItems {
             return $result;
         }
         $supMdl = new SuppliersModel();
-        $qresult = $supMdl->edit($this->data->id, $this->data->name);
+        $extra = [];
+        foreach (['email','phone','mobile','address','suburb','postcode','state','country','notes','credit_limit','credit_due_days','credit_enabled'] as $col) {
+            if (isset($this->data->$col)) $extra[$col] = $this->data->$col;
+            if (isset($this->data->{'credit'.ucfirst($col)})) $extra[$col] = $this->data->{'credit'.ucfirst($col)};
+        }
+        // camelCase aliases from admin UI
+        if (isset($this->data->credit_limit)) $extra['credit_limit'] = $this->data->credit_limit;
+        if (isset($this->data->credit_due_days)) $extra['credit_due_days'] = $this->data->credit_due_days;
+        if (isset($this->data->credit_enabled)) $extra['credit_enabled'] = $this->data->credit_enabled;
+        $qresult = $supMdl->edit($this->data->id, $this->data->name, $extra);
         if ($qresult === false) {
             $result['error'] = "Could not edit the supplier: ".$supMdl->errorInfo;
         } else {

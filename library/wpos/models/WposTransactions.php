@@ -126,11 +126,27 @@ class WposTransactions {
                 $sales = [];
                 foreach ($qres as $sale) {
                     $jsonObj = json_decode($sale['data'], true);
+                    if (is_array($jsonObj)) {
+                        if (!empty($sale['delivery_address']) && empty($jsonObj['delivery_address'])) $jsonObj['delivery_address'] = $sale['delivery_address'];
+                        if (!empty($sale['source']) && empty($jsonObj['source'])) $jsonObj['source'] = $sale['source'];
+                        if (!empty($sale['external_ref']) && empty($jsonObj['external_ref'])) $jsonObj['external_ref'] = $sale['external_ref'];
+                        if (!empty($sale['order_type']) && empty($jsonObj['order_type'])) $jsonObj['order_type'] = $sale['order_type'];
+                        if (!empty($sale['received_at']) && empty($jsonObj['received_at'])) $jsonObj['received_at'] = $sale['received_at'];
+                    }
                     $sales[$sale['ref']] = $jsonObj;
                 }
                 $result['data'] = $sales;
             } else {
-                $result['data'][$qres[0]['ref']] = json_decode($qres[0]['data']);
+                $result['data'] = [];
+                $single = json_decode($qres[0]['data']);
+                if ($single) {
+                    if (!empty($qres[0]['delivery_address']) && empty($single->delivery_address)) $single->delivery_address = $qres[0]['delivery_address'];
+                    if (!empty($qres[0]['source']) && empty($single->source)) $single->source = $qres[0]['source'];
+                    if (!empty($qres[0]['external_ref']) && empty($single->external_ref)) $single->external_ref = $qres[0]['external_ref'];
+                    if (!empty($qres[0]['order_type']) && empty($single->order_type)) $single->order_type = $qres[0]['order_type'];
+                    if (!empty($qres[0]['received_at']) && empty($single->received_at)) $single->received_at = $qres[0]['received_at'];
+                }
+                $result['data'][$qres[0]['ref']] = $single;
             }
         }
         return $result;

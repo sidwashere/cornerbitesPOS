@@ -9,7 +9,7 @@ $uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Direct API endpoint scripts (mirrors api/.htaccess). These must be served as-is
 // instead of being rewritten to api/wpos.php?a=...
-if (preg_match('#^/api/(webhooks|poll|process_inbox|process_whatsapp|setup_tables|import_items|save_whatsapp_config|save_website_content|website_content|get_whatsapp_config|menu|serve_logo|table_qr)\.php$#', $uri)) {
+if (preg_match('#^/api/(webhooks|poll|process_inbox|process_whatsapp|setup_tables|import_items|save_whatsapp_config|save_website_content|website_content|website_upload|order_qr|get_whatsapp_config|menu|serve_logo|table_qr|credit_statement|supplier_statement|accounts_report|accounts_export)\.php$#', $uri)) {
     return false;
 }
 

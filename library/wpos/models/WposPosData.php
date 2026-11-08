@@ -236,6 +236,11 @@ class WposPosData
                     $salejson = json_decode($sale['data']);
                     if ($salejson === null) continue;
                     $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                    if (!empty($sale['delivery_address']) && empty($salejson->delivery_address)) $salejson->delivery_address = $sale['delivery_address'];
+                    if (!empty($sale['source']) && empty($salejson->source)) $salejson->source = $sale['source'];
+                    if (!empty($sale['external_ref']) && empty($salejson->external_ref)) $salejson->external_ref = $sale['external_ref'];
+                    if (!empty($sale['order_type']) && empty($salejson->order_type)) $salejson->order_type = $sale['order_type'];
+                    if (!empty($sale['received_at']) && empty($salejson->received_at)) $salejson->received_at = $sale['received_at'];
                     if (isset($sale['ref'])) {
                         $sales[$sale['ref']] = $salejson;
                     }
@@ -256,6 +261,11 @@ class WposPosData
                             $salejson = json_decode($sale['data']);
                             if ($salejson === null) continue;
                             $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                            if (!empty($sale['delivery_address']) && empty($salejson->delivery_address)) $salejson->delivery_address = $sale['delivery_address'];
+                            if (!empty($sale['source']) && empty($salejson->source)) $salejson->source = $sale['source'];
+                            if (!empty($sale['external_ref']) && empty($salejson->external_ref)) $salejson->external_ref = $sale['external_ref'];
+                            if (!empty($sale['order_type']) && empty($salejson->order_type)) $salejson->order_type = $sale['order_type'];
+                            if (!empty($sale['received_at']) && empty($salejson->received_at)) $salejson->received_at = $sale['received_at'];
                             if (isset($sale['ref'])) {
                                 $sales[$sale['ref']] = $salejson;
                             }
@@ -279,6 +289,11 @@ class WposPosData
                             $salejson = json_decode($sale['data']);
                             if ($salejson === null) continue;
                             $salejson->type = isset($sale['type']) ? $sale['type'] : 'sale';
+                            if (!empty($sale['delivery_address']) && empty($salejson->delivery_address)) $salejson->delivery_address = $sale['delivery_address'];
+                            if (!empty($sale['source']) && empty($salejson->source)) $salejson->source = $sale['source'];
+                            if (!empty($sale['external_ref']) && empty($salejson->external_ref)) $salejson->external_ref = $sale['external_ref'];
+                            if (!empty($sale['order_type']) && empty($salejson->order_type)) $salejson->order_type = $sale['order_type'];
+                            if (!empty($sale['received_at']) && empty($salejson->received_at)) $salejson->received_at = $sale['received_at'];
                             if (isset($sale['ref'])) {
                                 $sales[$sale['ref']] = $salejson;
                             }

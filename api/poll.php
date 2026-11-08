@@ -21,6 +21,15 @@ if (!isset($_SESSION['userId'])) {
     echo json_encode(['error' => 'unauthorized']);
     exit;
 }
+// Sliding idle touch + release the session lock so sibling tabs poll concurrently
+try {
+    $_SESSION['last_activity'] = time();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        @setcookie(session_name(), session_id(), time() + 43200, '/', '', $secure, true);
+        session_write_close();
+    }
+} catch (Exception $e) {}
 
 $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
 $source = isset($_GET['source']) ? $_GET['source'] : null;
@@ -55,6 +64,13 @@ $sales = [];
 foreach ($rows as $r) {
     $json = json_decode($r['data']);
     if ($json) {
+        // Surface delivery/table/source from DB columns (JSON may pre-date these fields)
+        if (!empty($r['delivery_address']) && empty($json->delivery_address)) $json->delivery_address = $r['delivery_address'];
+        if (!empty($r['source']) && empty($json->source)) $json->source = $r['source'];
+        if (!empty($r['external_ref']) && empty($json->external_ref)) $json->external_ref = $r['external_ref'];
+        if (!empty($r['order_type']) && empty($json->order_type)) $json->order_type = $r['order_type'];
+        if (!empty($r['received_at']) && empty($json->received_at)) $json->received_at = $r['received_at'];
+        if (isset($r['status']) && !isset($json->status)) $json->status = (int)$r['status'];
         $sales[] = $json;
     }
 }

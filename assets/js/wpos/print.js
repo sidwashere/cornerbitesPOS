@@ -467,7 +467,7 @@ function WPOSPrint(kitchenMode) {
             case "wp":
                 if (getGlobalPrintSetting('escpreceiptmode')=='text') {
                     var data = getEscReceipt(record);
-                    printESCPReceipt(data);
+                    printESCPReceipt(data, ref);
                 } else {
                     // bitmap mode printing
                     var html = getHtmlReceipt(record, true);
@@ -480,13 +480,13 @@ function WPOSPrint(kitchenMode) {
         }
     }
 
-    function printESCPReceipt(data){
+    function printESCPReceipt(data, ref){
         if (WPOS.getConfigTable().pos.recprintlogo == true) {
             getESCPImageString(window.location.protocol + "//" + document.location.hostname + WPOS.getConfigTable().pos.reclogo, function (imgdata) {
-                appendQrcode("receipts", imgdata + data);
+                appendQrcode("receipts", imgdata + data, ref);
             });
         } else {
-            appendQrcode("receipts", data);
+            appendQrcode("receipts", data, ref);
         }
     }
 
@@ -530,9 +530,13 @@ function WPOSPrint(kitchenMode) {
         appendQrcode("receipts", esc_init);
     };
 
-    function appendQrcode(printer, data) {
+    function appendQrcode(printer, data, ref) {
         if (WPOS.getConfigTable().pos.recqrcode != "") {
-            getESCPImageString(window.location.protocol + "//" + document.location.hostname + "/docs/qrcode.png", function (imgdata) {
+            // Per-order QR (encodes the website order link for this sale reference)
+            var qrUrl = window.location.protocol + "//" + document.location.hostname + (ref
+                ? "/api/order_qr.php?ref=" + encodeURIComponent(ref)
+                : "/docs/qrcode.png");
+            getESCPImageString(qrUrl, function (imgdata) {
                 sendESCPPrintData(printer, data + imgdata + getFeedAndCutCommands(printer));
             });
         } else {
@@ -1166,7 +1170,7 @@ function WPOSPrint(kitchenMode) {
             thermalprint: escpprint,
             print_id: config.pos.recprintid,
             print_desc: config.pos.recprintdesc,
-            qrcode_url: config.pos.recqrcode!=""?document.location.protocol+"//"+document.location.host+"/docs/qrcode.png":null,
+            qrcode_url: config.pos.recqrcode!=""?document.location.protocol+"//"+document.location.host+"/api/order_qr.php?ref="+encodeURIComponent(record.ref||""):null,
             currency: function() {
                 return function (text, render) {
                     return WPOS.util.currencyFormat(render(text));

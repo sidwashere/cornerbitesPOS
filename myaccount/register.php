@@ -17,20 +17,12 @@ header("Access-Control-Allow-Origin: *");
             <td><input id="register_phone" type="text"/></td>
         </tr>
         <tr>
-            <td style="text-align: right;"><label>Mobile:&nbsp;</label></td>
-            <td><input id="register_mobile" type="text"/></td>
-        </tr>
-        <tr>
             <td style="text-align: right;"><label>Address:&nbsp;</label></td>
             <td><input id="register_address" type="text"/></td>
         </tr>
         <tr>
             <td style="text-align: right;"><label>Suburb:&nbsp;</label></td>
             <td><input id="register_suburb" type="text"/></td>
-        </tr>
-        <tr>
-            <td style="text-align: right;"><label>Postcode:&nbsp;</label></td>
-            <td><input id="register_postcode" type="text"/></td>
         </tr>
         <tr>
             <td style="text-align: right;"><label>State:&nbsp;</label></td>

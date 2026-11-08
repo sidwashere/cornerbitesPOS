@@ -29,6 +29,7 @@
     <th data-priority="4">ID</th>
     <th data-priority="2">Name</th>
     <th data-priority="3"># Items</th>
+    <th data-priority="4">Image (tray + web)</th>
     <th data-priority="1" class="noexport"></th>
 </tr>
 </thead>
@@ -44,11 +45,21 @@
 </div><!-- PAGE CONTENT ENDS -->
 </div><!-- /.col -->
 <div id="editcatdialog" class="hide">
-    <table>
+    <table style="width:100%;">
         <tr>
             <td style="text-align: right;"><label>Name:&nbsp;</label></td>
             <td><input id="categoryname" type="text"/>
                 <input id="categoryid" type="hidden"/></td>
+        </tr>
+        <tr>
+            <td style="text-align: right;"><label>Image:&nbsp;</label></td>
+            <td><input id="categoryimage" type="text" style="width:70%;"/><br/>
+                <img id="categoryimage-preview" style="max-height:60px; border:1px solid #ddd; border-radius:4px; margin:4px 0;"/><br/>
+                <input type="file" id="categoryimage-file" accept="image/*"/>
+                <button type="button" class="btn btn-xs btn-info" onclick="uploadCategoryImage();">Upload</button>
+                <button type="button" class="btn btn-xs btn-default" onclick="useTopSellerImage();">Use top seller</button>
+                <button type="button" class="btn btn-xs btn-default" onclick="$('#categoryimage').val(''); $('#categoryimage-preview').attr('src','');">Clear</button>
+                <div id="category-top-note" style="font-size:11px; color:#888;"></div></td>
         </tr>
     </table>
 </div>
@@ -67,6 +78,8 @@
 <script type="text/javascript">
     var categories = null;
     var datatable;
+    var CAT_TOP = {};
+    try { var _cbSt2 = document.createElement('style'); _cbSt2.textContent = "#categoriestable{clear:none !important;}"; (document.head || document.getElementsByTagName('head')[0] || document.documentElement).appendChild(_cbSt2); } catch(e) {}
     $(function() {
         categories = WPOS.getJsonData("categories/get");
         var suparray = [];
@@ -84,6 +97,7 @@
                 { "mData":"id" },
                 { "mData":"name" },
                 { "mData": "numitems"},
+                { mData:function(data,type,val){ var img = data.image || ''; if (!img) { try { var ts = CAT_TOP[data.id]; if (ts) img = ts.top_seller_image || ''; } catch(e) {} } return (img ? '<img src="' + img + '" style="max-height:36px; max-width:64px; border-radius:4px;"/> <small style="display:block; color:#888;">' + (data.image ? 'set' : 'top seller') + '</small>' : '<span style="color:#999;">—</span>'); }, bSortable: false },
                 { mData:null, sDefaultContent:'<div class="action-buttons"><a class="green" onclick="openeditcatdialog($(this).closest(\'tr\').find(\'td\').eq(1).text());"><i class="icon-pencil bigger-130"></i></a><a class="red" onclick="removeCategory($(this).closest(\'tr\').find(\'td\').eq(1).text())"><i class="icon-trash bigger-130"></i></a></div>', "bSortable": false, sClass: "noexport" }
             ],
             "columns": [
@@ -91,6 +105,7 @@
                 {type: "numeric"},
                 {type: "string"},
                 {type: "numeric"},
+                {},
                 {}
             ],
             "fnInfoCallback": function( oSettings, iStart, iEnd, iMax, iTotal, sPre ) {
@@ -186,6 +201,15 @@
                 $(this).css("maxWidth", "375px");
             }
         });
+        // Enrich with top-seller images (category tray fallback + "Use top seller")
+        try {
+            WPOS.sendJsonDataAsync('categories/images', JSON.stringify({}), function(res){
+                if (res && res.length) {
+                    res.forEach(function(c){ CAT_TOP[c.id] = c; });
+                    reloadTable();
+                }
+            }, function(){});
+        } catch(e) {}
         // hide loader
         WPOS.util.hideLoader();
     });
@@ -194,7 +218,32 @@
         var item = categories[id];
         $("#categoryid").val(item.id);
         $("#categoryname").val(item.name);
+        $("#categoryimage").val(item.image || '');
+        $("#categoryimage-preview").attr('src', item.image || '');
+        var top = CAT_TOP[id] || {};
+        var note = $('#category-top-note');
+        if (top.top_seller_image && !item.image) note.text('Empty = tray uses top-selling product image.');
+        else if (top.top_seller_image) note.text('Manual image set (top seller available for "Use top seller").');
+        else note.text('No top-selling image yet — upload or paste a URL.');
         $("#editcatdialog").dialog("open");
+    }
+    function uploadCategoryImage(){
+        var fi = document.getElementById('categoryimage-file');
+        if (!fi.files.length) { alert('Choose an image first'); return; }
+        var fd = new FormData();
+        fd.append('file', fi.files[0]);
+        WPOS.util.showLoader();
+        $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
+            success: function(res){ WPOS.util.hideLoader(); if (res && res.ok) { $('#categoryimage').val(res.url); $('#categoryimage-preview').attr('src', res.url); } else alert(res && res.error ? res.error : 'Upload failed'); },
+            error: function(){ WPOS.util.hideLoader(); alert('Upload failed'); }
+        });
+    }
+    function useTopSellerImage(){
+        var id = $("#categoryid").val();
+        var top = CAT_TOP[id] || {};
+        if (!top.top_seller_image) { alert('No top-selling product image for this category yet'); return; }
+        $('#categoryimage').val(top.top_seller_image);
+        $('#categoryimage-preview').attr('src', top.top_seller_image);
     }
     function saveCategory(isnewitem){
         // show loader
@@ -216,8 +265,10 @@
             item.id = $("#categoryid").val();
             item.name = $("#categoryname").val();
             result = WPOS.sendJsonData("categories/edit", JSON.stringify(item));
+            var catImg = $("#categoryimage").val() || '';
             if (result!==false){
-                categories[result.id] = result;
+                if (categories[item.id]) { categories[item.id].name = item.name; categories[item.id].image = catImg; }
+                WPOS.sendJsonData("categories/setImage", JSON.stringify({ id: item.id, image: catImg }));
                 reloadTable();
                 $("#editcatdialog").dialog("close");
             }

@@ -77,6 +77,20 @@ function WPOSTransactions() {
             }
         }
         var record = transactions[ref];
+        // Normalize online/website order shapes (items as map, missing payments/subtotal)
+        try {
+            if (record && !Array.isArray(record.items)) {
+                var _map = record.items && typeof record.items === 'object' ? Object.keys(record.items).map(function(k){ return record.items[k]; }) : [];
+                record.items = _map.map(function(it){
+                    var qty = parseInt(it.qty||1,10) || 1;
+                    var price = parseFloat(it.price||0) || 0;
+                    return { id: it.id||0, qty: qty, name: it.name||'Item', unit: price, price: qty*price, tax: {values:{}}, mod: {items:[]} };
+                });
+            }
+            if (record && !Array.isArray(record.payments)) record.payments = [];
+            if (record && (record.subtotal === undefined || record.subtotal === null)) record.subtotal = record.total || 0;
+            if (record && !record.hasOwnProperty('notes') && record.hasOwnProperty('salenotes')) record.notes = record.salenotes;
+        } catch(e) {}
         curref = ref;
         curid = record.id;
         // Populate general transaction info
@@ -89,6 +103,18 @@ function WPOSTransactions() {
         var location = (WPOS.locations.hasOwnProperty(record.locid) ? WPOS.locations[record.locid].name : 'NA');
         $("#transdev").text(device);
         $("#transloc").text(location);
+        // Online / delivery location (website orders carry delivery_address + table_number in the sale JSON)
+        try {
+            var srcLabel = record.source || record.channel || 'pos';
+            var srcNames = {website:'Website', pos:'POS', glovo:'Glovo', ubereats:'Uber Eats', phone:'Phone', dinein:'Dine In', delivery:'Delivery', pickup:'Pickup'};
+            $("#transsource").text((srcNames[String(srcLabel).toLowerCase()] || srcLabel) + (record.orderstatus ? ' (' + record.orderstatus + ')' : ''));
+            $("#transordertype").text(record.order_type || '-');
+            var deliv = record.delivery_address || '';
+            if (typeof deliv === 'object' && deliv) deliv = deliv.address || deliv.text || JSON.stringify(deliv);
+            $("#transdelivery").text(deliv || '-');
+            $("#transtable").text(record.table_number ? 'Table ' + record.table_number : '-');
+            $("#transexternal").text(record.external_ref || '-');
+        } catch(e) {}
         $("#transnotes").val(record.notes);
         $("#transsubtotal").text(WPOS.util.currencyFormat(record.subtotal));
 
@@ -106,17 +132,27 @@ function WPOSTransactions() {
         populateInvoiceInfo(record);
         populateTaxinfo(record);
         populateVoidInfo(record);
-        // Populate customer information
-        var customer = (record.custid==0?false:WPOS.customers.getCustomer(record.custid));
-        if (customer!==false) {
+        // Populate customer information (embedded JSON customer for website/online orders)
+        var customer = (!record.custid?false:WPOS.customers.getCustomer(record.custid));
+        if ((customer===false || !customer) && record.customer) {
+            try {
+                $("#tcustid").val('0');
+                $("#tcustname").text(record.customer.name || '');
+                $("#tcustaddress").text(record.delivery_address || '');
+                $("#tcustsuburb").text('');
+                $("#tcustcountry").text('');
+                $("#tcustphone").text(record.customer.phone || '');
+                $("#tcustemail").text('');
+                var cb = $("#transcustdtlbtn"); if (cb.length) cb.hide();
+                $("#tcustdetails").show();
+            } catch(e) {}
+        } else if (customer!==false) {
             $("#tcustid").val(customer.id);
             $("#tcustname").text(customer.name);
             $("#tcustaddress").text(customer.address);
             $("#tcustsuburb").text(customer.suburb);
-            $("#tcustpostcode").text(customer.postcode);
             $("#tcustcountry").text(customer.country);
             $("#tcustphone").text(customer.phone);
-            $("#tcustmobile").text(customer.mobile);
             $("#tcustemail").text(customer.email);
             $("#tcustdetails").show();
         } else {
@@ -215,12 +251,17 @@ function WPOSTransactions() {
     function populateItemsTable(items) {
         var itemtable = $("#transitemtable");
         $(itemtable).html('');
+        if (!items) return;
+        if (!Array.isArray(items)) {
+            try { items = Object.keys(items).map(function(k){ return items[k]; }).map(function(it){ var q=parseInt(it.qty||1,10)||1; var pr=parseFloat(it.price||0)||0; return {id:it.id||0,qty:q,name:it.name||'Item',unit:pr,price:q*pr,tax:{values:{}},mod:{items:[]}}; }); } catch(e) { return; }
+        }
         var taxitems = WPOS.getTaxTable().items;
         for (var i = 0; i < items.length; i++) {
             // tax data
             var taxStr = "";
-            for (var x in items[i].tax.values){
-                taxStr += WPOS.util.currencyFormat(items[i].tax.values[x]) + " (" + taxitems[x].name + " " + taxitems[x].value + "%) <br/>";
+            var _tvals = (items[i].tax && items[i].tax.values) ? items[i].tax.values : {};
+            for (var x in _tvals){
+                taxStr += WPOS.util.currencyFormat(_tvals[x]) + " (" + taxitems[x].name + " " + taxitems[x].value + "%) <br/>";
             }
             if (taxStr == "")
                 taxStr = WPOS.util.currencyFormat(0.00);
@@ -240,6 +281,8 @@ function WPOSTransactions() {
     function populatePaymentsTable(payments) {
         var paytable = $("#transpaymenttable");
         $(paytable).html('');
+        if (!payments) return;
+        if (!Array.isArray(payments)) { try { payments = Object.keys(payments).map(function(k){ return payments[k]; }); } catch(e){ return; } }
         var method, amount;
         for (var i = 0; i < payments.length; i++) {
             // catch extras

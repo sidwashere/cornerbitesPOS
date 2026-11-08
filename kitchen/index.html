@@ -47,7 +47,7 @@
 
     <!-- Wpos Libraries -->
     <script type="text/javascript" src="/assets/js/wpos/order-sound.js?v=20261106-1"></script>
-    <script type="text/javascript" src="kitchen.js?v=20261106-166"></script>
+    <script type="text/javascript" src="kitchen.js?v=20261106-201"></script>
     <script type="text/javascript" src="/assets/js/wpos/transactions.js?v=20261030"></script>
     <script type="text/javascript" src="/assets/js/wpos/print.js?v=20261030"></script>
     <script type="text/javascript" src="/assets/js/wpos/utilities.js?v=20261030"></script>
@@ -70,6 +70,13 @@
     <li><a href="#tabs-3">Settings</a></li>
     <button onClick="WPOS.logout();" style="float:right; height: 45px;" class="btn logout_btn">Logout</button>
 </ul>
+<div id="kitchenBrief" style="display:flex; flex-wrap:wrap; gap:14px; padding:6px 12px; background:#f7f8f5; border:1px solid #e3e3d8; border-radius:8px; font-size:13px; margin:4px 5px 6px;">
+    <strong>Board brief:</strong>
+    <span>Pending <b id="kQueued">0</b></span> ·
+    <span>Preparing <b id="kPreparing">0</b></span> ·
+    <span>Ready <b id="kReady">0</b></span> ·
+    <span>Oldest waiting <b id="kOldest">—</b></span>
+</div>
 <div id="tabs-1" style="padding: 5px; padding-top: 10px;">
     <div id="ordercontainer">
 
@@ -82,6 +89,7 @@
             <label class="fixedlabel" style="margin-right: 5px;">Sale Ref:  </label><span class="orderbox_saleref"></span><br/>
             <label class="fixedlabel" style="margin-right: 5px;">Customer:</label><span class="orderbox_customer"></span><br/>
             <label class="fixedlabel" style="margin-right: 5px;">Address:</label><span class="orderbox_address"></span><br/>
+            <label class="fixedlabel" style="margin-right: 5px;">Table:</label><span class="orderbox_table"></span><br/>
             <label class="fixedlabel" style="margin-right: 5px;">Channel:</label><span class="orderbox_channel"></span><br/>
             <label class="fixedlabel" style="margin-right: 5px;">Notes:</label><span class="orderbox_notes"></span><br/>
         </div>

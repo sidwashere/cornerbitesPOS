@@ -31,11 +31,6 @@
                     </div>
                     <div class="space-4"></div>
                     <div class="form-group">
-                        <div class="col-sm-5"><label>Mobile:</label></div>
-                        <div class="col-sm-5"><input type="text" id="mobile" /></div>
-                    </div>
-                    <div class="space-4"></div>
-                    <div class="form-group">
                         <div class="col-sm-5"><label>Address:</label></div>
                         <div class="col-sm-5"><input type="text" id="address" /></div>
                     </div>
@@ -43,11 +38,6 @@
                     <div class="form-group">
                         <div class="col-sm-5"><label>Suburb:</label></div>
                         <div class="col-sm-5"><input type="text" id="suburb" /></div>
-                    </div>
-                    <div class="space-4"></div>
-                    <div class="form-group">
-                        <div class="col-sm-5"><label>Postcode:</label></div>
-                        <div class="col-sm-5"><input type="text" id="postcode" /></div>
                     </div>
                     <div class="space-4"></div>
                     <div class="form-group">
