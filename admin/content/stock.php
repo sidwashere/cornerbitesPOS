@@ -57,11 +57,11 @@
     </div>
 </div>
 <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #e3e3d8;">
-    <div style="flex:1 1 280px; min-width:280px;">
+    <div style="flex:1 1 420px; min-width:280px; max-width:520px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-trophy"></i> Top 5 items by stock value</h4></div>
             <div class="widget-body"><div id="topValueChart" style="padding:8px;"></div></div></div>
     </div>
-    <div style="flex:1 1 280px; min-width:280px;">
+    <div style="flex:1 1 420px; min-width:280px; max-width:520px;">
         <div class="widget-box transparent"><div class="widget-header widget-header-flat"><h4 class="lighter"><i class="icon-map-marker"></i> Value by location</h4></div>
             <div class="widget-body"><div id="byLocChart" style="padding:8px;"></div></div></div>
     </div>
