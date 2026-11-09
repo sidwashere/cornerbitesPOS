@@ -18,6 +18,10 @@ AddType image/webp .webp
 # forward those to api/webhooks.php?platform=<platform>.
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Force HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+    # Route public webhook endpoints to the API
     RewriteRule ^webhooks/([^/]+)/?$ api/webhooks.php?platform=$1 [L,QSA]
 </IfModule>
 
