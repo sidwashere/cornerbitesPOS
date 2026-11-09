@@ -50,7 +50,6 @@ if ($cards->length === 0) {
 
 // Website category slug => POS category name (also used on the POS till).
 $categoryNames = [
-    'launch-combos' => 'Launch Offers',
     'mains'         => 'Chicken & Pilau',
     'chips'         => 'Chips & Masala',
     'breakfast'     => 'Uji & Bites',
@@ -58,7 +57,6 @@ $categoryNames = [
 ];
 
 $categoryTypes = [
-    'launch-combos' => 'food',
     'mains'         => 'food',
     'chips'         => 'food',
     'breakfast'     => 'food',

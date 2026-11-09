@@ -47,42 +47,39 @@ function WPOSReports() {
 
     var curstats;
 
+    // Normalise sale timestamps: POS/webhook use ms, older rows may be seconds.
+    function saleTimeMs(saleobj) {
+        var ts = parseFloat(saleobj && saleobj.processdt ? saleobj.processdt : 0);
+        if (!ts && saleobj && saleobj.dt) ts = Date.parse(saleobj.dt);
+        if (!ts) return 0;
+        return ts < 1e11 ? ts * 1000 : ts;
+    }
+    function dayWindow() {
+        var stime = new Date(); stime.setHours(0, 0, 0, 0);
+        var etime = new Date(); etime.setHours(23, 59, 59, 999);
+        return { stime: stime.getTime(), etime: etime.getTime() };
+    }
+
     function getTodaysRecords(includerefunds) {
         var sales = WPOS.getSalesTable();
         var todaysales = {};
-        var stime = new Date();
-        var etime = new Date();
-        stime.setHours(0);
-        stime.setMinutes(0);
-        stime.setSeconds(0);
-        stime = stime.getTime();
-        etime.setHours(23);
-        etime.setMinutes(59);
-        etime.setSeconds(59);
-        etime = etime.getTime();
+        var w = dayWindow();
+        var stime = w.stime;
+        var etime = w.etime;
         for (var key in sales) {
-            // ignore if an order
-            if (sales[key].hasOwnProperty('isorder') == false) {
-                // ignore if the sale was not made today or refunded today
-                if (sales[key].processdt > stime && sales[key].processdt < etime) {
-                    // ignore if not made by this device
-                    if (sales[key].devid == WPOS.getConfigTable().deviceid) {
-                        todaysales[key] = sales[key];
-                    }
-                } else {
-                    if (includerefunds)
-                    // check for refund made today
-                        if (sales[key].hasOwnProperty('refunddata')) {
-                            var refdata = sales[key].refunddata;
-                            for (var record in refdata) {
-                                if (refdata[record].processdt > stime && refdata[record].processdt < etime) {
-                                    // ignore if not made by this device
-                                    if (refdata[record].deviceid == WPOS.getConfigTable().deviceid) {
-                                        todaysales[key] = sales[key];
-                                    }
-                                }
-                            }
-                        }
+            // ignore if an order (uncompleted web/phone orders are not sales yet)
+            if (sales[key].hasOwnProperty('isorder') && sales[key].isorder) continue;
+            var ts = saleTimeMs(sales[key]);
+            // include every channel once it is an actual sale: POS tills, website/online
+            // (devid 0) and other sources — staff reports are store-wide, not this-till only.
+            if (ts >= stime && ts <= etime) {
+                todaysales[key] = sales[key];
+            } else if (includerefunds && sales[key].hasOwnProperty('refunddata')) {
+                var refdata = sales[key].refunddata;
+                for (var record in refdata) {
+                    var rts = parseFloat(refdata[record].processdt || 0);
+                    if (rts && rts < 1e11) rts *= 1000;
+                    if (rts >= stime && rts <= etime) { todaysales[key] = sales[key]; break; }
                 }
             }
         }
@@ -93,16 +90,9 @@ function WPOSReports() {
         var sales = getTodaysRecords(true);
         var sale;
         var emptfloat = parseFloat("0.00");
-        var stime = new Date();
-        var etime = new Date();
-        stime.setHours(0);
-        stime.setMinutes(0);
-        stime.setSeconds(0);
-        stime = stime.getTime();
-        etime.setHours(23);
-        etime.setMinutes(59);
-        etime.setSeconds(59);
-        etime = etime.getTime();
+        var w = dayWindow();
+        var stime = w.stime;
+        var etime = w.etime;
         var data = {'salesnum': 0, 'salestotal': emptfloat, 'voidnum': 0, 'voidtotal': emptfloat, 'refundnum': 0, 'refundtotal': emptfloat, 'totaltakings': emptfloat, 'methodtotals': {}};
         var salestat;
         for (var key in sales) {
@@ -135,7 +125,8 @@ function WPOSReports() {
                         }
                     }
                     // count refund as a sale, but only if it was sold today
-                    if (sale.processdt < stime || sale.processdt > etime) {
+                    var _ts = saleTimeMs(sale);
+                    if (_ts < stime || _ts > etime) {
                         break; // the sale was not made today
                     }
                 case 1:
@@ -191,16 +182,9 @@ function WPOSReports() {
         var sales = getTodaysRecords(true);
         var sale;
         var emptfloat = parseFloat("0.00");
-        var stime = new Date();
-        var etime = new Date();
-        stime.setHours(0);
-        stime.setMinutes(0);
-        stime.setSeconds(0);
-        stime = stime.getTime();
-        etime.setHours(23);
-        etime.setMinutes(59);
-        etime.setSeconds(59);
-        etime = etime.getTime();
+        var w = dayWindow();
+        var stime = w.stime;
+        var etime = w.etime;
 
         var data = {};
         var salestat;
@@ -251,7 +235,8 @@ function WPOSReports() {
                         }
                     }
                     // count refund as a sale, but only if it was sold today
-                    if (sale.processdt < stime || sale.processdt > etime) {
+                    var _ts = saleTimeMs(sale);
+                    if (_ts < stime || _ts > etime) {
                         break; // the sale was not made today
                     }
                 case 1:
@@ -291,22 +276,26 @@ function WPOSReports() {
         var discprice = 0;
         for (var ref in records) {
             if (!records[ref].hasOwnProperty('voiddata')) { // do not count voided sales
-                discount = parseFloat(records[ref].discount);
+                discount = parseFloat(records[ref].discount) || 0;
                 items = records[ref].items;
+                if (!items) continue;
                 for (var index in items) {
                     item = items[index];
-                    discprice = (parseFloat(item.price)-(item.price*(discount/100)));
-                    // check if record exists
-                    if (itemstats.items.hasOwnProperty(item.sitemid)) {
-                        // sum values
-                        itemstats.items[item.sitemid].qty += parseInt(item.qty);
-                        itemstats.items[item.sitemid].total += discprice;
+                    if (!item) continue;
+                    // Delivery-fee service lines are not products — keep totals in Overview, skip here.
+                    if (item.is_delivery_fee) continue;
+                    var qty = parseInt(item.qty) || 1;
+                    var unit = parseFloat(item.price) || 0;
+                    var lineTotal = (unit - unit * (discount / 100)) * qty;
+                    var sid = (item.sitemid === undefined || item.sitemid === null) ? (item.name || 'Miscellaneous') : item.sitemid;
+                    if (itemstats.items.hasOwnProperty(sid)) {
+                        itemstats.items[sid].qty += qty;
+                        itemstats.items[sid].total += lineTotal;
                     } else {
-                        // create new record
-                        var itemname = (item.sitemid == "0" ? "Miscellaneous" : item.name);
-                        itemstats.items[item.sitemid] = {"qty": parseInt(item.qty), "total": discprice, "name": itemname};
+                        var itemname = (sid == "0" ? "Miscellaneous" : (item.name || sid));
+                        itemstats.items[sid] = {"qty": qty, "total": lineTotal, "name": itemname};
                     }
-                    itemstats.totalsold += item.qty;
+                    itemstats.totalsold += qty;
                 }
             }
         }
@@ -320,10 +309,13 @@ function WPOSReports() {
         var html = reportheader("What's Selling Report") + '<table style="width:100%;" class="table table-stripped"><thead><tr><th>Item</th><th># Sold</th><th>Total</th></tr></thead><tbody>';
         var stats = getWhatsSellingStats();
         var item;
+        var rows = 0;
         for (var id in stats.items) {
             item = stats.items[id];
             html += '<tr><td>' + item.name + '</td><td>' + item.qty + '</td><td>' + WPOS.util.currencyFormat(item.total) + '</td></tr>';
+            rows++;
         }
+        if (!rows) html += '<tr><td colspan="3" style="text-align:center;">No sales today yet.</td></tr>';
 
         html += '</tbody></table>';
         // put into report window

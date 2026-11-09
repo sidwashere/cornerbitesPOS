@@ -39,8 +39,9 @@
                 <label>Email <input type="text" id="cms-site-email" class="form-control" style="width:100%; display:block;" /> Hours <input type="text" id="cms-site-hours" class="form-control" style="width:100%; display:block;" /></label>
                 <label>Delivery area <input type="text" id="cms-site-delivery-area" class="form-control" style="width:100%; display:block;" /> Delivery time <input type="text" id="cms-site-delivery-time" class="form-control" style="width:100%; display:block;" /></label>
                 <label>Payment note <input type="text" id="cms-site-payment-note" class="form-control" style="width:100%; display:block;" /></label>
-                <label>Launch date <input type="text" id="cms-site-launch-date" class="form-control" style="width:100%; display:block;" /></label>
-            </div>
+                <label>M-Pesa Buy Goods Till <input type="text" id="cms-site-mpesa-till" class="form-control" style="width:100%; display:block;" placeholder="1860556" /></label>
+                <label>Delivery fee (KSh, every online order) <input type="text" id="cms-site-delivery-fee" class="form-control" style="width:100%; display:block;" /></label>
+                            </div>
         </div>
         <div class="row" style="margin-top:10px;">
             <div class="col-sm-6">
@@ -128,7 +129,8 @@
         cmsSet('cms-site-tagline', s.tagline); cmsSet('cms-site-phone', s.phone); cmsSet('cms-site-whatsapp', s.whatsapp);
         cmsSet('cms-site-address', s.address); cmsSet('cms-site-email', s.email); cmsSet('cms-site-hours', s.hours);
         cmsSet('cms-site-delivery-area', s.delivery_area); cmsSet('cms-site-delivery-time', s.delivery_time);
-        cmsSet('cms-site-payment-note', s.payment_note); cmsSet('cms-site-launch-date', s.launch_date);
+        cmsSet('cms-site-delivery-fee', s.delivery_fee || 0);
+        cmsSet('cms-site-payment-note', s.payment_note); cmsSet('cms-site-mpesa-till', s.mpesa_till || '1860556');
         $('#cms-site-announcement-enabled').prop('checked', !!s.announcement_enabled);
         cmsSet('cms-site-announcement', s.announcement);
         cmsSet('cms-site-seo-title', s.seo_title); cmsSet('cms-site-seo-desc', s.seo_desc);
@@ -141,12 +143,16 @@
         s.tagline = cmsGet('cms-site-tagline'); s.phone = cmsGet('cms-site-phone'); s.whatsapp = cmsGet('cms-site-whatsapp');
         s.address = cmsGet('cms-site-address'); s.email = cmsGet('cms-site-email'); s.hours = cmsGet('cms-site-hours');
         s.delivery_area = cmsGet('cms-site-delivery-area'); s.delivery_time = cmsGet('cms-site-delivery-time');
-        s.payment_note = cmsGet('cms-site-payment-note'); s.launch_date = cmsGet('cms-site-launch-date');
+        s.delivery_fee = parseFloat(cmsGet('cms-site-delivery-fee')) || 0;
+        s.payment_note = cmsGet('cms-site-payment-note'); s.mpesa_till = cmsGet('cms-site-mpesa-till');
         s.announcement_enabled = $('#cms-site-announcement-enabled').is(':checked');
         s.announcement = cmsGet('cms-site-announcement');
         s.seo_title = cmsGet('cms-site-seo-title'); s.seo_desc = cmsGet('cms-site-seo-desc');
         s.logo = cmsGet('cms-site-logo');
         s.gallery = cmsGet('cms-site-gallery').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+        // Preserve photo carousels (hero/kitchen/venue) — not edited in this simple form,
+        // but must never be dropped on save.
+        if (CMS.site && CMS.site.carousels) s.carousels = CMS.site.carousels;
         return s;
     }
     function fillCatSelects(){

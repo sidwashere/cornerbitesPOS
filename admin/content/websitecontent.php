@@ -27,7 +27,7 @@
 
     <!-- Offers Tab -->
     <div class="tab-pane active" id="tab-offers">
-        <h4>Launch Offers & Deals</h4>
+        <h4>Offers & Deals</h4>
         <p class="text-muted">Edit the special offers shown on the website. Each offer has a title, description, price, and badge.</p>
         <div id="offersList"></div>
         <button class="btn btn-primary btn-sm" onclick="addOffer();"><i class="icon-plus"></i> Add Offer</button>

@@ -199,7 +199,10 @@ class WposPosData
                                 $devMdl = new DevicesModel();
                                 $locationDeviceIds = $devMdl->getLocationDeviceIds($this->data->deviceid);
                                 if (is_array($locationDeviceIds) && !empty($locationDeviceIds)) {
-                                    $this->data->deviceid = $locationDeviceIds;
+                                    // Always include external/website orders (devid 0) — they are
+                                    // part of this location's sales and belong in staff reports.
+                                    $locationDeviceIds[] = 0;
+                                    $this->data->deviceid = array_values(array_unique($locationDeviceIds));
                                 } else {
                                     unset($this->data->deviceid);
                                 }

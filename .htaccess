@@ -1,9 +1,16 @@
 AddType application/x-httpd-php .appcache
+AddType image/webp .webp
 <IfModule mod_expires.c>
   <Files *.appcache>
       ExpiresActive On
       ExpiresDefault "access plus 0 seconds"
   </Files>
+  # Optimised carousel images are content-versioned by timestamp — cache hard
+  <FilesMatch "\.(jpg|jpeg|png|webp)$">
+      ExpiresActive On
+      ExpiresDefault "access plus 1 month"
+      Header set Cache-Control "public, max-age=2592000, immutable"
+  </FilesMatch>
 </IfModule>
 
 # --- Route public webhook endpoints to the API ---

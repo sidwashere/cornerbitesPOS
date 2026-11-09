@@ -34,8 +34,8 @@
     if (site.address) heroSetText('Utawala-Kincar Near Coca-Cola Stage, Nairobi', site.address);
     if (site.address) heroSetText('Utawala-Kincar near Coca-Cola Stage', site.address);
     if (site.name) heroSetText('Corner Bites Diner', site.name + ' Diner');
-    if (site.launch_date) heroSetText('1st November 2026', site.launch_date);
-    if (site.hours) heroSetText('Open Day: Nov 1, 2026', site.hours);
+    if (site.payment_note) heroSetText('Pay With Lipa na M-Pesa — Till 1860556', site.payment_note);
+    if (site.hours) heroSetText('Open Daily', site.hours);
   }
 
   function renderAnnouncement(site){
@@ -50,7 +50,7 @@
   }
 
   function cardHtml(it){
-    var offer = (it.category === 'launch-combos');
+    var offer = false;
     var cls = offer
       ? 'food-item group bg-[#0f0f0f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border-2 border-lime-400 transition-all duration-300 flex flex-col justify-between'
       : 'food-item group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg border border-lime-200 transition-all duration-300 flex flex-col justify-between';
@@ -139,30 +139,71 @@
   }
 
   function renderOffers(data){
-    var wrap = document.getElementById('launch-offers');
-    if (!wrap || !data.offers || !data.offers.length) return;
+    var wrap = document.getElementById('offers');
+    if (!wrap) return;
+    if (!data.offers || !data.offers.length) { wrap.innerHTML = ''; if (wrap.closest('section')) wrap.closest('section').style.display = 'none'; return; }
     wrap.innerHTML = '<div class="flex gap-3 flex-wrap">' + data.offers.map(function(o){
       return '<div class="bg-[#171717] p-3 rounded-xl border border-lime-500/30"><div class="font-bold text-lime-300">' + esc(o.title) + '</div><div class="text-[11px] text-stone-300 font-medium">' + esc(o.description) + '</div><div class="font-black text-white mt-1 text-sm text-lime-400">KSh ' + o.price + '</div></div>';
     }).join('') + '</div>';
   }
 
+  function srcsetFromBase(base, ext){
+    // base is the stem url without size suffix, e.g. /uploads/website/carousel/20261108_153342
+    return base + '-400.webp 400w, ' + base + '-800.webp 800w, ' + base + '-1200.webp 1200w';
+  }
+  function renderCarousels(data){
+    var car = (data.site || {}).carousels;
+    if (!car) return;
+    var map = { 'cb-experience': car.experience, 'cb-kitchen': car.kitchen, 'cb-venue': car.venue };
+    Object.keys(map).forEach(function(id){
+      var slides = map[id]; if (!slides || !slides.length) return;
+      var root = document.getElementById(id); if (!root) return;
+      var current = root.getAttribute('data-current');
+      // Skip if CMS data matches already-rendered static markup (first slide title matches)
+      var first = root.querySelector('.cb-slide');
+      if (first && first.getAttribute('data-title') === slides[0].title) return;
+      var track = root.querySelector('.cb-track');
+      var dotsEl = root.querySelector('.cb-dots');
+      var countEl = root.querySelector('.cb-count');
+      if (!track) return;
+      var keepIndex = parseInt(current || '0', 10) || 0;
+      track.innerHTML = slides.map(function(s, i){
+        var base = (s.webp400 || '').replace(/-400\.webp$/, '');
+        if (!base && s.image) base = s.image.replace(/-800\.jpg$/, '').replace(/-800\.webp$/, '');
+        var active = i === keepIndex;
+        var lazy = i === 0 ? 'eager' : 'lazy';
+        return '<figure class="cb-slide' + (active ? ' is-active' : '') + '" role="option" aria-selected="' + (active ? 'true' : 'false') + '" aria-hidden="' + (!active) + '" data-title="' + esc(s.title || '') + '">'
+          + '<picture><source type="image/webp" srcset="' + srcsetFromBase(base) + '" sizes="(max-width:640px) 100vw, (max-width:1024px) 90vw, 1200px">'
+          + '<img src="' + esc(s.image || (base + '-800.jpg')) + '" srcset="' + esc(s.image || (base + '-800.jpg')) + ' 800w" sizes="(max-width:640px) 100vw, (max-width:1024px) 90vw, 1200px" alt="' + esc(s.alt || s.title || '') + '" width="1200" height="675" loading="' + lazy + '" decoding="async"' + (i === 0 ? ' fetchpriority="high"' : '') + '></picture>'
+          + '<figcaption class="cb-caption"><span class="cb-caption-title">' + esc(s.title || '') + '</span><span class="cb-caption-sub">' + esc(s.caption || '') + '</span></figcaption>'
+          + '<button type="button" class="cb-expand" aria-label="Enlarge photo: ' + esc(s.alt || s.title || '') + '"><span class="material-symbols-outlined" aria-hidden="true">open_in_full</span></button></figure>';
+      }).join('');
+      if (countEl) countEl.textContent = (keepIndex + 1) + ' / ' + slides.length;
+      // rebuild dots + rebind expand handlers via fresh init
+      if (dotsEl) dotsEl.innerHTML = '';
+      root.setAttribute('data-current', keepIndex);
+    });
+  }
   function renderLocation(data){
     var site = data.site || {};
     var loc = document.getElementById('location');
     if (!loc) return;
-    if (site.gallery && site.gallery[0]) {
-      var bg = loc.querySelector('.absolute.inset-0');
-      if (bg) bg.style.backgroundImage = 'url(' + JSON.stringify(site.gallery[0]).replace(/^"|"$/g, '') + ')';
-    }
+    // Venue is now a carousel; keep the logo overlay in sync, but never overwrite
+    // the carousel images with the legacy single-image/gallery fields.
     if (site.logo) {
+      var overlay = loc.querySelector('.cb-venue-wrap .absolute.bottom-4 img, .cb-venue-wrap img');
       var imgs = loc.querySelectorAll('img');
-      if (imgs.length && site.logo) imgs[0].setAttribute('src', site.logo);
+      // Do not touch carousel images (they are real photos) — only the small logo badge.
+      loc.querySelectorAll('.cb-carousel img').forEach(function(ci){ ci.setAttribute('data-cb-photo','1'); });
+      var badge = Array.prototype.filter.call(imgs, function(im){ return !im.hasAttribute('data-cb-photo') && (im.closest('.absolute') || im.closest('div p-4')); });
+      badge.forEach(function(im){ im.setAttribute('src', site.logo); });
     }
   }
 
   function applyCms(data){
     var site = data.site || {};
     window.__CB_WA = site.whatsapp || '254185112315';
+    window.__CB_FEE = site.delivery_fee > 0 ? site.delivery_fee : 0;
     window.__CB_PHONE = site.phone || '0185112315';
     if (site.seo_title) document.title = site.seo_title;
     var md = document.querySelector('meta[name="description"]');
@@ -185,6 +226,7 @@
       renderHighlights(items);
       renderFooterLists(items);
     });
+    renderCarousels(data);
     renderLocation(data);
     if (site.logo) {
       document.querySelectorAll('footer img, header img').forEach(function(img){

@@ -246,6 +246,21 @@ class WposPosSale {
         if (!isset($this->jsonobj->cost)) $this->jsonobj->cost = 0;
         if (!isset($this->jsonobj->processdt)) $this->jsonobj->processdt = time();
 
+        // Delivery fee (flat rate for online delivery orders): appended as a service line so
+        // POS/admin/kitchen totals include it everywhere, without touching stock (no sitemid).
+        $deliveryFee = isset($this->jsonobj->delivery_fee) ? round((float)$this->jsonobj->delivery_fee, 2) : 0;
+        if ($orderType === 'delivery' && $deliveryFee > 0) {
+            $this->jsonobj->delivery_fee = $deliveryFee;
+            $feeLine = (object)['name' => 'Delivery fee', 'qty' => 1, 'price' => $deliveryFee, 'sitemid' => null, 'desc' => '', 'is_delivery_fee' => true];
+            if (is_array($this->jsonobj->items)) {
+                $this->jsonobj->items[] = $feeLine;
+            } else {
+                // items is a stdClass map keyed "0","1",... — append as next key
+                $nextKey = (string)count((array)$this->jsonobj->items);
+                $this->jsonobj->items->$nextKey = $feeLine;
+            }
+        }
+
         // Calculate total from items
         $total = 0;
         foreach ($this->jsonobj->items as $item) {

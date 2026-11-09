@@ -22,6 +22,7 @@ class OrderNormalizer {
                 }
                 $out->notes = self::pick($data, ['special_instructions', 'notes', 'instructions'], null);
                 $out->priority = (int)self::pick($data, ['priority'], 0);
+                $out->delivery_fee = (float)self::pick($data, ['delivery_fee', 'deliveryFee'], 0);
                 $rawItems = self::pick($data, ['items'], []);
                 break;
 

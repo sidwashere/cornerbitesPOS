@@ -1,0 +1,537 @@
+{
+  "version": 2,
+  "site": {
+    "name": "Corner Bites",
+    "hero_title": "TASTY MEALS, EVERY TIME!",
+    "hero_subtitle": "Freshly prepared Kenyan fast food, hand-cut fries, Fluffy Mandazi & signature Pilau at Utawala-Kincar Station.",
+    "tagline": "Tasty Meals, Every Time!",
+    "phone": "0185112315",
+    "whatsapp": "254185112315",
+    "address": "Utawala-Kincar near Coca-Cola Stage, Nairobi",
+    "email": "order@cornerbites.co.ke",
+    "hours": "Open Daily 7:00 AM \u2013 10:00 PM",
+    "delivery_area": "Utawala, Kincar, Coca-Cola Stage, Benedicta & Airways",
+    "delivery_time": "20-35 mins",
+    "payment_note": "Pay with Lipa na M-Pesa \u2014 Buy Goods Till 1860556",
+    "announcement_enabled": true,
+    "announcement": "Open daily \u2014 fresh hot food all day, every day!",
+    "seo_title": "Corner Bites \u2014 Tasty Meals, Every Time! | Utawala-Kincar",
+    "seo_desc": "Swahili Beef Pilau, Quarter Chicken, Fries Masala, Uji Power & Mandazi \u2014 fresh halal fast food in Utawala-Kincar, Nairobi. Dine-in, takeaway & rapid delivery.",
+    "logo": "/uploads/website/biz-logo-real.png",
+    "gallery": [],
+    "delivery_fee": 70,
+    "carousels": {
+      "experience": [
+        {
+          "image": "/uploads/website/carousel/20261108_153342-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153342-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153342-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153342-1200.webp",
+          "title": "Our serving counter",
+          "caption": "Fresh food ready at the counter, every day.",
+          "alt": "Staff serving food behind the Corner Bites display counter"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_160534-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_160534-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_160534-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_160534-1200.webp",
+          "title": "Swahili pilau, fresh daily",
+          "caption": "Tender beef pilau with fresh herbs and onion rings.",
+          "alt": "Tray of Swahili beef pilau garnished with coriander and red onion"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_174518-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_174518-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_174518-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_174518-1200.webp",
+          "title": "Fresh juice on tap",
+          "caption": "Today's juice, ready to pour.",
+          "alt": "Three juice dispensers with fresh juice at Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153800-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153800-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153800-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153800-1200.webp",
+          "title": "Find us in Utawala",
+          "caption": "Our green canopy at Utawala-Kincar, near Coca-Cola Stage.",
+          "alt": "Corner Bites storefront with green canopy and signboard in Utawala"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153424-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153424-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153424-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153424-1200.webp",
+          "title": "Behind the counter",
+          "caption": "Hot food kept fresh under glass.",
+          "alt": "Corner Bites food display counter with hot food under glass"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_160805-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_160805-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_160805-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_160805-1200.webp",
+          "title": "Pilau, up close",
+          "caption": "Fragrant pilau rice with tender beef.",
+          "alt": "Close-up of Swahili pilau with beef, onion and coriander"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_174522-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_174522-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_174522-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_174522-1200.webp",
+          "title": "Juice, ready to serve",
+          "caption": "Ice-cold juice from our dispenser.",
+          "alt": "Fresh juice dispensers ready to serve at Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153900-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153900-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153900-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153900-1200.webp",
+          "title": "Meet us at the door",
+          "caption": "Our team at the entrance, ready to welcome you.",
+          "alt": "Corner Bites staff standing at the entrance under the green canopy"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_160636-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_160636-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_160636-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_160636-1200.webp",
+          "title": "From the kitchen",
+          "caption": "Pilau, fresh from the tray.",
+          "alt": "Fresh pilau in a serving tray inside Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153852-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153852-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153852-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153852-1200.webp",
+          "title": "Inside Corner Bites",
+          "caption": "A warm welcome at our corner.",
+          "alt": "Interior view of Corner Bites dining area"
+        }
+      ],
+      "kitchen": [
+        {
+          "image": "/uploads/website/carousel/20261108_174644-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_174644-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_174644-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_174644-1200.webp",
+          "title": "Fresh fruit salad",
+          "caption": "Chilled fruit salad, ready to go.",
+          "alt": "Plastic boxes of fresh cut fruit salad on the counter"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153358-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153358-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153358-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153358-1200.webp",
+          "title": "Cosy indoor seating",
+          "caption": "Bright tables with green stools inside.",
+          "alt": "Indoor dining area with white tables and green stools"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_162646-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_162646-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_162646-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_162646-1200.webp",
+          "title": "Outdoor corner",
+          "caption": "Relax on the terrace outside.",
+          "alt": "Outdoor wooden bench seating at Corner Bites terrace"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_175653-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_175653-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_175653-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_175653-1200.webp",
+          "title": "Gather round the table",
+          "caption": "Family-style dining inside Corner Bites.",
+          "alt": "Guests seated at a white table inside the Corner Bites dining room"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_160540-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_160540-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_160540-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_160540-1200.webp",
+          "title": "Fresh from the tray",
+          "caption": "Hot pilau, served all day.",
+          "alt": "Tray of hot Swahili pilau inside Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_174706-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_174706-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_174706-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_174706-1200.webp",
+          "title": "Fresh and chilled",
+          "caption": "Fruit and juice, made daily.",
+          "alt": "Fresh fruit and juice served at Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153905-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153905-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153905-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153905-1200.webp",
+          "title": "Inside, the terrace",
+          "caption": "Light and airy seating inside.",
+          "alt": "Inside Corner Bites looking out toward the terrace"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_175708-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_175708-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_175708-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_175708-1200.webp",
+          "title": "Good company, good food",
+          "caption": "Friends and family at Corner Bites.",
+          "alt": "Guests enjoying a meal together inside Corner Bites"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153836-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153836-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153836-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153836-1200.webp",
+          "title": "Our terrace corner",
+          "caption": "Bench seating by the fence.",
+          "alt": "Corner Bites terrace bench seating and fence"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_174804-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_174804-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_174804-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_174804-1200.webp",
+          "title": "Ready when you are",
+          "caption": "Fresh juice and fruit, all day.",
+          "alt": "Fresh juice dispensers and fruit at Corner Bites"
+        }
+      ],
+      "venue": [
+        {
+          "image": "/uploads/website/carousel/20261108_163109-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_163109-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_163109-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_163109-1200.webp",
+          "title": "Welcome in",
+          "caption": "The entrance to Corner Bites.",
+          "alt": "Corner Bites entrance with balloons above the doorway"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153834-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153834-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153834-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153834-1200.webp",
+          "title": "Our terrace",
+          "caption": "Outdoor bench seating by the fence.",
+          "alt": "Corner Bites terrace with bench seating and metal fence"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153813-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153813-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153813-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153813-1200.webp",
+          "title": "Seating with a view",
+          "caption": "Watch the street from the corner seat.",
+          "alt": "Corner Bites outdoor seating area in front of the shop"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153849-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153849-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153849-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153849-1200.webp",
+          "title": "Corner Bites, front and centre",
+          "caption": "The full frontage on the street.",
+          "alt": "Full front view of Corner Bites with green canopy and signboard"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_163131-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_163131-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_163131-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_163131-1200.webp",
+          "title": "Look for the green canopy",
+          "caption": "Our sign at Utawala-Kincar.",
+          "alt": "Corner Bites green canopy and signboard close-up"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_162750-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_162750-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_162750-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_162750-1200.webp",
+          "title": "Easy to find",
+          "caption": "Near Coca-Cola Stage, Utawala-Kincar.",
+          "alt": "Wide street view of Corner Bites in Utawala-Kincar"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_153816-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_153816-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_153816-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_153816-1200.webp",
+          "title": "Step inside",
+          "caption": "Open doors, fresh food waiting.",
+          "alt": "Corner Bites entrance with outdoor seating"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_162810-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_162810-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_162810-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_162810-1200.webp",
+          "title": "The corner spot",
+          "caption": "Your neighbourhood Corner Bites.",
+          "alt": "Corner Bites storefront at the street corner"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_163013-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_163013-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_163013-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_163013-1200.webp",
+          "title": "At the corner",
+          "caption": "Stop by for a tasty meal.",
+          "alt": "Corner Bites dine-in area at the entrance"
+        },
+        {
+          "image": "/uploads/website/carousel/20261108_175854-800.jpg",
+          "webp800": "/uploads/website/carousel/20261108_175854-800.webp",
+          "webp400": "/uploads/website/carousel/20261108_175854-400.webp",
+          "webp1200": "/uploads/website/carousel/20261108_175854-1200.webp",
+          "title": "Corner Bites, inside and out",
+          "caption": "Dine in, take away, or get delivery.",
+          "alt": "Guests inside Corner Bites dining area"
+        }
+      ]
+    },
+    "mpesa_till": "1860556"
+  },
+  "categories": [
+    {
+      "id": "mains",
+      "label": "\ud83c\udf57 Chicken & Pilau"
+    },
+    {
+      "id": "chips",
+      "label": "\ud83c\udf5f Chips & Masala"
+    },
+    {
+      "id": "breakfast",
+      "label": "\u2615 Uji & Bites"
+    },
+    {
+      "id": "drinks",
+      "label": "\ud83e\udd64 Juice & Sodas"
+    }
+  ],
+  "offers": [],
+  "prices": [],
+  "ads": [],
+  "general": [],
+  "menu": {
+    "items": [
+      {
+        "id": "pilau",
+        "name": "Pilau (Swahili Beef Pilau)",
+        "price": 150,
+        "category": "mains",
+        "badge": "Flyer Classic",
+        "tag": "Swahili Dish",
+        "description": "Authentic aromatic pilau rice cooked with tender beef chunks, cumin, garlic and cardamom, served with fresh spicy kachumbari.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Swahili_Pilau.jpg",
+        "order": 4,
+        "visible": true,
+        "linked_itemid": 4
+      },
+      {
+        "id": "chicken",
+        "name": "Chicken 1/4 (Quarter Chicken)",
+        "price": 190,
+        "category": "mains",
+        "badge": "Signature",
+        "tag": "Deep Fried",
+        "description": "Crispy seasoned quarter chicken, fried golden brown with crunchy skin and juicy, flavorful meat inside. Pairs great with Fries or Pilau.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Roasted_Chicken_Ongata_Rongai.jpg",
+        "order": 5,
+        "visible": true,
+        "linked_itemid": 5
+      },
+      {
+        "id": "fries-masala",
+        "name": "Fries Masala",
+        "price": 160,
+        "category": "chips",
+        "badge": "Customer Favorite",
+        "tag": "Spicy Gravy",
+        "description": "Golden hand-cut potato chips smothered in a sizzling hot tomato, onion, and chili masala gravy with lemon and chopped cilantro.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Chicken_masala_%26_home_made_fries.JPG",
+        "order": 6,
+        "visible": true,
+        "linked_itemid": 6
+      },
+      {
+        "id": "fries",
+        "name": "Fries (Chips)",
+        "price": 100,
+        "category": "chips",
+        "badge": "Everyday Value",
+        "tag": "Hand-Cut",
+        "description": "Crisp, golden-fried Kenyan potato chips lightly salted and served hot in generous portions with tomato ketchup and chili sauce.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Fries_with_Dry-Fried_pork_%26_Homemade_Sauce.jpg",
+        "order": 7,
+        "visible": true,
+        "linked_itemid": 7
+      },
+      {
+        "id": "samosa",
+        "name": "Samosa",
+        "price": 50,
+        "category": "breakfast",
+        "badge": "Snack",
+        "tag": "Hot Pastry",
+        "description": "Crispy, flaky triangular pastry pocket stuffed with well-seasoned minced meat, onions, cumin, and chopped coriander.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/18/Chicken_samosas_and_lemon_slices.jpg",
+        "order": 8,
+        "visible": true,
+        "linked_itemid": 8
+      },
+      {
+        "id": "uji",
+        "name": "Uji Power",
+        "price": 70,
+        "category": "breakfast",
+        "badge": "Healthy Hit",
+        "tag": "Power Bowl",
+        "description": "Nairobi's legendary thick, nutritious multigrain porridge infused with ground pumpkin seeds, nuts, and natural honey sweetness.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/9/94/Drinking_traditional_porridge.jpg",
+        "order": 9,
+        "visible": true,
+        "linked_itemid": 9
+      },
+      {
+        "id": "mandazi",
+        "name": "Mandazi (Andazi)",
+        "price": 20,
+        "category": "breakfast",
+        "badge": "Swahili Pastry",
+        "tag": "Fresh Daily",
+        "description": "Soft, fluffy, golden-brown East African sweet fried bread pastry infused with aromatic cardamom. Perfect companion for chai or uji.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/5/57/Mandazis.jpg",
+        "order": 10,
+        "visible": true,
+        "linked_itemid": 10
+      },
+      {
+        "id": "juice",
+        "name": "Fruit Juice",
+        "price": 100,
+        "category": "drinks",
+        "badge": "100% Fresh",
+        "tag": "Cold",
+        "description": "Freshly blended chilled tropical fruit juice: Mango, Passion, Pineapple or Orange without artificial sweeteners or preservatives.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/3/39/Sugarcane_Juice.jpg",
+        "order": 11,
+        "visible": true,
+        "linked_itemid": 11
+      },
+      {
+        "id": "fruit-salad",
+        "name": "Fruit Salad",
+        "price": 50,
+        "category": "drinks",
+        "badge": "Light & Sweet",
+        "tag": "Hand-Cut",
+        "description": "Crisp medley of freshly diced watermelon, sweet pineapple, pawpaw, and crisp apple cubes tossed in natural fruit nectar.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Fruit_salad_plate.jpg",
+        "order": 12,
+        "visible": true,
+        "linked_itemid": 12
+      },
+      {
+        "id": "soda350",
+        "name": "Soda 350ml",
+        "price": 60,
+        "category": "drinks",
+        "badge": "Ice Cold",
+        "tag": "350ml",
+        "description": "Crisp ice-cold 350ml soda bottle. Choose Coca-Cola, Fanta Orange, Fanta Blackcurrant, Sprite, or Stoney Tangawizi.",
+        "image": "/uploads/website/coke-350ml-c396d272.jpg",
+        "linked_itemid": 13,
+        "order": 13,
+        "visible": true
+      },
+      {
+        "id": "soda500",
+        "name": "Soda 500ml",
+        "price": 80,
+        "category": "drinks",
+        "badge": "Ice Cold",
+        "tag": "500ml",
+        "description": "Refreshing 500ml PET bottle served super chilled. Coca-Cola, Fanta, Sprite, Krest Bitter Lemon, or Stoney Tangawizi.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/6/69/Coca_cola_bottle_-_300ml_plastic_-_front_-_01.jpg",
+        "order": 14,
+        "visible": true,
+        "linked_itemid": 14
+      },
+      {
+        "id": "sausages",
+        "name": "Sausages",
+        "price": 50,
+        "category": "breakfast",
+        "badge": "Snack",
+        "tag": "Hot Pastry",
+        "description": "Crispy fried sausages, served steaming hot with fresh pilipili.",
+        "image": "",
+        "order": 15,
+        "visible": true,
+        "linked_itemid": 16
+      },
+      {
+        "id": "smokies",
+        "name": "Smokies",
+        "price": 40,
+        "category": "breakfast",
+        "badge": "Snack",
+        "tag": "Deep Fried",
+        "description": "Classic flavored smokie, deep fried golden and served crisp.",
+        "image": "",
+        "order": 16,
+        "visible": true,
+        "linked_itemid": 17
+      },
+      {
+        "id": "chapatis",
+        "name": "Chapatis",
+        "price": 30,
+        "category": "breakfast",
+        "badge": "Daily Pastry",
+        "tag": "Soft & Flaky",
+        "description": "Soft, flaky, hand-made chapatis \u2014 fresh off the pan.",
+        "image": "",
+        "order": 18,
+        "visible": true,
+        "linked_itemid": 19
+      },
+      {
+        "id": "tea",
+        "name": "Tea",
+        "price": 50,
+        "category": "drinks",
+        "badge": "Hot & Fresh",
+        "tag": "Kenya Tea",
+        "description": "Hot spiced Kenyan chai brewed fresh with milk and spices.",
+        "image": "",
+        "order": 19,
+        "visible": true,
+        "linked_itemid": 20
+      },
+      {
+        "id": "choma-sausages",
+        "name": "Choma Sausages",
+        "price": 150,
+        "category": "mains",
+        "badge": "Choma Special",
+        "tag": "Charcoal Grilled",
+        "description": "Smoky charcoal-grilled sausages with our special choma glaze.",
+        "image": "",
+        "order": 20,
+        "visible": true,
+        "linked_itemid": 18
+      }
+    ]
+  }
+}
