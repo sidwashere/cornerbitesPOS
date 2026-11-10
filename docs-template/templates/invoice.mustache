@@ -26,6 +26,9 @@
         }
 
     </style>
+    <style type="text/css">
+        @media print { @page { margin: 0; } }
+    </style>
 </head>
 <body>
 <table width="100%">
@@ -162,5 +165,11 @@
 <div style="margin-top: 20px; text-align: center;">
     {{payment_instructions}}
 </div>
+{{#qrcode_url}}
+<div style="margin-top: 10px; text-align: center;">
+    <img style="height: 75px;" src="{{qrcode_url}}"/>
+    <br/><small style="font-size: 10px;">Scan for order ref: {{sale_ref}}</small>
+</div>
+{{/qrcode_url}}
 </body>
 </html>

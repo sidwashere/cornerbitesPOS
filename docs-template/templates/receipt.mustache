@@ -10,6 +10,11 @@
         table:first-child {
             margin-top: 8px;
         }
+        @media print {
+            @page { margin: 0; size: auto; }
+            html, body { margin: 0; padding: 0; height: auto; }
+            #container { margin: 0 auto; }
+        }
     </style>
 {{#thermalprint}}
     <style type="text/css">
@@ -153,11 +158,10 @@
         <strong style="text-align: center;">{{footer}}</strong><br/>
     {{/footer}}
 
-    {{^thermalprint}}
-        {{#qrcode_url}}
+    {{#qrcode_url}}
         <img style="text-align: center; height: 75px; margin-top: 4px;" src="{{qrcode_url}}"/>
-        {{/qrcode_url}}
-    {{/thermalprint}}
+        <br/><small style="font-size: 10px;">Scan for order ref: {{sale_ref}}</small>
+    {{/qrcode_url}}
 
     </div>
 </body>
