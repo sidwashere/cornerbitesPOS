@@ -1,3 +1,6 @@
 <?php
-echo "DOCROOT=" . $_SERVER['DOCUMENT_ROOT'] . "\n";
-echo "APP_ROOT=" . (isset($_SERVER['APP_ROOT'])?$_SERVER['APP_ROOT']:'unset') . "\n";
+$_SERVER['APP_ROOT'] = "/";
+require($_SERVER['DOCUMENT_ROOT'] . "/library/wpos/config.php");
+echo "config loaded\n";
+$pdo = (new DbConfig())->_db;
+echo "db connected\n";
