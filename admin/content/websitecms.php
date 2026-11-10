@@ -218,18 +218,25 @@ function webByPos(){ CMS_WEB_BY_POS = {}; CMS_ITEMS.forEach(function(it){ if (it
 
 function loadCms(){
     WPOS.util.showLoader();
-    loadPosTables();
+    var _posOk = loadPosTables();
+    if (!_posOk) { console.warn('POS tables could not be loaded (items/suppliers/categories).'); }
     $.get('/api/website_content.php', function(data){
-        CMS = data || {};
-        if (!CMS.site) CMS.site = {};
-        if (!CMS.menu) CMS.menu = { items: [] };
-        if (!CMS.categories) CMS.categories = [];
-        if (!CMS.offers) CMS.offers = [];
-        CMS_ITEMS = CMS.menu.items.map(function(it){ return Object.assign({}, it); });
-        webByPos();
-        fillGeneral(); fillProducts(); fillCategories(); fillOffers(); fillCatSelects(); fillLinkedSelect(); fillPosSelects();
+        try {
+            CMS = data || {};
+            if (!CMS.site) CMS.site = {};
+            if (!CMS.menu) CMS.menu = { items: [] };
+            if (!Array.isArray(CMS.menu.items)) CMS.menu.items = [];
+            if (!CMS.categories) CMS.categories = [];
+            if (!CMS.offers) CMS.offers = [];
+            CMS_ITEMS = CMS.menu.items.map(function(it){ return Object.assign({}, it); });
+            webByPos();
+            fillGeneral(); fillProducts(); fillCategories(); fillOffers(); fillCatSelects(); fillLinkedSelect(); fillPosSelects();
+        } catch (e) {
+            console.error('CMS load failed:', e && e.message, e);
+            alert('Could not load the CMS data: ' + (e && e.message ? e.message : e));
+        }
         WPOS.util.hideLoader();
-    }).fail(function(){ WPOS.util.hideLoader(); });
+    }).fail(function(xhr){ WPOS.util.hideLoader(); alert('Could not reach the CMS API (HTTP ' + (xhr && xhr.status) + ').'); });
 }
 
 // ---------- General ----------
