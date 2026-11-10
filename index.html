@@ -482,6 +482,15 @@
                                                     <option value="print">Always Print</option>
                                                 </select></label>
                                             </div>
+                                            <div class="settings-row">
+                                                <label>Default printer (auto-print, no dialog):
+                                                    <select id="defaultprinter" onchange="WPOS.print.setGlobalPrintSetting('defaultprinter', $('#defaultprinter').val());" style="margin-right: 10px; min-width: 180px;">
+                                                        <option value="">-- Browser dialog (default) --</option>
+                                                    </select>
+                                                </label>
+                                                <button class="btn btn-primary btn-xs field-button" onclick="WPOS.print.populatePrinters();" style="vertical-align: middle;"><i class="icon-refresh"></i> Refresh printers</button>
+                                                <span style="font-size:11px; color:#888; margin-left:8px;">Requires the Web Print service running locally.</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

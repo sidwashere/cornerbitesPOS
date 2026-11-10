@@ -50,6 +50,7 @@ function WPOSPrint(kitchenMode) {
         },
         global: {
             recask:"email",
+            defaultprinter: "",
             cashdraw: false,
             serviceip: "127.0.0.1",
             serviceport: 8080,
@@ -236,6 +237,7 @@ function WPOSPrint(kitchenMode) {
         }
         $("#cashdraw").prop("checked", curset.cashdraw);
         $("#recask").val(curset.recask);
+        $("#defaultprinter").val(getGlobalPrintSetting('defaultprinter'));
         $("#printinv").prop("checked", getGlobalPrintSetting('printinv'));
         var escpmode = getGlobalPrintSetting('escpreceiptmode');
         $("#escpreceiptmode").val(escpmode);
@@ -308,6 +310,16 @@ function WPOSPrint(kitchenMode) {
         reclist.html('');
         for (var p in printers) {
             reclist.append('<option value="' + printers[p] + '">' + printers[p] + '</option>');
+        }
+        // also populate the global default-printer selector
+        var defSel = $('#defaultprinter');
+        if (defSel.length) {
+            var cur = getGlobalPrintSetting('defaultprinter') || '';
+            defSel.html('<option value="">-- Browser dialog (default) --</option>');
+            for (var p2 in printers) {
+                defSel.append('<option value="' + printers[p2] + '">' + printers[p2] + '</option>');
+            }
+            defSel.val(cur);
         }
         for (var i in curset.printers){
             var printer = curset.printers[i];
@@ -1289,6 +1301,15 @@ function WPOSPrint(kitchenMode) {
 
     // Browser printing methods
     function browserPrintHtml(html, name, width, height) {
+        // If a default printer is configured, print silently to it via the
+        // webprint service (no browser print dialog, no extra steps).
+        var defPrinter = getGlobalPrintSetting('defaultprinter');
+        if (defPrinter && typeof webprint !== 'undefined' && webprint && typeof webprint.printHtml === 'function') {
+            try {
+                webprint.printHtml(html, defPrinter);
+                return;
+            } catch(e) { /* fall through to browser print */ }
+        }
 
         var printw = window.open('', name, 'height='+height+',width='+width+',scrollbars=yes');
 
