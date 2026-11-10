@@ -278,8 +278,19 @@
     function uploadItemImage(retry){
         var fileInput = document.getElementById('cms-item-file');
         if (!fileInput.files.length) { alert('Choose an image first'); return; }
+        var picked = fileInput.files[0];
+        // Clear, actionable checks BEFORE hitting the server (avoids opaque 400s).
+        var pickedName = (picked.name || '').toLowerCase();
+        if (/\.(heic|heif)$/.test(pickedName) || /image\/(heic|heif)/.test(picked.type || '')) {
+            alert('That photo is in HEIC format (iPhone "High Efficiency"), which browsers and the server cannot use.\n\nFix (30 seconds):\n• iPhone: Settings > Camera > Formats > "Most Compatible" (new photos become JPG)\n• Or open the photo, tap Share > Save as JPEG, and upload that copy.\n\nJPG / PNG / WebP photos upload fine.');
+            return;
+        }
+        if (picked.size > 20 * 1024 * 1024) {
+            alert('That photo is ' + Math.round(picked.size / 1048576) + 'MB. Please choose one under 20MB (most phone photos are 2-5MB).');
+            return;
+        }
         WPOS.util.showLoader();
-        compressImageFile(fileInput.files[0], function(file){
+        compressImageFile(picked, function(file){
             var fd = new FormData();
             fd.append('file', file);
             // Persisted credentials (cb_auth) so uploads survive a stale PHP session.

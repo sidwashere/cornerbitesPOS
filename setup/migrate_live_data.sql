@@ -10,13 +10,13 @@ DELETE FROM stored_items WHERE id IN (1,2,3);
 DELETE FROM stored_categories WHERE id = 1;
 
 -- 2. Category names + images to match the production menu
-UPDATE stored_categories SET name='Chicken &amp; Pilau', image='https://upload.wikimedia.org/wikipedia/commons/8/8e/Roasted_Chicken_Ongata_Rongai.jpg' WHERE id=2;
-UPDATE stored_categories SET name='Chips & Masala', image='' WHERE id=3;
-UPDATE stored_categories SET name='Uji & Bites', image='' WHERE id=4;
-UPDATE stored_categories SET name='Juice &amp; Sodas', image='/uploads/website/coke-350ml-817f7d84.jpg' WHERE id=5;
-UPDATE stored_categories SET name='Drinks', image='' WHERE id=6;
-UPDATE stored_categories SET name='Breakfast &amp; Snacks', image='' WHERE id=7;
-UPDATE stored_categories SET name='Choma &amp; Grills', image='' WHERE id=8;
+INSERT INTO stored_categories (id, name, image) VALUES (2, 'Chicken &amp; Pilau', 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Roasted_Chicken_Ongata_Rongai.jpg') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (3, 'Chips & Masala', '') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (4, 'Uji & Bites', '') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (5, 'Juice &amp; Sodas', '/uploads/website/coke-350ml-817f7d84.jpg') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (6, 'Drinks', '') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (7, 'Breakfast &amp; Snacks', '') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
+INSERT INTO stored_categories (id, name, image) VALUES (8, 'Choma &amp; Grills', '') ON DUPLICATE KEY UPDATE name=VALUES(name), image=VALUES(image);
 
 -- 3. Item parity: prices, data JSON (image, description, website_id), categories
 INSERT INTO stored_items (id, supplierid, categoryid, code, name, price, data)

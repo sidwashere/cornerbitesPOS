@@ -44,6 +44,16 @@ AddType image/webp .webp
     php_value memory_limit 256M
 </IfModule>
 
+# --- Never cache the admin UI / API (a stale cached page = missing CMS buttons,
+# --- broken saves, old JS). Browser + proxy must always revalidate these. ---
+<IfModule mod_headers.c>
+    <LocationMatch "^/(admin|api)/">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </LocationMatch>
+</IfModule>
+
 # --- Cornerbites POS production hardening ---
 <FilesMatch "^\.">
     Order allow,deny
