@@ -73,7 +73,7 @@
             <input type="hidden" id="setstockitemid" />
             <input type="hidden" id="setstocklocid" />
             <td style="text-align: right;"><label>Qty:&nbsp;</label></td>
-            <td><input id="setstockqty" type="text" value="1"/></td>
+            <td><input id="setstockqty" type="text" value="1" style="width:80px; display:inline-block;"/> <select id="setstockunit" style="width:90px; display:inline-block;"><option>Pcs</option><option>Kgs</option><option>Grams</option></select> <button type="button" class="btn btn-xs btn-default" onclick="addCustomStockUnit('setstockunit');">+</button></td>
         </tr>
     </table>
 </div>
@@ -88,7 +88,7 @@
         </tr>
         <tr>
             <td style="text-align: right;"><label>Qty:&nbsp;</label></td>
-            <td><input id="tstockqty" type="text" value="1"/></td>
+            <td><input id="tstockqty" type="text" value="1" style="width:80px; display:inline-block;"/> <select id="tstockunit" style="width:90px; display:inline-block;"><option>Pcs</option><option>Kgs</option><option>Grams</option></select> <button type="button" class="btn btn-xs btn-default" onclick="addCustomStockUnit('tstockunit');">+</button></td>
         </tr>
     </table>
 </div>
@@ -96,7 +96,7 @@
     <table>
         <tr>
             <td style="text-align: right;"><label>Item:</label></td>
-            <td><select id="addstockitemid" class="itemselect">
+            <td><select id="addstockitemid" class="itemselect" onchange="onAddStockItemChange();">
                 </select></td>
         </tr>
         <tr>
@@ -106,7 +106,7 @@
         </tr>
         <tr>
             <td style="text-align: right;"><label>Qty:&nbsp;</label></td>
-            <td><input id="addstockqty" type="text" value="1"/></td>
+            <td><input id="addstockqty" type="text" value="1" style="width:80px; display:inline-block;"/> <select id="addstockunit" style="width:90px; display:inline-block;"><option>Pcs</option><option>Kgs</option><option>Grams</option></select> <button type="button" class="btn btn-xs btn-default" onclick="addCustomStockUnit('addstockunit');">+</button></td>
         </tr>
         <tr><td colspan="2" style="border-top:1px solid #ddd; padding-top:6px;"><strong>Purchase &amp; money (optional)</strong></td></tr>
         <tr>
@@ -164,6 +164,21 @@
 <script type="text/javascript">
     var stock = null;
     var items = null;
+    function ensureStockUnitOption(selectId, unit){
+        if (!unit) return;
+        var sel = document.getElementById(selectId);
+        if (!sel) return;
+        var opts = Array.prototype.map.call(sel.options, function(o){ return o.value; });
+        if (opts.indexOf(unit) === -1) { var o = document.createElement('option'); o.value = unit; o.textContent = unit; sel.appendChild(o); }
+    }
+    function addCustomStockUnit(selectId){
+        var u = prompt('Enter a new unit of measurement (e.g. Litres, Boxes):');
+        if (!u) return;
+        u = u.trim();
+        if (!u) return;
+        ensureStockUnitOption(selectId, u);
+        document.getElementById(selectId).value = u;
+    }
     var datatable;
     var STOCK_STATS = null;
     // Clearfix for the custom DataTables layout (float containment without the theme's .row class)
@@ -294,6 +309,7 @@
         SUPPLIERS_LIST = WPOS.getJsonData("suppliers/get") || {};
         loadStockStats();
         stock = WPOS.getJsonData("stock/get");
+        items = WPOS.getJsonData("items/get");
         var stockarray = [];
         var tempstock;
         for (var key in stock){
@@ -312,7 +328,7 @@
                 { mData:function(data,type,val){return supplierSelect(data);}, bSortable: false },
                 { mData:function(data,type,val){ var c = itemExtra(data.storeditemid); return '<span>' + WPOS.util.money(c.cost) + '</span> <a class="green" onclick="editCost(' + data.storeditemid + ');"><i class="icon-pencil bigger-120"></i></a>'; }, bSortable: false },
                 { mData:function(data,type,val){return (data.locationid!=='0'?(WPOS.locations.hasOwnProperty(data.locationid)?WPOS.locations[data.locationid].name:'Unknown'):'Warehouse');} },
-                { mData:"stocklevel" },
+                { mData:function(data,type,val){ var it = (typeof items !== 'undefined' && items) ? items[data.storeditemid] : null; var u = (it && it.unit) ? it.unit : ''; return data.stocklevel + (u ? ' ' + u : ''); }, },
                 { mData:function(data,type,val){return '<div class="action-buttons"><a class="green" onclick="openEditStockDialog('+data.id+');"><i class="icon-pencil bigger-130"></i></a><a class="blue" onclick="openTransferStockDialog('+data.id+')"><i class="icon-arrow-right bigger-130"></i></a><a class="red" onclick="getStockHistory('+data.storeditemid+', '+data.locationid+');"><i class="icon-time bigger-130"></i></a></div>'; }, "bSortable": false }
             ],
             "columns": [
@@ -492,7 +508,7 @@
         var hist;
         for (var i in stockhist){
             hist = stockhist[i];
-            $("#stockhisttable").append('<tr><td>'+hist.name+'</td><td>'+hist.location+'</td><td>'+hist.type+(hist.auxid!=-1?(hist.auxdir==1?" from ":" to ")+(hist.auxid==0?"Warehouse":WPOS.locations[hist.auxid].name):"")+'</td><td>'+hist.amount+'</td><td>'+hist.dt+'</td></tr>');
+            $("#stockhisttable").append('<tr><td>'+hist.name+'</td><td>'+hist.location+'</td><td>'+hist.type+(hist.auxid!=-1?(hist.auxdir==1?" from ":" to ")+(hist.auxid==0?"Warehouse":WPOS.locations[hist.auxid].name):"")+'</td><td>'+hist.amount+' '+(hist.unit||'')+'</td><td>'+hist.dt+'</td></tr>');
         }
         WPOS.util.hideLoader();
         $("#stockhistdialog").dialog('open');
@@ -502,6 +518,11 @@
         $("#setstockitemid").val(item.storeditemid);
         $("#setstocklocid").val(item.locationid);
         $("#setstockqty").val(item.stocklevel);
+        // default unit from the item
+        var it = (typeof items !== 'undefined' && items) ? items[item.storeditemid] : null;
+        var u = (it && it.unit) ? it.unit : 'Pcs';
+        ensureStockUnitOption('setstockunit', u);
+        $("#setstockunit").val(u);
         $("#editstockdialog").dialog("open");
     }
     function openAddStockDialog(){
@@ -522,7 +543,18 @@
         var item = stock[id];
         $("#tstockitemid").val(item.storeditemid);
         $("#tstocklocid").val(item.locationid);
+        var it = (typeof items !== 'undefined' && items) ? items[item.storeditemid] : null;
+        var u = (it && it.unit) ? it.unit : 'Pcs';
+        ensureStockUnitOption('tstockunit', u);
+        $("#tstockunit").val(u);
         $("#transferstockdialog").dialog("open");
+    }
+    function onAddStockItemChange(){
+        var id = $('#addstockitemid').val();
+        var it = (typeof items !== 'undefined' && items) ? items[id] : null;
+        var u = (it && it.unit) ? it.unit : 'Pcs';
+        ensureStockUnitOption('addstockunit', u);
+        $('#addstockunit').val(u);
     }
     function populateItems(){
         if (items == null){
@@ -534,6 +566,7 @@
                 itemselect.append('<option class="itemid-'+items[i].id+'" value="'+items[i].id+'">'+items[i].name+'</option>');
             }
             WPOS.util.hideLoader();
+            onAddStockItemChange();
         }
     }
     function saveItem(type){
@@ -546,6 +579,7 @@
             item.storeditemid = $("#addstockitemid option:selected").val();
             item.locationid = $("#addstocklocid option:selected").val();
             item.amount = $("#addstockqty").val();
+            item.unit = $("#addstockunit").val() || 'Pcs';
             var supId = parseInt($('#addstocksupplier').val() || '0', 10);
             var unitCost = parseFloat($('#addstockcost').val() || 0);
             var paidNow = parseFloat($('#addstockpaid').val() || 0);
@@ -560,7 +594,7 @@
                 var total = qty * unitCost;
                 if (paidNow < 0 || paidNow > total) { alert('Pay now cannot exceed total (' + WPOS.util.money(total) + ')'); break; }
                 if (paidNow > 0 && accId <= 0) { alert('Pick the account the money leaves from'); break; }
-                var pur = WPOS.sendJsonData('suppliers/purchase', JSON.stringify({supplierid: supId, locationid: parseInt(item.locationid || '1', 10), items: [{name: itemName, storeditemid: parseInt(item.storeditemid, 10), qty: qty, cost: unitCost}], paid_immediate: paidNow, account_id: accId, notes: notes}));
+                var pur = WPOS.sendJsonData('suppliers/purchase', JSON.stringify({supplierid: supId, locationid: parseInt(item.locationid || '1', 10), items: [{name: itemName, storeditemid: parseInt(item.storeditemid, 10), qty: qty, unit: item.unit, cost: unitCost}], paid_immediate: paidNow, account_id: accId, notes: notes}));
                 if (pur !== false) {
                     alert('Purchase ' + pur.ref + ' — total KSh ' + pur.total + ' (' + (pur.on_credit > 0 ? 'KSh ' + pur.on_credit + ' on supplier credit' : 'paid in full') + (paidNow > 0 ? ' from account' : '') + ')');
                     reloadTable();
@@ -578,6 +612,7 @@
             item.storeditemid = $("#setstockitemid").val();
             item.locationid = $("#setstocklocid").val();
             item.amount = $("#setstockqty").val();
+            item.unit = $("#setstockunit").val() || 'Pcs';
             if (WPOS.sendJsonData("stock/set", JSON.stringify(item))!==false){
                 reloadTable();
                 $("#editstockdialog").dialog("close");
@@ -589,6 +624,7 @@
             item.locationid = $("#tstocklocid").val();
             item.newlocationid = $("#tstocknewlocid").val();
             item.amount = $("#tstockqty").val();
+            item.unit = $("#tstockunit").val() || 'Pcs';
             if (WPOS.sendJsonData("stock/transfer", JSON.stringify(item))!==false){
                reloadTable();
                $("#transferstockdialog").dialog("close");

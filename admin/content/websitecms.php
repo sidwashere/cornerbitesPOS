@@ -129,7 +129,7 @@
                     <tr><td style="text-align:right;"><label>Unit Cost:&nbsp;</label></td><td><input id="cms-item-cost" type="text" value="0" class="form-control" style="width:100%;"/></td></tr>
                     <tr><td style="text-align:right;"><label>Unit Price:&nbsp;</label></td><td><input id="cms-item-price" type="text" value="0" class="form-control" style="width:100%;"/></td></tr>
                     <tr><td style="text-align:right;"><label>Tax:&nbsp;</label></td><td><select id="cms-item-tax" class="form-control" style="width:100%;"></select></td></tr>
-                    <tr><td style="text-align:right;"><label>Default Qty:&nbsp;</label></td><td><input id="cms-item-qty" type="text" value="1" class="form-control" style="width:100%;"/></td></tr>
+                    <tr><td style="text-align:right;"><label>Default Qty:&nbsp;</label></td><td><input id="cms-item-qty" type="text" value="1" class="form-control" style="width:40%; display:inline-block;" /> <select id="cms-item-unit" class="form-control" style="width:55%; display:inline-block;"><option>Pcs</option><option>Kgs</option><option>Grams</option></select> <button type="button" class="btn btn-xs btn-default" onclick="addCustomUnit('cms-item-unit');" title="Add your own unit">+</button></td></tr>
                     <tr><td style="text-align:right;"><label>Stockcode:&nbsp;</label></td><td><input id="cms-item-code" type="text" class="form-control" style="width:100%;"/></td></tr>
                     <tr><td style="text-align:right;"><label>POS Category:&nbsp;</label></td><td><select id="cms-item-poscategory" class="form-control" style="width:100%;"></select></td></tr>
                     <tr><td style="text-align:right;"><label>Supplier:&nbsp;</label></td><td><select id="cms-item-supplier" class="form-control" style="width:100%;"></select></td></tr>
@@ -226,6 +226,23 @@ function escId(s){ return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "
 function cmsGet(id){ var el = document.getElementById(id); return el ? el.value : ''; }
 function cmsSet(id, v){ var el = document.getElementById(id); if (el) el.value = v || ''; }
 function taxName(id){ try { var r = WPOS.getTaxTable().rules[id]; return r ? r.name : 'Not Defined'; } catch(e){ return '-'; } }
+function ensureUnitOption(selectId, unit){
+    if (!unit) return;
+    var sel = document.getElementById(selectId);
+    if (!sel) return;
+    var opts = Array.prototype.map.call(sel.options, function(o){ return o.value; });
+    if (opts.indexOf(unit) === -1) {
+        var o = document.createElement('option'); o.value = unit; o.textContent = unit; sel.appendChild(o);
+    }
+}
+function addCustomUnit(selectId){
+    var u = prompt('Enter a new unit of measurement (e.g. Litres, Boxes):');
+    if (!u) return;
+    u = u.trim();
+    if (!u) return;
+    ensureUnitOption(selectId, u);
+    document.getElementById(selectId).value = u;
+}
 
 function loadPosTables(){
     try {
@@ -444,6 +461,8 @@ function openProductDialog(posId, webId){
         cmsSet('cms-item-cost', p.cost);
         cmsSet('cms-item-price', p.price);
         cmsSet('cms-item-qty', p.qty);
+        ensureUnitOption('cms-item-unit', p.unit);
+        $('#cms-item-unit').val(p.unit || 'Pcs');
         cmsSet('cms-item-code', p.code);
         $('#cms-item-tax').val(p.taxid);
         $('#cms-item-poscategory').val(p.categoryid);
@@ -479,6 +498,8 @@ function onLinkedChange(val){
     cmsSet('cms-item-cost', p.cost);
     cmsSet('cms-item-price', p.price);
     cmsSet('cms-item-qty', p.qty);
+    ensureUnitOption('cms-item-unit', p.unit);
+    $('#cms-item-unit').val(p.unit || 'Pcs');
     cmsSet('cms-item-code', p.code);
     $('#cms-item-tax').val(p.taxid);
     $('#cms-item-poscategory').val(p.categoryid);
@@ -579,6 +600,7 @@ function saveProductDialog(){
     item.cost = cost;
     item.taxid = parseInt($('#cms-item-tax').val(), 10) || 1;
     item.qty = qty;
+    item.unit = $('#cms-item-unit').val() || 'Pcs';
     var code = String(cmsGet('cms-item-code') || '').trim().toUpperCase();
     if (!code) code = 'CB' + Math.random().toString(36).substr(2,8).toUpperCase();
     item.code = code;

@@ -216,7 +216,8 @@ class WposSupplierCredit {
                 }
                 if ($itemId > 0 && $qty !== 0) {
                     $pdo->prepare("UPDATE stock_levels SET stocklevel = stocklevel + :q, dt = NOW() WHERE storeditemid = :iid AND locationid = :loc")->execute([':q' => $qty, ':iid' => $itemId, ':loc' => $loc]);
-                    $pdo->prepare("INSERT INTO stock_history (storeditemid, locationid, auxid, auxdir, type, amount, dt) VALUES (:iid,:loc,0,1,'purchase',:amt,NOW())")->execute([':iid' => $itemId, ':loc' => $loc, ':amt' => $qty]);
+                    $unit = isset($it->unit) ? (string)$it->unit : (isset($it['unit']) ? (string)$it['unit'] : 'Pcs');
+$pdo->prepare("INSERT INTO stock_history (storeditemid, locationid, auxid, auxdir, type, amount, unit, dt) VALUES (:iid,:loc,0,1,'purchase',:amt,:unit,NOW())")->execute([':iid' => $itemId, ':loc' => $loc, ':amt' => $qty, ':unit' => ($unit ? $unit : 'Pcs')]);
                     if ($cost > 0) $pdo->prepare("UPDATE stored_items SET data = REPLACE(data, '\"cost\":\"0.00\"', '\"cost\":\"" . number_format($cost,2) . "\"') WHERE id = :iid")->execute([':iid' => $itemId]);
                 }
             }

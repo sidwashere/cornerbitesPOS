@@ -92,7 +92,8 @@ class WposAdminStock {
             return $result;
         }
         // create history record for removed stock
-        if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Transfer', -$this->data->amount, $this->data->newlocationid, 0)===false){ // stock history created with minus
+        $unit = isset($this->data->unit) ? $this->data->unit : 'Pcs';
+if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Transfer', -$this->data->amount, $this->data->newlocationid, 0, $unit)===false){ // stock history created with minus
             $result['error'] = "Could not create stock history record";
             return $result;
         }
@@ -102,7 +103,7 @@ class WposAdminStock {
             return $result;
         }
         // create history record for added stockd
-        if ($this->createStockHistory($this->data->storeditemid, $this->data->newlocationid, 'Stock Transfer', $this->data->amount, $this->data->locationid, 1)===false){
+        if ($this->createStockHistory($this->data->storeditemid, $this->data->newlocationid, 'Stock Transfer', $this->data->amount, $this->data->locationid, 1, $unit)===false){
             $result['error'] = "Could not create stock history record";
             return $result;
         }
@@ -131,7 +132,8 @@ class WposAdminStock {
             return $result;
         }
         // create history record for added stock
-        if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Added', $this->data->amount)===false){
+        $unit = isset($this->data->unit) ? $this->data->unit : 'Pcs';
+if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Added', $this->data->amount, -1, 0, $unit)===false){
             $result['error'] = "Could not create stock history record";
             return $result;
         }
@@ -158,7 +160,8 @@ class WposAdminStock {
             return $result;
         }
         // create history record for added stock
-        if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Added', $this->data->amount)===false){
+        $unit = isset($this->data->unit) ? $this->data->unit : 'Pcs';
+if ($this->createStockHistory($this->data->storeditemid, $this->data->locationid, 'Stock Added', $this->data->amount, -1, 0, $unit)===false){
             $result['error'] = "Could not create stock history record";
             return $result;
         }
@@ -196,8 +199,8 @@ class WposAdminStock {
      * @param int $direction
      * @return bool
      */
-    private function createStockHistory($storeditemid, $locationid, $type, $amount, $sourceid=-1, $direction=0){
-        if ($this->histMdl->create($storeditemid, $locationid, $type, $amount, $sourceid, $direction)!==false){
+    private function createStockHistory($storeditemid, $locationid, $type, $amount, $sourceid=-1, $direction=0, $unit='Pcs'){
+        if ($this->histMdl->create($storeditemid, $locationid, $type, $amount, $sourceid, $direction, $unit)!==false){
             return true;
         }
         return false;
