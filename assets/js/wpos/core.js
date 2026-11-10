@@ -370,7 +370,13 @@ function WPOS() {
                 setStatusBar(4, "Updating device settings...", statusmsg, 0);
                 fetchConfigTable(function(data){
                     if (data===false){
-                        showInitError();
+                        // One retry on a slow/flaky connection before giving up
+                        setTimeout(function(){
+                            fetchConfigTable(function(data2){
+                                if (data2===false){ showInitError(); return; }
+                                loadOnlineData(2, loginloader);
+                            });
+                        }, 1500);
                         return;
                     }
                     loadOnlineData(2, loginloader);
@@ -629,7 +635,7 @@ function WPOS() {
     function checkOnlineStatus() {
         try {
             var res = $.ajax({
-            timeout : 3000,
+            timeout : 8000,
             url     : "/api/hello",
             type    : "GET",
             cache   : false,
@@ -763,7 +769,7 @@ function WPOS() {
                 type    : "POST",
                 data    : {data: data},
                 dataType: "json",
-                timeout : 10000,
+                timeout : 30000,
                 cache   : false,
                 success : function(json){
                     var errCode = json.errorCode;
