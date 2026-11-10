@@ -66,7 +66,8 @@
     <div class="cb-pane" id="cms-tab-menu">
         <div style="margin-bottom:8px;">
             <button class="btn btn-primary btn-sm" onclick="openItemDialog(null);"><i class="icon-plus"></i> Add menu item</button>
-            <span style="font-size:12px; color:#666;">Price auto-syncs from POS when linked to an inventory product.</span>
+            <button class="btn btn-default btn-sm" onclick="syncFromPos();" style="margin-left:4px;"><i class="icon-refresh"></i> Sync from POS</button>
+            <span style="font-size:12px; color:#666;">One source of truth: POS holds name/price/image/description; this CMS holds display extras (badge, tag, order, visible). Sync pulls POS → CMS.</span>
         </div>
         <div class="cb-scroll" style="max-height:420px;"><table id="cms-items-table" class="table table-striped table-bordered" style="font-size:12px; min-width:900px;">
             <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Category</th><th>Badge</th><th>Order</th><th>Visible</th><th>Actions</th></tr></thead>
@@ -326,6 +327,30 @@
     function categoryLabel(id){
         var c = (CMS.categories || []).filter(function(x){ return x.id === id; })[0];
         return c ? c.label : id;
+    }
+    function syncFromPos(){
+        WPOS.util.showLoader();
+        try {
+            var items = WPOS.getJsonData('items/get') || {};
+            var byId = {};
+            for (var k in items) byId[items[k].id] = items[k];
+            var changed = 0;
+            CMS_ITEMS.forEach(function(it){
+                if (!it.linked_itemid || !byId[it.linked_itemid]) return;
+                var p = byId[it.linked_itemid];
+                var dd = (typeof p.data === 'string') ? (function(){ try { return JSON.parse(p.data); } catch(e){ return {}; } })() : (p.data || {});
+                var before = JSON.stringify({n:it.name,pr:it.price,im:it.image,ds:it.description});
+                if (p.name) it.name = p.name;
+                if (p.price != null && !isNaN(parseFloat(p.price))) it.price = parseFloat(p.price);
+                if (p.image || dd.image) it.image = p.image || dd.image;
+                if (p.description || dd.description) it.description = p.description || dd.description;
+                if (JSON.stringify({n:it.name,pr:it.price,im:it.image,ds:it.description}) !== before) changed++;
+            });
+            fillItems();
+            // push CMS display extras back to POS is handled on Save & Publish
+            WPOS.util.hideLoader();
+            $('#cms-status').text('Synced ' + changed + ' item(s) from POS. Click Save & Publish to push display extras to POS.');
+        } catch(e) { WPOS.util.hideLoader(); $('#cms-status').text('Sync failed: ' + e.message); }
     }
     function saveCms(){
         CMS.site = collectGeneral();
