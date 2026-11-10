@@ -437,7 +437,7 @@ function WPOSAdmin(){
         // hide/show sections
         curuser.sections.reports>0?$("#menureports").show():$("#menureports").hide();
         curuser.sections.reports>0?$("#menuaccounts").show():$("#menuaccounts").hide();
-        curuser.sections.reports>0?$("#menuwebsitecms").show():$("#menuwebsitecms").hide();
+        (curuser.sections.reports>0 || curuser.sections.items>0)?$("#menuwebsitecms").show():$("#menuwebsitecms").hide();
         curuser.sections.graph>0?$("#menugraph").show():$("#menugraph").hide();
         curuser.sections.sales>0?$("#menusales").show():$("#menusales").hide();
         curuser.sections.invoices>0?$("#menuinvoices").show():$("#menuinvoices").hide();
