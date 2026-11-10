@@ -67,7 +67,8 @@
         <div style="margin-bottom:8px;">
             <button class="btn btn-primary btn-sm" onclick="openItemDialog(null);"><i class="icon-plus"></i> Add menu item</button>
             <button class="btn btn-default btn-sm" onclick="syncFromPos();" style="margin-left:4px;"><i class="icon-refresh"></i> Sync from POS</button>
-            <span style="font-size:12px; color:#666;">One source of truth: POS holds name/price/image/description; this CMS holds display extras (badge, tag, order, visible). Sync pulls POS → CMS.</span>
+            <button class="btn btn-default btn-sm" onclick="syncToPosNow();" style="margin-left:4px;"><i class="icon-upload-alt"></i> Sync to POS</button>
+            <span style="font-size:12px; color:#666;">One source of truth: POS holds name/price/image/description; this CMS holds display extras (badge, tag, order, visible).</span>
         </div>
         <div class="cb-scroll" style="max-height:420px;"><table id="cms-items-table" class="table table-striped table-bordered" style="font-size:12px; min-width:900px;">
             <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Category</th><th>Badge</th><th>Order</th><th>Visible</th><th>Actions</th></tr></thead>
@@ -243,54 +244,87 @@
             try { WPOS.sendJsonData('items/delete', JSON.stringify({ id: it.linked_itemid })); alert('POS product deleted.'); } catch(e) { alert('Menu item removed; POS product delete failed — remove it from Inventory manually.'); }
         }
     }
+    // Downscale big photos in the browser before upload: keeps pages fast on mobile
+    // data and makes even huge phone photos sail through server size limits.
+    function compressImageFile(file, cb){
+        var BIG_BYTES = 400 * 1024, BIG_EDGE = 2000;
+        var isRaster = /image\/(jpeg|jpg|png|webp)/.test(file.type);
+        if (!isRaster || (file.size <= BIG_BYTES)) { cb(file); return; }
+        var img = new Image();
+        var url = URL.createObjectURL(file);
+        img.onload = function(){
+            try {
+                var w = img.naturalWidth, h = img.naturalHeight;
+                if (Math.max(w, h) <= BIG_EDGE && file.size <= 1.5 * 1024 * 1024) { cb(file); return; }
+                var scale = Math.min(1, 1600 / Math.max(w, h));
+                var nw = Math.max(1, Math.round(w * scale)), nh = Math.max(1, Math.round(h * scale));
+                var c = document.createElement('canvas');
+                c.width = nw; c.height = nh;
+                var ctx = c.getContext('2d');
+                ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, nw, nh); // flatten PNG alpha onto white for JPEG
+                ctx.drawImage(img, 0, 0, nw, nh);
+                var keepPng = /image\/png/.test(file.type) && file.size <= 3 * 1024 * 1024;
+                c.toBlob(function(blob){
+                    if (!blob || blob.size >= file.size) { cb(file); return; }
+                    var ext = keepPng ? 'png' : 'jpg';
+                    var out = new File([blob], file.name.replace(/\.[^.]+$/, '') + '-web.' + ext, { type: keepPng ? 'image/png' : 'image/jpeg' });
+                    cb(out);
+                }, keepPng ? 'image/png' : 'image/jpeg', 0.85);
+            } catch(e) { cb(file); }
+        };
+        img.onerror = function(){ cb(file); };
+        img.src = url;
+    }
     function uploadItemImage(retry){
         var fileInput = document.getElementById('cms-item-file');
         if (!fileInput.files.length) { alert('Choose an image first'); return; }
-        var fd = new FormData();
-        fd.append('file', fileInput.files[0]);
-        // Persisted credentials (cb_auth) so uploads survive a stale PHP session.
-        try {
-            var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
-            if (saved && saved.username && saved.auth_hash) {
-                fd.append('username', saved.username);
-                fd.append('auth_hash', saved.auth_hash);
-            }
-        } catch(e) {}
         WPOS.util.showLoader();
-        $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
-            success: function(res){
-                WPOS.util.hideLoader();
-                if (res && res.ok) {
-                    $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url);
-                    // Instant sync: push the new image to the linked POS product immediately
-                    // (one source of truth = POS product image), so the till tray + admin reflect it.
-                    var linkedId = parseInt($('#cms-item-linked').val(), 10);
-                    if (linkedId > 0) {
-                        try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: linkedId, image: res.url })); } catch(e) {}
-                    }
+        compressImageFile(fileInput.files[0], function(file){
+            var fd = new FormData();
+            fd.append('file', file);
+            // Persisted credentials (cb_auth) so uploads survive a stale PHP session.
+            try {
+                var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+                if (saved && saved.username && saved.auth_hash) {
+                    fd.append('username', saved.username);
+                    fd.append('auth_hash', saved.auth_hash);
                 }
-                else alert('Upload failed: ' + (res && res.error ? res.error : 'unknown error'));
-            },
-            error: function(xhr){
-                WPOS.util.hideLoader();
-                var msg = 'Upload failed';
-                try { var j = JSON.parse(xhr.responseText || '{}'); if (j.error) msg = 'Upload failed: ' + j.error; } catch(e){}
-                // Session expired mid-upload? Try silent re-auth from persisted credentials, then retry once.
-                if (!retry && (xhr.status === 403 || /Unauthorized/i.test(msg))) {
-                    try {
-                        var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
-                        if (saved && saved.username && saved.auth_hash) {
-                            var r = WPOS.sendJsonData('authrenew', JSON.stringify({ username: saved.username, auth_hash: saved.auth_hash }));
-                            if (r && r.id) {
-                                $.ajaxSetup({ beforeSend: function(x){ x.setRequestHeader('anti-csrf-token', r.csrf_token); } });
-                                uploadItemImage(true);
-                                return;
-                            }
+            } catch(e) {}
+            $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
+                success: function(res){
+                    WPOS.util.hideLoader();
+                    if (res && res.ok) {
+                        $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url);
+                        // Instant sync: push the new image to the linked POS product immediately
+                        // (one source of truth = POS product image), so the till tray + admin reflect it.
+                        var linkedId = parseInt($('#cms-item-linked').val(), 10);
+                        if (linkedId > 0) {
+                            try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: linkedId, image: res.url })); } catch(e) {}
                         }
-                    } catch(e){}
+                    }
+                    else alert('Upload failed: ' + (res && res.error ? res.error : 'unknown error'));
+                },
+                error: function(xhr){
+                    WPOS.util.hideLoader();
+                    var msg = 'Upload failed';
+                    try { var j = JSON.parse(xhr.responseText || '{}'); if (j.error) msg = 'Upload failed: ' + j.error; } catch(e){}
+                    // Session expired mid-upload? Try silent re-auth from persisted credentials, then retry once.
+                    if (!retry && (xhr.status === 403 || /Unauthorized/i.test(msg))) {
+                        try {
+                            var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+                            if (saved && saved.username && saved.auth_hash) {
+                                var r = WPOS.sendJsonData('authrenew', JSON.stringify({ username: saved.username, auth_hash: saved.auth_hash }));
+                                if (r && r.id) {
+                                    $.ajaxSetup({ beforeSend: function(x){ x.setRequestHeader('anti-csrf-token', r.csrf_token); } });
+                                    uploadItemImage(true);
+                                    return;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                    alert(msg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
                 }
-                alert(msg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
-            }
+            });
         });
     }
     function fillCategories(){
@@ -354,9 +388,7 @@
         });
         if (created > 0) {
             CMS.menu = { items: CMS_ITEMS };
-            var _saveUrl = '/api/save_website_content.php';
-        try { var _sv = JSON.parse(localStorage.getItem('cb_auth') || 'null'); if (_sv && _sv.username && _sv.auth_hash) _saveUrl += '?username=' + encodeURIComponent(_sv.username) + '&auth_hash=' + encodeURIComponent(_sv.auth_hash); } catch(e) {}
-        $.ajax({ url: _saveUrl, type: 'POST', data: JSON.stringify(CMS), contentType: 'application/json', dataType: 'json', success: function(){}, error: function(){} });
+            _postCms(function(){}); // persist the new links silently
             info = ' · + ' + created + ' POS product(s) created.';
         }
         done(info);
@@ -389,7 +421,7 @@
             $('#cms-status').text('Synced ' + changed + ' item(s) from POS. Click Save & Publish to push display extras to POS.');
         } catch(e) { WPOS.util.hideLoader(); $('#cms-status').text('Sync failed: ' + e.message); }
     }
-    function saveCms(){
+    function saveCms(retry){
         CMS.site = collectGeneral();
         CMS.menu = { items: CMS_ITEMS };
         CMS.categories = Array.from(document.querySelectorAll('#cms-cats-list input[data-ci]')).map(function(el){
@@ -398,16 +430,51 @@
             return { id: idEl && idEl.value ? idEl.value : ('cat-' + i), label: el.value };
         });
         WPOS.util.showLoader();
-        $.ajax({ url: '/api/save_website_content.php', type: 'POST', data: JSON.stringify(CMS), contentType: 'application/json', dataType: 'json',
-            success: function(res){
-                if (!res || !res.ok) { WPOS.util.hideLoader(); $('#cms-status').text('Error: ' + (res && res.error)); return; }
-                syncPosProducts(function(syncInfo){
-                    WPOS.util.hideLoader();
-                    $('#cms-status').text('Saved ' + new Date().toLocaleTimeString() + (syncInfo || ''));
-                    alert('Published. The site is live with your changes.' + (syncInfo || ''));
-                });
-            },
-            error: function(){ WPOS.util.hideLoader(); $('#cms-status').text('Save failed'); }
+        _postCms(function(res){
+            if (!res || !res.ok) { WPOS.util.hideLoader(); $('#cms-status').text('Error: ' + (res && res.error)); return; }
+            syncPosProducts(function(syncInfo){
+                WPOS.util.hideLoader();
+                $('#cms-status').text('Saved ' + new Date().toLocaleTimeString() + (syncInfo || ''));
+                alert('Published. The site is live with your changes.' + (syncInfo || ''));
+            });
+        }, retry);
+    }
+    // POST the CMS JSON to the server. cb(ok|fail result). Sends persisted creds
+    // so saves survive a stale PHP session; silently re-auths once on 403.
+    function _postCms(cb, retry){
+        var _saveUrl = '/api/save_website_content.php';
+        try {
+            var _sv = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+            if (_sv && _sv.username && _sv.auth_hash)
+                _saveUrl += '?username=' + encodeURIComponent(_sv.username) + '&auth_hash=' + encodeURIComponent(_sv.auth_hash);
+        } catch(e) {}
+        $.ajax({ url: _saveUrl, type: 'POST', data: JSON.stringify(CMS), contentType: 'application/json', dataType: 'json',
+            success: function(res){ cb(res); },
+            error: function(xhr){
+                if (!retry && xhr.status === 403) {
+                    try {
+                        var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+                        if (saved && saved.username && saved.auth_hash) {
+                            var r = WPOS.sendJsonData('authrenew', JSON.stringify({ username: saved.username, auth_hash: saved.auth_hash }));
+                            if (r && r.id) {
+                                $.ajaxSetup({ beforeSend: function(x){ x.setRequestHeader('anti-csrf-token', r.csrf_token); } });
+                                _postCms(cb, true);
+                                return;
+                            }
+                        }
+                    } catch(e) {}
+                }
+                cb(null, xhr);
+            }
+        });
+    }
+    // Explicit "Sync to POS" button: push CMS item details (name/price/image/description)
+    // into the linked POS products right now — same routine Save & Publish uses.
+    function syncToPosNow(){
+        WPOS.util.showLoader();
+        syncPosProducts(function(info){
+            WPOS.util.hideLoader();
+            $('#cms-status').text('Pushed to POS ' + new Date().toLocaleTimeString() + (info || ''));
         });
     }
         function openLiveSite(){

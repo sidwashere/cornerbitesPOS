@@ -117,6 +117,9 @@ function WPOSAdmin(){
         } else {
             contenturl = "content/"+sec+".php";
         }
+        // cache:false appends ?_=timestamp so section pages (e.g. the Website CMS)
+        // are NEVER served from browser cache — admins always see the latest page.
+        if (query) query += "&_=" + Date.now(); else query = "_=" + Date.now();
         // Stale-while-revalidate: keep the old section on screen (no blank flash),
         // swap only when the new HTML has fully arrived. Kill old pollers first
         // so stale intervals cannot repaint over the new section (multi-flash bug).

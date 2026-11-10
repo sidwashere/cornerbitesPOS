@@ -32,6 +32,16 @@ AddType image/webp .webp
     php_value session.cookie_lifetime 43200
 </IfModule>
 
+# --- Image uploads (Website CMS) ---
+# LiteSpeed reads php_value from .htaccess; raise the 2M default so real photos
+# from the CMS uploader go through. The CMS also downsizes client-side as a belt
+# and braces measure.
+<IfModule LiteSpeed>
+    php_value upload_max_filesize 20M
+    php_value post_max_size 24M
+    php_value memory_limit 256M
+</IfModule>
+
 # --- Cornerbites POS production hardening ---
 <FilesMatch "^\.">
     Order allow,deny

@@ -2,7 +2,22 @@
 <script>
 (function(){
   "use strict";
-  var API = (function(){ return window.location.origin; })();
+  var API = (function(){
+    // Same-origin when served from the POS/local dev; on the public website the
+    // POS API lives on pos.cornerbites.co.ke (menu + content + uploads images).
+    var LOCAL_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'pos.cornerbites.co.ke'];
+    if (LOCAL_HOSTS.indexOf(window.location.hostname) !== -1) return window.location.origin;
+    return 'https://pos.cornerbites.co.ke';
+  })();
+  // Product images live on the POS server (one source of truth). Make relative
+  // /uploads/... URLs absolute against the POS origin when rendered off-site.
+  function absUrl(u){
+    u = String(u == null ? '' : u);
+    if (!u) return u;
+    if (u.indexOf('//') === 0 || /^[a-z][a-z0-9+.-]*:/i.test(u)) return u; // protocol-relative or absolute
+    if (u.charAt(0) === '/') return API + u;
+    return u;
+  }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function money(v){ return 'KSh ' + Number(v || 0).toLocaleString('en-KE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
@@ -68,7 +83,7 @@
     var chipCls = offer ? 'bg-stone-900 border border-lime-500/40 text-lime-300' : 'bg-lime-50 text-lime-800 border border-lime-200';
     var titleLc = String(it.name + ' ' + (it.badge || '') + ' ' + (it.tag || '') + ' ' + it.price).toLowerCase();
     return '<div class="' + cls + '" data-category="' + esc(it.category) + '" data-title="' + esc(titleLc) + '">'
-      + '<div class="relative h-52 w-full overflow-hidden ' + imgBg + '">' + (it.image ? '<img loading="lazy" decoding="async" alt="' + esc(it.name) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="' + esc(it.image) + '">' : '')
+      + '<div class="relative h-52 w-full overflow-hidden ' + imgBg + '">' + (it.image ? '<img loading="lazy" decoding="async" alt="' + esc(it.name) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="' + esc(absUrl(it.image)) + '">' : '')
       + badgeHtml + tagHtml + '</div>'
       + '<div class="p-5 space-y-2 flex-1"><div class="flex items-start justify-between gap-2"><h3 class="font-display-lg text-lg font-bold ' + titleSt + '">' + esc(it.name) + '</h3><span class="font-price-display text-xl font-black ' + priceSt + ' flex-shrink-0">' + it.price + '/=</span></div>'
       + '<p class="font-body-sm text-xs ' + descSt + ' line-clamp-2">' + esc(it.description || '') + '</p>'
@@ -141,7 +156,7 @@
     var grid = document.querySelector('main .mt-4.grid-cols-2') || document.querySelector('.mt-4.grid.grid-cols-2');
     if (grid && hl.length) {
       grid.innerHTML = hl.map(function(it){
-        return '<div class="relative rounded-2xl overflow-hidden border border-lime-200 bg-lime-50/50 p-2.5 flex flex-col justify-between group hover:shadow-md transition-all"><div class="relative h-32 rounded-xl overflow-hidden bg-white mb-2"><img loading="lazy" decoding="async" alt="' + esc(it.name) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="' + esc(it.image || '') + '"><span class="absolute top-2 left-2 bg-black text-lime-400 border border-lime-400 text-[10px] font-black px-2 py-0.5 rounded shadow">' + it.price + '/=</span></div><div class="font-bold text-stone-900 text-xs sm:text-sm">' + esc(it.name) + '</div><div class="text-[11px] text-stone-600 line-clamp-1">' + esc((it.description || '').slice(0, 40)) + '</div><button class="mt-2 w-full py-1.5 bg-black hover:bg-stone-900 text-lime-400 border border-lime-500 rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-colors" onclick="quickAdd(\'' + String(it.name).replace(/'/g, "\\'") + '\', ' + it.price + ')"><span class="material-symbols-outlined text-[14px]">add</span> Add ' + it.price + '/=</button></div>';
+        return '<div class="relative rounded-2xl overflow-hidden border border-lime-200 bg-lime-50/50 p-2.5 flex flex-col justify-between group hover:shadow-md transition-all"><div class="relative h-32 rounded-xl overflow-hidden bg-white mb-2"><img loading="lazy" decoding="async" alt="' + esc(it.name) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="' + esc(absUrl(it.image || '')) + '"><span class="absolute top-2 left-2 bg-black text-lime-400 border border-lime-400 text-[10px] font-black px-2 py-0.5 rounded shadow">' + it.price + '/=</span></div><div class="font-bold text-stone-900 text-xs sm:text-sm">' + esc(it.name) + '</div><div class="text-[11px] text-stone-600 line-clamp-1">' + esc((it.description || '').slice(0, 40)) + '</div><button class="mt-2 w-full py-1.5 bg-black hover:bg-stone-900 text-lime-400 border border-lime-500 rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-colors" onclick="quickAdd(\'' + String(it.name).replace(/'/g, "\\'") + '\', ' + it.price + ')"><span class="material-symbols-outlined text-[14px]">add</span> Add ' + it.price + '/=</button></div>';
       }).join('');
     }
   }
@@ -157,6 +172,7 @@
 
   function srcsetFromBase(base, ext){
     // base is the stem url without size suffix, e.g. /uploads/website/carousel/20261108_153342
+    base = absUrl(base);
     return base + '-400.webp 400w, ' + base + '-800.webp 800w, ' + base + '-1200.webp 1200w';
   }
   function renderCarousels(data){
@@ -182,7 +198,7 @@
         var lazy = i === 0 ? 'eager' : 'lazy';
         return '<figure class="cb-slide' + (active ? ' is-active' : '') + '" role="option" aria-selected="' + (active ? 'true' : 'false') + '" aria-hidden="' + (!active) + '" data-title="' + esc(s.title || '') + '">'
           + '<picture><source type="image/webp" srcset="' + srcsetFromBase(base) + '" sizes="(max-width:640px) 100vw, (max-width:1024px) 90vw, 1200px">'
-          + '<img src="' + esc(s.image || (base + '-800.jpg')) + '" srcset="' + esc(s.image || (base + '-800.jpg')) + ' 800w" sizes="(max-width:640px) 100vw, (max-width:1024px) 90vw, 1200px" alt="' + esc(s.alt || s.title || '') + '" width="1200" height="675" loading="' + lazy + '" decoding="async"' + (i === 0 ? ' fetchpriority="high"' : '') + '></picture>'
+          + '<img src="' + esc(absUrl(s.image || (base + '-800.jpg'))) + '" srcset="' + esc(absUrl(s.image || (base + '-800.jpg'))) + ' 800w" sizes="(max-width:640px) 100vw, (max-width:1024px) 90vw, 1200px" alt="' + esc(s.alt || s.title || '') + '" width="1200" height="675" loading="' + lazy + '" decoding="async"' + (i === 0 ? ' fetchpriority="high"' : '') + '></picture>'
           + '<figcaption class="cb-caption"><span class="cb-caption-title">' + esc(s.title || '') + '</span><span class="cb-caption-sub">' + esc(s.caption || '') + '</span></figcaption>'
           + '<button type="button" class="cb-expand" aria-label="Enlarge photo: ' + esc(s.alt || s.title || '') + '"><span class="material-symbols-outlined" aria-hidden="true">open_in_full</span></button></figure>';
       }).join('');
@@ -204,7 +220,7 @@
       // Do not touch carousel images (they are real photos) — only the small logo badge.
       loc.querySelectorAll('.cb-carousel img').forEach(function(ci){ ci.setAttribute('data-cb-photo','1'); });
       var badge = Array.prototype.filter.call(imgs, function(im){ return !im.hasAttribute('data-cb-photo') && (im.closest('.absolute') || im.closest('div p-4')); });
-      badge.forEach(function(im){ im.setAttribute('src', site.logo); });
+      badge.forEach(function(im){ im.setAttribute('src', absUrl(site.logo)); });
     }
   }
 

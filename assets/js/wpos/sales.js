@@ -149,10 +149,6 @@ function WPOSItems() {
         return this.generateItemGrid(-1);
     };
 
-    this.generateQuickItemsGrid = function(){
-        return this.generateItemGridCategories();
-    };
-
     this.toggleQuickItem = function(itemId){
         return false;
     };
