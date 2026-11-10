@@ -647,12 +647,15 @@
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function money(v){ return 'KSh ' + Number(v || 0).toLocaleString('en-KE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
+  // Idempotent: never re-apply a replacement that has already been applied,
+  // otherwise the 20s auto-refresh duplicates text (e.g. "Open Daily" ->
+  // "Open Daily 7 AM – 10 PM" -> "Open Daily 7 AM – 10 PM 7 AM – 10 PM").
   function heroSetText(oldText, newText){
-    if (!oldText || !newText) return;
+    if (!oldText || !newText || oldText === newText) return;
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     var node;
     while ((node = walker.nextNode())) {
-      if (node.nodeValue && node.nodeValue.indexOf(oldText) !== -1) {
+      if (node.nodeValue && node.nodeValue.indexOf(oldText) !== -1 && node.nodeValue.indexOf(newText) === -1) {
         node.nodeValue = node.nodeValue.replace(oldText, newText);
       }
     }
