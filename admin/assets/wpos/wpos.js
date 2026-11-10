@@ -196,14 +196,9 @@ function WPOSAdmin(){
                     if (r && r.id) { if (adoptAndEnter(r)) return; }
                 } catch(e) {}
             }
-            // 3. Truly logged out — try a silent auto-login as the POS admin
-            //    (staff/admin) so the user is never forced to type credentials
-            //    again after the first login.
-            try {
-                var r = WPOS.sendJsonData('auth', JSON.stringify({username:'staff', password:'admin', getsessiontokens:true}));
-                if (r && r.id) { if (adoptAndEnter(r)) return; }
-            } catch(e) {}
-            // 4. Last resort — show login
+            // 3. Truly logged out — show the usual login screen.
+            //    (No auto-login with hardcoded credentials: admin access requires
+            //    an explicit login. Session resume above handles returning users.)
             showLogin();
         });
     };
@@ -385,18 +380,7 @@ function WPOSAdmin(){
                 if (renewed) { try { WPOS.initAdmin(); } catch(e) {} return; }
             }
         } catch(e) {}
-        // Last resort: silent auto-login as the POS admin so the user is
-        // never forced to re-type credentials.
-        try {
-            var r2 = WPOS.sendJsonData('auth', JSON.stringify({username:'staff', password:'admin', getsessiontokens:true}));
-            if (r2 && r2.id) {
-                curuser = r2;
-                $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader('anti-csrf-token', (curuser ? curuser.csrf_token : '')); } });
-                try { localStorage.setItem('cb_auth', JSON.stringify({username: curuser.username, auth_hash: curuser.auth_hash || curuser.token})); } catch(e) {}
-                WPOS.initAdmin();
-                return;
-            }
-        } catch(e) {}
+        // Last resort: show the usual login screen (no silent auto-login).
         WPOS.stopPageLoader();
         WPOS.stopSocket();
         stopSessionCheck();
