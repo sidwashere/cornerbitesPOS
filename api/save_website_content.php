@@ -11,7 +11,13 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 header('Content-Type: application/json');
 $auth = new Auth();
-if (!$auth->isLoggedIn()) { http_response_code(403); echo json_encode(['error' => 'Unauthorized']); exit; }
+if (!$auth->isLoggedIn()) {
+    $u = isset($_REQUEST['username']) ? trim((string)$_REQUEST['username']) : '';
+    $h = isset($_REQUEST['auth_hash']) ? trim((string)$_REQUEST['auth_hash']) : '';
+    $renewed = false;
+    if ($u !== '' && $h !== '') { try { $renewed = (bool)$auth->renewTokenSession($u, $h); } catch (Exception $e) { $renewed = false; } }
+    if (!$renewed || !$auth->isLoggedIn()) { http_response_code(403); echo json_encode(['error' => 'Unauthorized — please log in again']); exit; }
+}
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) { http_response_code(400); echo json_encode(['error' => 'Invalid JSON']); exit; }

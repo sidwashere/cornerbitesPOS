@@ -11,7 +11,19 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 header('Content-Type: application/json');
 $auth = new Auth();
-if (!$auth->isLoggedIn()) { http_response_code(403); echo json_encode(['error' => 'Unauthorized']); exit; }
+if (!$auth->isLoggedIn()) {
+    // Fallback: accept a persisted auth_hash (from localStorage cb_auth) so uploads
+    // still work when the PHP session cookie has gone stale. Mirrors authrenew.
+    $u = isset($_REQUEST['username']) ? trim((string)$_REQUEST['username']) : (isset($_POST['username']) ? trim((string)$_POST['username']) : '');
+    $h = isset($_REQUEST['auth_hash']) ? trim((string)$_REQUEST['auth_hash']) : (isset($_POST['auth_hash']) ? trim((string)$_POST['auth_hash']) : '');
+    $renewed = false;
+    if ($u !== '' && $h !== '') {
+        try { $renewed = (bool)$auth->renewTokenSession($u, $h); } catch (Exception $e) { $renewed = false; }
+    }
+    if (!$renewed || !$auth->isLoggedIn()) {
+        http_response_code(403); echo json_encode(['error' => 'Unauthorized — please log in again']); exit;
+    }
+}
 
 if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
     http_response_code(400); echo json_encode(['error' => 'No valid file uploaded']); exit;

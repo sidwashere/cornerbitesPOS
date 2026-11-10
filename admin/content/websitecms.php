@@ -243,19 +243,46 @@
             try { WPOS.sendJsonData('items/delete', JSON.stringify({ id: it.linked_itemid })); alert('POS product deleted.'); } catch(e) { alert('Menu item removed; POS product delete failed — remove it from Inventory manually.'); }
         }
     }
-    function uploadItemImage(){
+    function uploadItemImage(retry){
         var fileInput = document.getElementById('cms-item-file');
         if (!fileInput.files.length) { alert('Choose an image first'); return; }
         var fd = new FormData();
         fd.append('file', fileInput.files[0]);
+        // Persisted credentials (cb_auth) so uploads survive a stale PHP session.
+        try {
+            var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+            if (saved && saved.username && saved.auth_hash) {
+                fd.append('username', saved.username);
+                fd.append('auth_hash', saved.auth_hash);
+            }
+        } catch(e) {}
         WPOS.util.showLoader();
         $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
             success: function(res){
                 WPOS.util.hideLoader();
                 if (res && res.ok) { $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url); }
-                else alert(res && res.error ? res.error : 'Upload failed');
+                else alert('Upload failed: ' + (res && res.error ? res.error : 'unknown error'));
             },
-            error: function(){ WPOS.util.hideLoader(); alert('Upload failed'); }
+            error: function(xhr){
+                WPOS.util.hideLoader();
+                var msg = 'Upload failed';
+                try { var j = JSON.parse(xhr.responseText || '{}'); if (j.error) msg = 'Upload failed: ' + j.error; } catch(e){}
+                // Session expired mid-upload? Try silent re-auth from persisted credentials, then retry once.
+                if (!retry && (xhr.status === 403 || /Unauthorized/i.test(msg))) {
+                    try {
+                        var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+                        if (saved && saved.username && saved.auth_hash) {
+                            var r = WPOS.sendJsonData('authrenew', JSON.stringify({ username: saved.username, auth_hash: saved.auth_hash }));
+                            if (r && r.id) {
+                                $.ajaxSetup({ beforeSend: function(x){ x.setRequestHeader('anti-csrf-token', r.csrf_token); } });
+                                uploadItemImage(true);
+                                return;
+                            }
+                        }
+                    } catch(e){}
+                }
+                alert(msg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
+            }
         });
     }
     function fillCategories(){
@@ -319,7 +346,9 @@
         });
         if (created > 0) {
             CMS.menu = { items: CMS_ITEMS };
-            $.ajax({ url: '/api/save_website_content.php', type: 'POST', data: JSON.stringify(CMS), contentType: 'application/json', dataType: 'json', success: function(){}, error: function(){} });
+            var _saveUrl = '/api/save_website_content.php';
+        try { var _sv = JSON.parse(localStorage.getItem('cb_auth') || 'null'); if (_sv && _sv.username && _sv.auth_hash) _saveUrl += '?username=' + encodeURIComponent(_sv.username) + '&auth_hash=' + encodeURIComponent(_sv.auth_hash); } catch(e) {}
+        $.ajax({ url: _saveUrl, type: 'POST', data: JSON.stringify(CMS), contentType: 'application/json', dataType: 'json', success: function(){}, error: function(){} });
             info = ' · + ' + created + ' POS product(s) created.';
         }
         done(info);
