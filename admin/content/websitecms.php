@@ -260,7 +260,15 @@
         $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
             success: function(res){
                 WPOS.util.hideLoader();
-                if (res && res.ok) { $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url); }
+                if (res && res.ok) {
+                    $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url);
+                    // Instant sync: push the new image to the linked POS product immediately
+                    // (one source of truth = POS product image), so the till tray + admin reflect it.
+                    var linkedId = parseInt($('#cms-item-linked').val(), 10);
+                    if (linkedId > 0) {
+                        try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: linkedId, image: res.url })); } catch(e) {}
+                    }
+                }
                 else alert('Upload failed: ' + (res && res.error ? res.error : 'unknown error'));
             },
             error: function(xhr){

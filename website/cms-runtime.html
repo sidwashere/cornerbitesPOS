@@ -259,6 +259,9 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+  // Keep the live site in sync with POS/CMS changes (image uploads, price edits) without a manual refresh.
+  setInterval(function(){ if (document.visibilityState === 'visible') boot(); }, 60000);
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') boot(); });
 })();
 </script>
 </body></html>

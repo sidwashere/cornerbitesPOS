@@ -447,6 +447,7 @@ function WPOS() {
             // Non-critical plugins (print/scan) must never block the till from coming up.
             try { WPOS.initPlugins(); } catch(e){ console.error("initPlugins failed:", e); }
             try { populateDeviceInfo(); } catch(e){ console.error("populateDeviceInfo failed:", e); }
+        try { startItemsAutoRefresh(); } catch(e){}
             // Always reveal the till and populate the product grid, even if a plugin above threw.
             setTimeout(hideLogin, 500);
             setTimeout(function(){
@@ -1194,6 +1195,20 @@ function WPOS() {
     var stockindex;
     var categoryindex;
 
+    // Keep the till tray in sync with POS product changes (image/price/name) made from
+    // the admin or the Website CMS. Poll every 60s + on tab focus, and refresh the tray.
+    var _itemsRefreshTimer = null;
+    function refreshItemsTable() {
+        try {
+            fetchItemsTable(function(){ try { if (WPOS.items && WPOS.items.generateItemGridCategories) WPOS.items.generateItemGridCategories(); } catch(e){} });
+        } catch(e) {}
+    }
+    function startItemsAutoRefresh() {
+        if (_itemsRefreshTimer) return;
+        _itemsRefreshTimer = setInterval(function(){ if (document.visibilityState === 'visible') refreshItemsTable(); }, 60000);
+    }
+    window.addEventListener('focus', function(){ refreshItemsTable(); });
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') refreshItemsTable(); });
     this.getItemsTable = function () {
         if (itemtable == null) {
             loadItemsTable();
