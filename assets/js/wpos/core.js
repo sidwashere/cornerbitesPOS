@@ -1205,7 +1205,7 @@ function WPOS() {
     }
     function startItemsAutoRefresh() {
         if (_itemsRefreshTimer) return;
-        _itemsRefreshTimer = setInterval(function(){ if (document.visibilityState === 'visible') refreshItemsTable(); }, 60000);
+        _itemsRefreshTimer = setInterval(function(){ if (document.visibilityState === 'visible') refreshItemsTable(); }, 20000);
     }
     window.addEventListener('focus', function(){ refreshItemsTable(); });
     document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') refreshItemsTable(); });

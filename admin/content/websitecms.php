@@ -66,9 +66,7 @@
     <div class="cb-pane" id="cms-tab-menu">
         <div style="margin-bottom:8px;">
             <button class="btn btn-primary btn-sm" onclick="openItemDialog(null);"><i class="icon-plus"></i> Add menu item</button>
-            <button class="btn btn-default btn-sm" onclick="syncFromPos();" style="margin-left:4px;"><i class="icon-refresh"></i> Sync from POS</button>
-            <button class="btn btn-default btn-sm" onclick="syncToPosNow();" style="margin-left:4px;"><i class="icon-upload-alt"></i> Sync to POS</button>
-            <span style="font-size:12px; color:#666;">One source of truth: POS holds name/price/image/description; this CMS holds display extras (badge, tag, order, visible).</span>
+            <span style="font-size:12px; color:#666; margin-left:8px;">One source of truth: the POS holds name/price/image/description. Images uploaded here push to the POS and refresh on the website menu + till tray automatically.</span>
         </div>
         <div class="cb-scroll" style="max-height:420px;"><table id="cms-items-table" class="table table-striped table-bordered" style="font-size:12px; min-width:900px;">
             <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Category</th><th>Badge</th><th>Order</th><th>Visible</th><th>Actions</th></tr></thead>
@@ -99,6 +97,12 @@
         <img id="cms-item-preview" style="max-height:80px; max-width:120px; border:1px solid #ddd; border-radius:6px;" alt=""/>
         <input type="file" id="cms-item-file" accept="image/*" style="display:inline-block;" />
         <button class="btn btn-xs btn-info" onclick="uploadItemImage();"><i class="icon-cloud-upload"></i> Upload</button>
+    </div>
+    <div id="cms-upload-progress-wrap" style="display:none; margin:6px 0 2px;">
+        <div style="height:10px; background:#e5e5e5; border-radius:5px; overflow:hidden;">
+            <div id="cms-upload-bar" style="height:100%; width:0%; background:linear-gradient(90deg,#3a87ad,#6fb3d2); transition:width .12s linear;"></div>
+        </div>
+        <div id="cms-upload-status" style="font-size:11px; color:#555; margin-top:3px;"></div>
     </div>
     <label>Linked POS product (price auto-sync) <select id="cms-item-linked" class="form-control" style="width:100%; display:block;"></select></label>
     <label>Sort order <input type="text" id="cms-item-order" class="form-control" style="width:30%; display:inline-block;" /> <label style="display:inline-block;"><input type="checkbox" id="cms-item-visible" /> Visible on site</label></label>
@@ -246,54 +250,70 @@
     }
     // Downscale big photos in the browser before upload: keeps pages fast on mobile
     // data and makes even huge phone photos sail through server size limits.
+    // Better image optimization: downscale to 1600px, strip EXIF (canvas redraw),
+    // prefer WebP (smaller) when the browser supports it, else high-quality JPEG.
     function compressImageFile(file, cb){
-        var BIG_BYTES = 400 * 1024, BIG_EDGE = 2000;
-        var isRaster = /image\/(jpeg|jpg|png|webp)/.test(file.type);
-        if (!isRaster || (file.size <= BIG_BYTES)) { cb(file); return; }
+        var MAX_EDGE = 1600, TARGET_BYTES = 400 * 1024;
+        var isRaster = /image\/(jpeg|jpg|png|webp)/i.test(file.type);
+        if (!isRaster) { cb(file); return; }   // SVG/GIF pass through
+        if (file.size <= TARGET_BYTES && !(file.type === 'image/png' && file.size > 600 * 1024)) { cb(file); return; }
         var img = new Image();
         var url = URL.createObjectURL(file);
         img.onload = function(){
             try {
                 var w = img.naturalWidth, h = img.naturalHeight;
-                if (Math.max(w, h) <= BIG_EDGE && file.size <= 1.5 * 1024 * 1024) { cb(file); return; }
-                var scale = Math.min(1, 1600 / Math.max(w, h));
+                if (w <= 0 || h <= 0) { cb(file); return; }
+                var scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+                // Only resize if it actually helps (avoid upscaling tiny images)
+                if (scale === 1 && file.size <= TARGET_BYTES) { cb(file); URL.revokeObjectURL(url); return; }
                 var nw = Math.max(1, Math.round(w * scale)), nh = Math.max(1, Math.round(h * scale));
                 var c = document.createElement('canvas');
                 c.width = nw; c.height = nh;
                 var ctx = c.getContext('2d');
-                ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, nw, nh); // flatten PNG alpha onto white for JPEG
+                // flatten transparent PNGs onto white so JPEG/WebP stays clean
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, nw, nh);
                 ctx.drawImage(img, 0, 0, nw, nh);
-                var keepPng = /image\/png/.test(file.type) && file.size <= 3 * 1024 * 1024;
+                // Prefer WebP when supported (typically 25-35% smaller than JPEG at equal quality)
+                var supportsWebP = false;
+                try { supportsWebP = (c.toDataURL('image/webp', 0.85).indexOf('data:image/webp') === 0); } catch(e) {}
+                var mime = supportsWebP ? 'image/webp' : 'image/jpeg';
+                var ext = supportsWebP ? 'webp' : 'jpg';
                 c.toBlob(function(blob){
+                    URL.revokeObjectURL(url);
                     if (!blob || blob.size >= file.size) { cb(file); return; }
-                    var ext = keepPng ? 'png' : 'jpg';
-                    var out = new File([blob], file.name.replace(/\.[^.]+$/, '') + '-web.' + ext, { type: keepPng ? 'image/png' : 'image/jpeg' });
+                    var out = new File([blob], file.name.replace(/\.[^.]+$/, '') + '-web.' + ext, { type: mime });
                     cb(out);
-                }, keepPng ? 'image/png' : 'image/jpeg', 0.85);
-            } catch(e) { cb(file); }
+                }, mime, 0.82);
+            } catch(e) { URL.revokeObjectURL(url); cb(file); }
         };
-        img.onerror = function(){ cb(file); };
+        img.onerror = function(){ URL.revokeObjectURL(url); cb(file); };
         img.src = url;
     }
     function uploadItemImage(retry){
         var fileInput = document.getElementById('cms-item-file');
         if (!fileInput.files.length) { alert('Choose an image first'); return; }
         var picked = fileInput.files[0];
-        // Clear, actionable checks BEFORE hitting the server (avoids opaque 400s).
         var pickedName = (picked.name || '').toLowerCase();
-        if (/\.(heic|heif)$/.test(pickedName) || /image\/(heic|heif)/.test(picked.type || '')) {
-            alert('That photo is in HEIC format (iPhone "High Efficiency"), which browsers and the server cannot use.\n\nFix (30 seconds):\n• iPhone: Settings > Camera > Formats > "Most Compatible" (new photos become JPG)\n• Or open the photo, tap Share > Save as JPEG, and upload that copy.\n\nJPG / PNG / WebP photos upload fine.');
+        if (/.(heic|heif)$/.test(pickedName) || /image\/(heic|heif)/.test(picked.type || '')) {
+            alert('That photo is in HEIC format (iPhone "High Efficiency"), which browsers and the server cannot use.\n\nFix (30 seconds):\n• iPhone: Settings > Camera > Formats > "Most Compatible"\n• Or Share > Save as JPEG and upload that copy.\n\nJPG / PNG / WebP photos upload fine.');
             return;
         }
         if (picked.size > 20 * 1024 * 1024) {
-            alert('That photo is ' + Math.round(picked.size / 1048576) + 'MB. Please choose one under 20MB (most phone photos are 2-5MB).');
+            alert('That photo is ' + Math.round(picked.size / 1048576) + 'MB. Please choose one under 20MB.');
             return;
         }
+        // Progress UI
+        var wrap = document.getElementById('cms-upload-progress-wrap');
+        var bar = document.getElementById('cms-upload-bar');
+        var status = document.getElementById('cms-upload-status');
+        if (wrap) wrap.style.display = 'block';
+        if (bar) bar.style.width = '0%';
+        if (status) status.textContent = 'Compressing image...';
         WPOS.util.showLoader();
         compressImageFile(picked, function(file){
+            if (status) status.textContent = 'Uploading ' + Math.round(file.size / 1024) + 'KB...';
             var fd = new FormData();
             fd.append('file', file);
-            // Persisted credentials (cb_auth) so uploads survive a stale PHP session.
             try {
                 var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
                 if (saved && saved.username && saved.auth_hash) {
@@ -301,25 +321,38 @@
                     fd.append('auth_hash', saved.auth_hash);
                 }
             } catch(e) {}
-            $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
-                success: function(res){
-                    WPOS.util.hideLoader();
-                    if (res && res.ok) {
-                        $('#cms-item-image').val(res.url); $('#cms-item-preview').attr('src', res.url);
-                        // Instant sync: push the new image to the linked POS product immediately
-                        // (one source of truth = POS product image), so the till tray + admin reflect it.
-                        var linkedId = parseInt($('#cms-item-linked').val(), 10);
-                        if (linkedId > 0) {
-                            try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: linkedId, image: res.url })); } catch(e) {}
-                        }
+            // XHR with progress events (jQuery $.ajax doesn't expose upload progress cleanly)
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/website_upload.php', true);
+            xhr.responseType = 'json';
+            xhr.upload.onprogress = function(e){
+                if (e.lengthComputable && bar) {
+                    var pct = Math.round((e.loaded / e.total) * 100);
+                    bar.style.width = pct + '%';
+                    if (status) status.textContent = 'Uploading... ' + pct + '%';
+                }
+            };
+            xhr.onload = function(){
+                WPOS.util.hideLoader();
+                var res = xhr.response;
+                if (!res) { try { res = JSON.parse(xhr.responseText || '{}'); } catch(e) { res = {}; } }
+                if (xhr.status >= 200 && xhr.status < 300 && res && res.ok) {
+                    if (bar) bar.style.width = '100%';
+                    if (status) status.textContent = 'Upload complete ✓  (' + Math.round((res.size || file.size) / 1024) + 'KB)';
+                    $('#cms-item-image').val(res.url);
+                    $('#cms-item-preview').attr('src', res.url);
+                    var linkedId = parseInt($('#cms-item-linked').val(), 10);
+                    if (linkedId > 0) {
+                        try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: linkedId, image: res.url })); } catch(e) {}
+                        if (status) status.textContent = 'Upload complete ✓  Synced to POS — website & till tray will refresh shortly.';
                     }
-                    else alert('Upload failed: ' + (res && res.error ? res.error : 'unknown error'));
-                },
-                error: function(xhr){
-                    WPOS.util.hideLoader();
-                    var msg = 'Upload failed';
-                    try { var j = JSON.parse(xhr.responseText || '{}'); if (j.error) msg = 'Upload failed: ' + j.error; } catch(e){}
-                    // Session expired mid-upload? Try silent re-auth from persisted credentials, then retry once.
+                    // hide the progress bar after a moment
+                    setTimeout(function(){ if (wrap) wrap.style.display = 'none'; }, 3500);
+                } else {
+                    var msg = (res && res.error) ? res.error : ('Upload failed (HTTP ' + xhr.status + ')');
+                    if (status) status.textContent = 'Failed: ' + msg;
+                    if (bar) bar.style.background = '#d9534f';
+                    // Session expired mid-upload? Try silent re-auth, then retry once.
                     if (!retry && (xhr.status === 403 || /Unauthorized/i.test(msg))) {
                         try {
                             var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
@@ -333,9 +366,16 @@
                             }
                         } catch(e) {}
                     }
-                    alert(msg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
+                    alert('Upload failed: ' + msg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
                 }
-            });
+            };
+            xhr.onerror = function(){
+                WPOS.util.hideLoader();
+                if (status) status.textContent = 'Network error — please try again.';
+                if (bar) bar.style.background = '#d9534f';
+                alert('Upload failed: network error.');
+            };
+            xhr.send(fd);
         });
     }
     function fillCategories(){
@@ -408,30 +448,6 @@
         var c = (CMS.categories || []).filter(function(x){ return x.id === id; })[0];
         return c ? c.label : id;
     }
-    function syncFromPos(){
-        WPOS.util.showLoader();
-        try {
-            var items = WPOS.getJsonData('items/get') || {};
-            var byId = {};
-            for (var k in items) byId[items[k].id] = items[k];
-            var changed = 0;
-            CMS_ITEMS.forEach(function(it){
-                if (!it.linked_itemid || !byId[it.linked_itemid]) return;
-                var p = byId[it.linked_itemid];
-                var dd = (typeof p.data === 'string') ? (function(){ try { return JSON.parse(p.data); } catch(e){ return {}; } })() : (p.data || {});
-                var before = JSON.stringify({n:it.name,pr:it.price,im:it.image,ds:it.description});
-                if (p.name) it.name = p.name;
-                if (p.price != null && !isNaN(parseFloat(p.price))) it.price = parseFloat(p.price);
-                if (p.image || dd.image) it.image = p.image || dd.image;
-                if (p.description || dd.description) it.description = p.description || dd.description;
-                if (JSON.stringify({n:it.name,pr:it.price,im:it.image,ds:it.description}) !== before) changed++;
-            });
-            fillItems();
-            // push CMS display extras back to POS is handled on Save & Publish
-            WPOS.util.hideLoader();
-            $('#cms-status').text('Synced ' + changed + ' item(s) from POS. Click Save & Publish to push display extras to POS.');
-        } catch(e) { WPOS.util.hideLoader(); $('#cms-status').text('Sync failed: ' + e.message); }
-    }
     function saveCms(retry){
         CMS.site = collectGeneral();
         CMS.menu = { items: CMS_ITEMS };
@@ -479,14 +495,7 @@
             }
         });
     }
-    // Explicit "Sync to POS" button: push CMS item details (name/price/image/description)
-    // into the linked POS products right now — same routine Save & Publish uses.
-    function syncToPosNow(){
-        WPOS.util.showLoader();
-        syncPosProducts(function(info){
-            WPOS.util.hideLoader();
-            $('#cms-status').text('Pushed to POS ' + new Date().toLocaleTimeString() + (info || ''));
-        });
+);
     }
         function openLiveSite(){
         var url = (CMS.site && CMS.site.website_url) ? CMS.site.website_url.trim() : '';
