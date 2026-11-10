@@ -294,7 +294,7 @@
         if (!fileInput.files.length) { alert('Choose an image first'); return; }
         var picked = fileInput.files[0];
         var pickedName = (picked.name || '').toLowerCase();
-        if (/.(heic|heif)$/.test(pickedName) || /image\/(heic|heif)/.test(picked.type || '')) {
+        if (/\.(heic|heif)$/.test(pickedName) || /image\/(heic|heif)/.test(picked.type || '')) {
             alert('That photo is in HEIC format (iPhone "High Efficiency"), which browsers and the server cannot use.\n\nFix (30 seconds):\n• iPhone: Settings > Camera > Formats > "Most Compatible"\n• Or Share > Save as JPEG and upload that copy.\n\nJPG / PNG / WebP photos upload fine.');
             return;
         }
@@ -494,8 +494,6 @@
                 cb(null, xhr);
             }
         });
-    }
-);
     }
         function openLiveSite(){
         var url = (CMS.site && CMS.site.website_url) ? CMS.site.website_url.trim() : '';
