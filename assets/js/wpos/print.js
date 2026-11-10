@@ -46,7 +46,7 @@ function WPOSPrint(kitchenMode) {
             printip: "",
             printport: "",
             cutter:"gs_full",
-            feed:4
+            feed:1
         },
         global: {
             recask:"email",
