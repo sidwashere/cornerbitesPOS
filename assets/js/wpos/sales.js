@@ -106,7 +106,7 @@ function WPOSItems() {
 
     this.generateItemGrid = function(categoryId){
         var iboxitems = $("#iboxitems");
-        iboxitems.html('<div style="padding: 5px;"><button class="btn btn-sm btn-primary" onclick="WPOS.items.generateItemGridCategories();"><i class="icon-backward">&nbsp;</i>Categories</button></div>');
+        iboxitems.html('');
         var price;
         var items = [];
         if (categoryId>-1){
@@ -138,40 +138,15 @@ function WPOSItems() {
         }
     };
 
+    // Simplified tray: list ALL products with image + price directly (no categories,
+    // no quick-items). Reads from the same POS product source as the website menu,
+    // so price/image/name/description updates stay in sync across till, admin and web.
     this.generateItemGridCategories = function(){
-        var iboxitems = $("#iboxitems");
-        iboxitems.html('<div class="iboxitem" onclick="WPOS.sales.generateQuickItemsGrid();"><h5>Quick Items</h5><h6>(Favorites)</h6></div>');
-        var itemtable = {};
-        try { itemtable = WPOS.getItemsTable() || {}; } catch(e) {}
-        iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid(-1);"><h5>All Categories</h5><h6>('+Object.keys(itemtable).length+' items)</h6></div>');
-        var catindex = {};
-        try { catindex = WPOS.getCategoryIndex() || {}; } catch(e) {}
-        var categories = {};
-        try { categories = WPOS.getConfigTable().item_categories || {}; } catch(e) {}
-        //console.log(catindex);
-        for (var i in categories){
-            var catImg = categories[i].image || '';
-            var catThumb = '';
-            if (!catImg) {
-                // Fall back to the top-selling product image derivation already applied server-side;
-                // here pick the first item in this category that has an image
-                try {
-                    var idx = catindex[i] || [];
-                    var table = WPOS.getItemsTable() || {};
-                    for (var k = 0; k < idx.length; k++) { if (table[idx[k]] && table[idx[k]].image) { catImg = table[idx[k]].image; break; } }
-                } catch(e) {}
-            }
-            if (catImg) {
-                catThumb = '<div style="height:72px; border-radius:6px; overflow:hidden; margin-bottom:6px; background:#f5f5f5;"><img loading="lazy" src="' + String(catImg).replace(/"/g,'&quot;') + '" alt="" onerror=\"this.parentNode.style.display=\'none\'\" style="width:100%; height:100%; object-fit:cover; display:block;"></div>';
-            }
-            iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid('+i+');">' +
-                catThumb +
-                '<h5>'+categories[i].name+'</h5>'+
-                '<h6>('+(catindex.hasOwnProperty(i)?catindex[i].length:0)+' items)</h6>'+
-                '</div>');
-        }
-        var misctotal = catindex.hasOwnProperty(0)?catindex[0].length:0;
-        iboxitems.append('<div class="iboxitem" onclick="WPOS.items.generateItemGrid(0);"><h5>Miscellaneous</h5><h6>('+misctotal+' items)</h6></div>');
+        return this.generateItemGrid(-1);
+    };
+
+    this.generateQuickItemsGrid = function(){
+        return this.generateItemGrid(-1);
     };
 
     this.generateQuickItemsGrid = function(){
