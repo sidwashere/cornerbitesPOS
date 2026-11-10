@@ -30,8 +30,8 @@ AddType image/webp .webp
 
 # --- Session lifetime (12 hours) ---
 <IfModule mod_php.c>
-    php_value session.gc_maxlifetime 43200
-    php_value session.cookie_lifetime 43200
+    php_value session.gc_maxlifetime 604800
+    php_value session.cookie_lifetime 604800
 </IfModule>
 
 # --- Image uploads (Website CMS) ---

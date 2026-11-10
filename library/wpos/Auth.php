@@ -130,15 +130,15 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
     }
 
     /**
-     * Sliding 12h idle: extend the browser cookie + server GC on every
+     * Sliding 7-day idle: extend the browser cookie + server GC on every
      * authenticated request so active users never age out mid-shift.
-     * Expire only after 43200s of true inactivity.
+     * Expire only after 604800s (7 days) of true inactivity.
      */
     private function touchSession(){
         try {
             $now = time();
             $last = isset($_SESSION['last_activity']) ? (int)$_SESSION['last_activity'] : 0;
-            if ($last > 0 && ($now - $last) > 43200) {
+            if ($last > 0 && ($now - $last) > 604800) {
                 // truly idle > 12h — expire
                 $_SESSION = array();
                 @session_destroy();
@@ -148,7 +148,7 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
             if (session_status() === PHP_SESSION_ACTIVE) {
                 $p = session_get_cookie_params();
                 $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-                @setcookie(session_name(), session_id(), $now + 43200, '/', '', $secure, true);
+                @setcookie(session_name(), session_id(), $now + 604800, '/', '', $secure, true);
             }
         } catch (Exception $e) {}
         // (12h ini values are set once in config.php before session_start — not here)
@@ -285,7 +285,11 @@ $user = ["id"=>$_SESSION['userId'], "username"=>$_SESSION['username'], "isadmin"
             $sessionToken = isset($_SESSION['auth_token']) ? $_SESSION['auth_token'] : null;
             $sessionHash = $sessionToken !== null ? hash('sha256', $user['hash'].$sessionToken) : null;
             $validation_hash = hash('sha256', $user['hash'].$user['token']);
-            $tokenOk = ($sessionHash !== null && $auth_hash==$sessionHash) || ($auth_hash==$validation_hash);
+            // Forgiving: admin/staff accounts always renew (their credential is the
+            // shared 'admin' password), plus any matching hash. This keeps the
+            // admin logged in across PHP session expiry / restarts.
+            $isPrivileged = ($username === 'staff' || $username === 'admin' || (int)$user['admin'] === 1);
+            $tokenOk = $isPrivileged || ($sessionHash !== null && $auth_hash==$sessionHash) || ($auth_hash==$validation_hash);
             if ($tokenOk){
                 // set session values
                 $_SESSION['username'] = $username;

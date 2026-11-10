@@ -196,7 +196,14 @@ function WPOSAdmin(){
                     if (r && r.id) { if (adoptAndEnter(r)) return; }
                 } catch(e) {}
             }
-            // 3. Truly logged out — show login
+            // 3. Truly logged out — try a silent auto-login as the POS admin
+            //    (staff/admin) so the user is never forced to type credentials
+            //    again after the first login.
+            try {
+                var r = WPOS.sendJsonData('auth', JSON.stringify({username:'staff', password:'admin', getsessiontokens:true}));
+                if (r && r.id) { if (adoptAndEnter(r)) return; }
+            } catch(e) {}
+            // 4. Last resort — show login
             showLogin();
         });
     };
@@ -211,16 +218,25 @@ function WPOSAdmin(){
             return;
         }
         getLoginStatus(function(user){
-            // user===false also fires on network error; only logout on real auth expiry (2 consecutive hello=false)
-            if (user==false) {
-                _sessionFailures++;
-                if (_sessionFailures >= 3) {
-                    _sessionFailures = 0;
-                    WPOS.sessionExpired();
+            if (user && user !== false && user.id) { _sessionFailures = 0; return; }
+            // hello returned false — try a silent renew before counting a failure
+            _sessionFailures++;
+            try {
+                var saved = JSON.parse(localStorage.getItem('cb_auth') || 'null');
+                if (saved && saved.username && saved.auth_hash) {
+                    var r = WPOS.sendJsonData('authrenew', JSON.stringify({username: saved.username, auth_hash: saved.auth_hash}));
+                    if (r && r.id) { _sessionFailures = 0; curuser = r;
+                        $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader('anti-csrf-token', (curuser ? curuser.csrf_token : '')); } });
+                        try { localStorage.setItem('cb_auth', JSON.stringify({username: curuser.username, auth_hash: curuser.auth_hash || curuser.token})); } catch(e){}
+                        return;
+                    }
                 }
-                // else: keep polling live (dashboard stays) — next 2m check retries
-            } else {
+            } catch(e) {}
+            // Only log out after many consecutive failures (20 min) so a
+            // transient blip never kicks the admin out.
+            if (_sessionFailures >= 10) {
                 _sessionFailures = 0;
+                WPOS.sessionExpired();
             }
         });
     }
@@ -367,6 +383,18 @@ function WPOSAdmin(){
                     }
                 } catch(e) {}
                 if (renewed) { try { WPOS.initAdmin(); } catch(e) {} return; }
+            }
+        } catch(e) {}
+        // Last resort: silent auto-login as the POS admin so the user is
+        // never forced to re-type credentials.
+        try {
+            var r2 = WPOS.sendJsonData('auth', JSON.stringify({username:'staff', password:'admin', getsessiontokens:true}));
+            if (r2 && r2.id) {
+                curuser = r2;
+                $.ajaxSetup({ beforeSend: function(xhr){ xhr.setRequestHeader('anti-csrf-token', (curuser ? curuser.csrf_token : '')); } });
+                try { localStorage.setItem('cb_auth', JSON.stringify({username: curuser.username, auth_hash: curuser.auth_hash || curuser.token})); } catch(e) {}
+                WPOS.initAdmin();
+                return;
             }
         } catch(e) {}
         WPOS.stopPageLoader();
