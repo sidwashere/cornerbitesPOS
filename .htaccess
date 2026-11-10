@@ -23,6 +23,8 @@ AddType image/webp .webp
     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
     # Route public webhook endpoints to the API
     RewriteRule ^webhooks/([^/]+)/?$ api/webhooks.php?platform=$1 [L,QSA]
+    # Block internal directories (migration scripts, vendor libs) from HTTP
+    RewriteRule ^(setup|node_modules)/ - [F]
 </IfModule>
 
 
