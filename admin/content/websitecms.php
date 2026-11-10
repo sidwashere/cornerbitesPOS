@@ -79,9 +79,19 @@
     </div>
 
     <div class="cb-pane" id="cms-tab-cats">
-        <p class="text-muted">These drive the menu category pills on the website.</p>
+        <h4 style="margin-top:0;">Website categories (pills on the public site)</h4>
+        <p class="text-muted" style="font-size:12px;">These drive the menu category pills on the website.</p>
         <div id="cms-cats-list"></div>
-        <button class="btn btn-primary btn-sm" onclick="addCategory();"><i class="icon-plus"></i> Add category</button>
+        <button class="btn btn-primary btn-sm" onclick="addCategory();"><i class="icon-plus"></i> Add website category</button>
+
+        <hr style="margin:16px 0;"/>
+        <h4>POS categories (till tray &amp; kitchen)</h4>
+        <p class="text-muted" style="font-size:12px;">Managed here so the till, kitchen and website stay in sync. Images set here show on the till tray and the website menu.</p>
+        <div class="cb-scroll" style="max-height:320px;"><table id="cms-poscats-table" class="table table-striped table-bordered" style="font-size:12px; min-width:600px;">
+            <thead><tr><th>ID</th><th>Name</th><th># Items</th><th>Image</th><th>Actions</th></tr></thead>
+            <tbody id="cms-poscats-body"></tbody>
+        </table></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:6px;" onclick="openPosCategoryDialog();"><i class="icon-plus"></i> Add POS category</button>
     </div>
 
     <div class="cb-pane" id="cms-tab-offers">
@@ -172,6 +182,23 @@
     </div>
 </div>
 
+<div id="cmsposcatdialog" class="hide" style="padding:14px; min-width:420px;">
+    <input type="hidden" id="cms-poscat-id" />
+    <label>Name <input type="text" id="cms-poscat-name" class="form-control" style="width:100%; display:block;" /></label>
+    <label>Image URL <input type="text" id="cms-poscat-image" class="form-control" style="width:100%; display:block;" onchange="$('#cms-poscat-preview').attr('src', this.value);"/></label>
+    <div style="margin:4px 0;">
+        <img id="cms-poscat-preview" style="max-height:60px; border:1px solid #ddd; border-radius:6px; margin:4px 0;" alt=""/>
+        <input type="file" id="cms-poscat-file" accept="image/*" style="display:inline-block;" />
+        <button class="btn btn-xs btn-info" onclick="uploadPosCategoryImage();"><i class="icon-cloud-upload"></i> Upload</button>
+        <button class="btn btn-xs btn-default" onclick="useTopSellerPosImage();">Use top seller</button>
+        <button class="btn btn-xs btn-default" onclick="$('#cms-poscat-image').val(''); $('#cms-poscat-preview').attr('src','');">Clear</button>
+    </div>
+    <div style="margin-top:10px; text-align:center;">
+        <button class="btn btn-success btn-sm" onclick="savePosCategory();">Save</button>
+        <button class="btn btn-default btn-sm" onclick="$('#cmsposcatdialog').dialog('close')">Cancel</button>
+    </div>
+</div>
+
 <div id="cms-modalloader" class="hide" style="width: 360px; height: 320px; text-align: center;">
     <img id="cms-modalloader_img" style="width: 128px; height: auto;" src="/admin/assets/images/cloud_loader.gif"/>
     <div id="cms-modalloader_prog" class="progress progress-striped active">
@@ -221,6 +248,8 @@ function loadCms(){
     WPOS.util.showLoader();
     var _posOk = loadPosTables();
     if (!_posOk) { console.warn('POS tables could not be loaded (items/suppliers/categories).'); }
+    // Enrich POS categories with top-seller images
+    try { WPOS.sendJsonDataAsync('categories/images', JSON.stringify({}), function(res){ if (res && res.length) { res.forEach(function(c){ POS_CAT_TOP[c.id] = c; }); } }, function(){}); } catch(e) {}
     $.get('/api/website_content.php', function(data){
         try {
             CMS = data || {};
@@ -231,7 +260,7 @@ function loadCms(){
             if (!CMS.offers) CMS.offers = [];
             CMS_ITEMS = CMS.menu.items.map(function(it){ return Object.assign({}, it); });
             webByPos();
-            fillGeneral(); fillProducts(); fillCategories(); fillOffers(); fillCatSelects(); fillLinkedSelect(); fillPosSelects();
+            fillGeneral(); fillProducts(); fillCategories(); fillPosCategories(); fillOffers(); fillCatSelects(); fillLinkedSelect(); fillPosSelects();
         } catch (e) {
             console.error('CMS load failed:', e && e.message, e);
             alert('Could not load the CMS data: ' + (e && e.message ? e.message : e));
@@ -702,6 +731,98 @@ function fillOffers(){
 function addOffer(){
     CMS.offers.push({ title: 'New Offer', description: '', price: 0, badge: '' });
     fillOffers();
+}
+
+// ---------- POS categories (till tray) ----------
+var POS_CAT_TOP = {};
+function fillPosCategories(){
+    var rows = '';
+    var ids = Object.keys(POS_CATS).sort(function(a,b){ return String(POS_CATS[a].name).localeCompare(String(POS_CATS[b].name)); });
+    ids.forEach(function(id){
+        var c = POS_CATS[id];
+        var img = c.image || '';
+        if (!img && POS_CAT_TOP[id]) img = POS_CAT_TOP[id].top_seller_image || '';
+        var kind = c.image ? 'set' : (img ? 'top seller' : '');
+        rows += '<tr>'
+            + '<td>' + id + '</td>'
+            + '<td><strong>' + esc(c.name || '-') + '</strong></td>'
+            + '<td>' + (c.numitems != null ? c.numitems : '-') + '</td>'
+            + '<td>' + (img ? '<img src="' + img + '" style="max-height:36px; max-width:64px; border-radius:4px;"/> <small style="display:block; color:#888;">' + kind + '</small>' : '<span style="color:#999;">—</span>') + '</td>'
+            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openPosCategoryDialog(' + id + ')">Edit</button> <button class="btn btn-xs btn-danger" onclick="removePosCategory(' + id + ')">Delete</button></td>'
+            + '</tr>';
+    });
+    $('#cms-poscats-body').html(rows || '<tr><td colspan="5" class="center">No POS categories yet.</td></tr>');
+}
+function openPosCategoryDialog(id){
+    var dlg = $('#cmsposcatdialog');
+    if (!dlg.hasClass('ui-dialog-content')) dlg.removeClass('hide').dialog({ width: 'auto', maxWidth: '460px', modal: true, autoOpen: false, title: 'POS category' });
+    $('#cms-poscat-id').val(id || '');
+    if (id && POS_CATS[id]) {
+        cmsSet('cms-poscat-name', POS_CATS[id].name);
+        cmsSet('cms-poscat-image', POS_CATS[id].image);
+        $('#cms-poscat-preview').attr('src', POS_CATS[id].image || '');
+    } else {
+        cmsSet('cms-poscat-name', '');
+        cmsSet('cms-poscat-image', '');
+        $('#cms-poscat-preview').attr('src', '');
+    }
+    dlg.dialog('open');
+}
+function uploadPosCategoryImage(){
+    var fi = document.getElementById('cms-poscat-file');
+    if (!fi.files.length) { alert('Choose an image first'); return; }
+    var fd = new FormData();
+    fd.append('file', fi.files[0]);
+    WPOS.util.showLoader();
+    $.ajax({ url: '/api/website_upload.php', type: 'POST', data: fd, processData: false, contentType: false, dataType: 'json',
+        success: function(res){ WPOS.util.hideLoader(); if (res && res.ok) { $('#cms-poscat-image').val(res.url); $('#cms-poscat-preview').attr('src', res.url); } else alert(res && res.error ? res.error : 'Upload failed'); },
+        error: function(){ WPOS.util.hideLoader(); alert('Upload failed'); }
+    });
+}
+function useTopSellerPosImage(){
+    var id = $('#cms-poscat-id').val();
+    var top = POS_CAT_TOP[id] || {};
+    if (!top.top_seller_image) { alert('No top-selling product image for this category yet'); return; }
+    $('#cms-poscat-image').val(top.top_seller_image);
+    $('#cms-poscat-preview').attr('src', top.top_seller_image);
+}
+function savePosCategory(){
+    var name = cmsGet('cms-poscat-name');
+    if (!name) { alert('Name required'); return; }
+    var id = $('#cms-poscat-id').val();
+    WPOS.util.showLoader();
+    var item = { name: name };
+    var result;
+    if (id) {
+        item.id = id;
+        result = WPOS.sendJsonData('categories/edit', JSON.stringify(item));
+        var img = cmsGet('cms-poscat-image') || '';
+        if (result !== false) {
+            try { WPOS.sendJsonData('categories/setImage', JSON.stringify({ id: id, image: img })); } catch(e) {}
+            if (POS_CATS[id]) { POS_CATS[id].name = name; POS_CATS[id].image = img; }
+        }
+    } else {
+        result = WPOS.sendJsonData('categories/add', JSON.stringify(item));
+        if (result !== false && result && result.id) {
+            var newId = result.id;
+            var img = cmsGet('cms-poscat-image') || '';
+            POS_CATS[newId] = result;
+            if (img) { try { WPOS.sendJsonData('categories/setImage', JSON.stringify({ id: newId, image: img })); } catch(e) {} POS_CATS[newId].image = img; }
+        }
+    }
+    WPOS.util.hideLoader();
+    if (result === false) return;
+    fillPosCategories();
+    $('#cmsposcatdialog').dialog('close');
+}
+function removePosCategory(id){
+    if (!confirm('Delete POS category #' + id + '? Items in it will become uncategorised.')) return;
+    WPOS.util.showLoader();
+    if (WPOS.sendJsonData('categories/delete', JSON.stringify({ id: id }))) {
+        delete POS_CATS[id];
+        fillPosCategories();
+    }
+    WPOS.util.hideLoader();
 }
 
 function categoryLabel(id){
