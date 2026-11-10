@@ -27,9 +27,11 @@ class WposStockStats {
         if (isset($this->data->name) && trim((string)$this->data->name) !== '') $cur['name'] = trim((string)$this->data->name);
         if (isset($this->data->price) && is_numeric($this->data->price)) $cur['price'] = (string)number_format((float)$this->data->price, 2, '.', '');
         if (isset($this->data->image)) $data['image'] = trim((string)$this->data->image);
+        if (isset($this->data->description)) $data['description'] = trim((string)$this->data->description);
+        if (isset($this->data->website_id)) $data['website_id'] = trim((string)$this->data->website_id);
         $pdo->prepare("UPDATE stored_items SET name = :n, price = :p, data = :d WHERE id = :id")->execute([':n' => $cur['name'], ':p' => $cur['price'], ':d' => json_encode($data), ':id' => $itemId]);
         Logger::write("Item $itemId details updated (image/price/name)", "ITEM");
-        $result['data'] = ['itemid' => $itemId, 'name' => $cur['name'], 'price' => (float)$cur['price'], 'image' => $data['image'] ?? ''];
+        $result['data'] = ['itemid' => $itemId, 'name' => $cur['name'], 'price' => (float)$cur['price'], 'image' => $data['image'] ?? '', 'description' => $data['description'] ?? '', 'website_id' => $data['website_id'] ?? ''];
         return $result;
     }
 
@@ -87,14 +89,18 @@ class WposStockStats {
         $price = isset($this->data->price) ? (float)$this->data->price : 0;
         $catLabel = trim((string)($this->data->category_label ?? $this->data->category ?? ''));
         $image = trim((string)($this->data->image ?? ''));
+        $desc = trim((string)($this->data->description ?? ''));
+        $webId = trim((string)($this->data->website_id ?? ''));
         if ($name === '' || $price <= 0) { $result['error'] = 'name and price>0 required'; return $result; }
         $pdo = $this->db();
         $ex = $pdo->prepare("SELECT id FROM stored_items WHERE lower(name) = lower(:n) LIMIT 1");
         $ex->execute([':n' => $name]);
         if ($id = $ex->fetchColumn()) {
-            // Already exists — just sync image
+            // Already exists — sync image/desc/website link
             $this->data->itemid = (int)$id;
             $this->data->image = $image;
+            $this->data->description = $desc;
+            $this->data->website_id = $webId;
             return $this->setDetails($result);
         }
         // category (create if needed)
@@ -114,8 +120,15 @@ class WposStockStats {
         $obj->taxid = 1; $obj->cost = $price; $obj->price = $price; $obj->type = '';
         $obj->supplierid = 0; $obj->categoryid = $catId;
         if ($image !== '') $obj->image = $image;
+        if ($desc !== '') $obj->description = $desc;
         $itemMdl = new StoredItemsModel();
         $result['data'] = $itemMdl->create($obj);
+        // stamp website linkage + description into data JSON
+        if (is_numeric($result['data'])) {
+            try {
+                $pdo->prepare("UPDATE stored_items SET data = :d WHERE id = :id")->execute([':d' => json_encode(['image' => $image, 'description' => $desc, 'website_id' => $webId, 'cost' => number_format($price, 2, '.', ''), 'lowlevel' => 10]), ':id' => (int)$result['data']]);
+            } catch (Exception $e) {}
+        }
         // default stock level at default location
         $loc = $pdo->query("SELECT id FROM locations ORDER BY id LIMIT 1")->fetchColumn();
         if ($loc && is_numeric($result['data'])) {

@@ -383,9 +383,10 @@ function WPOSAdmin(){
         } catch(e) {}
         // hide unallowed sections
         hidePermSections();
-        // Load needed config
-        fetchConfigTable();
-        WPOS.startPageLoader();
+        // Load needed config (never let a config failure block navigation/page loader)
+        try { fetchConfigTable(); } catch (e) { console.error('fetchConfigTable failed:', e); }
+        // Start the page loader FIRST so section navigation always works even if config fetch failed.
+        try { WPOS.startPageLoader(); } catch (e) { console.error('startPageLoader failed:', e); }
         startSessionCheck();
         hideLoginDiv();
     };

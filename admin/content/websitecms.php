@@ -1,7 +1,7 @@
 <!-- Website CMS — mature content manager for the public website -->
 <div class="page-header">
     <h1 style="margin-right:20px; display:inline-block;"><i class="icon-globe"></i> Website CMS</h1>
-    <span class="btn btn-default btn-sm pull-right" onclick="window.open('/website/', '_blank')" style="margin-right:6px;"><i class="icon-eye-open"></i> View Site</span>
+    <span class="btn btn-default btn-sm pull-right" onclick="openLiveSite();" style="margin-right:6px;"><i class="icon-eye-open"></i> View Site</span>
     <button class="btn btn-success btn-sm pull-right" onclick="saveCms();"><i class="icon-save align-top bigger-125"></i> Save &amp; Publish</button>
     <span id="cms-status" style="float:right; margin-right:10px; font-size:12px; color:#666;"></span>
 </div>
@@ -41,6 +41,7 @@
                 <label>Payment note <input type="text" id="cms-site-payment-note" class="form-control" style="width:100%; display:block;" /></label>
                 <label>M-Pesa Buy Goods Till <input type="text" id="cms-site-mpesa-till" class="form-control" style="width:100%; display:block;" placeholder="1860556" /></label>
                 <label>Delivery fee (KSh, every online order) <input type="text" id="cms-site-delivery-fee" class="form-control" style="width:100%; display:block;" /></label>
+                <label>Live website URL (root of your domain) <input type="text" id="cms-site-website-url" class="form-control" style="width:100%; display:block;" placeholder="https://cornerbites.co.ke/" /></label>
                             </div>
         </div>
         <div class="row" style="margin-top:10px;">
@@ -130,7 +131,7 @@
         cmsSet('cms-site-address', s.address); cmsSet('cms-site-email', s.email); cmsSet('cms-site-hours', s.hours);
         cmsSet('cms-site-delivery-area', s.delivery_area); cmsSet('cms-site-delivery-time', s.delivery_time);
         cmsSet('cms-site-delivery-fee', s.delivery_fee || 0);
-        cmsSet('cms-site-payment-note', s.payment_note); cmsSet('cms-site-mpesa-till', s.mpesa_till || '1860556');
+        cmsSet('cms-site-payment-note', s.payment_note); cmsSet('cms-site-mpesa-till', s.mpesa_till || '1860556'); cmsSet('cms-site-website-url', s.website_url || '');
         $('#cms-site-announcement-enabled').prop('checked', !!s.announcement_enabled);
         cmsSet('cms-site-announcement', s.announcement);
         cmsSet('cms-site-seo-title', s.seo_title); cmsSet('cms-site-seo-desc', s.seo_desc);
@@ -138,13 +139,15 @@
         cmsSet('cms-site-gallery', (s.gallery || []).join('\n'));
     }
     function collectGeneral(){
-        var s = {};
+        // Preserve every non-general field (logo, gallery, carousels, mpesa_till,
+        // delivery_fee, announcement, seo, ...) so saving never wipes them.
+        var s = (CMS.site && typeof CMS.site === 'object') ? JSON.parse(JSON.stringify(CMS.site)) : {};
         s.name = cmsGet('cms-site-name'); s.hero_title = cmsGet('cms-site-hero-title'); s.hero_subtitle = cmsGet('cms-site-hero-subtitle');
         s.tagline = cmsGet('cms-site-tagline'); s.phone = cmsGet('cms-site-phone'); s.whatsapp = cmsGet('cms-site-whatsapp');
         s.address = cmsGet('cms-site-address'); s.email = cmsGet('cms-site-email'); s.hours = cmsGet('cms-site-hours');
         s.delivery_area = cmsGet('cms-site-delivery-area'); s.delivery_time = cmsGet('cms-site-delivery-time');
         s.delivery_fee = parseFloat(cmsGet('cms-site-delivery-fee')) || 0;
-        s.payment_note = cmsGet('cms-site-payment-note'); s.mpesa_till = cmsGet('cms-site-mpesa-till');
+        s.payment_note = cmsGet('cms-site-payment-note'); s.mpesa_till = cmsGet('cms-site-mpesa-till'); s.website_url = cmsGet('cms-site-website-url');
         s.announcement_enabled = $('#cms-site-announcement-enabled').is(':checked');
         s.announcement = cmsGet('cms-site-announcement');
         s.seo_title = cmsGet('cms-site-seo-title'); s.seo_desc = cmsGet('cms-site-seo-desc');
@@ -288,10 +291,19 @@
     function syncPosProducts(done){
         var info = '';
         var unlinked = CMS_ITEMS.filter(function(it){ return !it.linked_itemid; });
-        // 1) push thumbnails into POS for linked items
+        // 1) sync full details into POS for linked items (name, price, image, description, website link)
         CMS_ITEMS.forEach(function(it){
-            if (it.linked_itemid && it.image) {
-                try { WPOS.sendJsonData('items/setDetails', JSON.stringify({ itemid: it.linked_itemid, image: it.image })); } catch(e) {}
+            if (it.linked_itemid) {
+                try {
+                    WPOS.sendJsonData('items/setDetails', JSON.stringify({
+                        itemid: it.linked_itemid,
+                        name: it.name,
+                        price: it.price,
+                        image: it.image || '',
+                        description: it.description || '',
+                        website_id: it.id || ''
+                    }));
+                } catch(e) {}
             }
         });
         // 2) unlinked items: offer to create POS products (so they can be sold on the till)
@@ -300,7 +312,7 @@
         var created = 0;
         unlinked.forEach(function(it){
             try {
-                var r = WPOS.sendJsonData('items/createFromMenu', JSON.stringify({ name: it.name, price: it.price, category_label: (categoryLabel(it.category) || it.category), image: it.image }));
+                var r = WPOS.sendJsonData('items/createFromMenu', JSON.stringify({ name: it.name, price: it.price, category_label: (categoryLabel(it.category) || it.category), image: it.image || '', description: it.description || '', website_id: it.id || '' }));
                 if (r !== false && r !== null) { it.linked_itemid = parseInt(r, 10) || parseInt(r.id, 10) || 0; created++; }
             } catch(e) {}
         });
@@ -336,5 +348,14 @@
             error: function(){ WPOS.util.hideLoader(); $('#cms-status').text('Save failed'); }
         });
     }
-    $(function(){ loadCms(); });
+        function openLiveSite(){
+        var url = (CMS.site && CMS.site.website_url) ? CMS.site.website_url.trim() : '';
+        if (!url) {
+            var host = location.hostname;
+            var isLocal = /localhost|127\.0\.0\.1/.test(host);
+            url = isLocal ? '/website/' : '/';
+        }
+        window.open(url, '_blank');
+    }
+loadCms();
 </script>

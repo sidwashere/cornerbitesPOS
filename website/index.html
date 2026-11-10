@@ -701,11 +701,19 @@
       + '<div class="px-5 pb-5"><button class="' + btnCls + '" onclick="quickAdd(\'' + String(it.name).replace(/'/g, "\\'") + '\', ' + it.price + ')"><span class="material-symbols-outlined text-[18px]">' + btnIcon + '</span><span class="">' + btnText + ' • ' + it.price + '/=</span></button></div></div>';
   }
 
-  function renderMenu(data, posPrices){
+  function renderMenu(data, posMap){
     var items = (data.menu && data.menu.items || []).filter(function(it){ return it.visible !== false; }).sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
-    // POS live prices for linked items
-    if (posPrices) {
-      items.forEach(function(it){ if (it.linked_itemid && posPrices[it.linked_itemid] != null) it.price = parseFloat(posPrices[it.linked_itemid]); });
+    // POS is the source of truth for linked items: price, image and description
+    // all flow from the admin POS backend into the live website.
+    if (posMap) {
+      items.forEach(function(it){
+        if (!it.linked_itemid || !posMap[it.linked_itemid]) return;
+        var p = posMap[it.linked_itemid];
+        if (p.price != null && !isNaN(parseFloat(p.price))) it.price = parseFloat(p.price);
+        if (p.image) it.image = p.image;
+        if (p.description) it.description = p.description;
+        if (p.name) it.name = p.name;
+      });
     }
     var cats = data.categories || [];
     var grid = document.getElementById('food-grid');
@@ -838,12 +846,12 @@
     renderOffers(data);
     // menu + highlights + footer need the POS map for linked prices
     fetch(API + '/api/menu.php', { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(pos){
-      var posPrices = null;
+      var posMap = null;
       if (pos && pos.ok && Array.isArray(pos.menu)) {
-        posPrices = {};
-        pos.menu.forEach(function(cat){ (cat.items || []).forEach(function(it){ posPrices[it.id] = it.price; }); });
+        posMap = {};
+        pos.menu.forEach(function(cat){ (cat.items || []).forEach(function(it){ posMap[it.id] = it; }); });
       }
-      var items = renderMenu(data, posPrices);
+      var items = renderMenu(data, posMap);
       renderHighlights(items);
       renderFooterLists(items);
     }).catch(function(){

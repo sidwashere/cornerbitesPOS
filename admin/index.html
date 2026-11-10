@@ -903,6 +903,24 @@
 
         <!-- Websocket library -->
         <script type="text/javascript" src="/assets/libs/socketio/socket.io-1.4.5.js?v=20261030"></script>
-	</body>
+	<script>
+// Fallback navigation guard: ensure content loads on hash change even if the
+// WPOS page loader's listener was not registered (e.g. config fetch failed).
+(function(){
+  function load(){
+    try {
+      if (!window.WPOS || !WPOS.loadPageContent) return;
+      var sec = (location.hash||'').replace(/^#!?/,'').split('&')[0];
+      if (!sec) sec = 'dashboard';
+      window.sec = sec;
+      WPOS.loadPageContent('');
+    } catch(e) { console.error('fallback load failed', e); }
+  }
+  window.addEventListener('hashchange', function(){ setTimeout(load, 0); }, false);
+  // initial load
+  setTimeout(function(){ if ((document.getElementById('maincontent')||{}).innerHTML.length < 50) load(); }, 1500);
+})();
+</script>
+</body>
 </html>
 

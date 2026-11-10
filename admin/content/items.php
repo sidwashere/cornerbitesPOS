@@ -37,6 +37,7 @@
     <th data-priority="5">Stockcode</th>
     <th data-priority="9">Category</th>
     <th data-priority="10">Supplier</th>
+    <th data-priority="3" class="center">Web</th>
     <th class="noexport" data-priority="2"></th>
 </tr>
 </thead>
@@ -268,6 +269,10 @@
                 { "mData":"code" },
                 { "mData":function(data,type,val){return (categories.hasOwnProperty(data.categoryid)?categories[data.categoryid].name:'None'); } },
                 { "mData":function(data,type,val){return (suppliers.hasOwnProperty(data.supplierid)?suppliers[data.supplierid].name:'None'); } },
+                { "mData":function(data,type,val){
+                    if (data && data.website_id) return '<span class="label label-success arrowed-in arrowed-in-right" title="Linked to website item: ' + data.website_id + '">Web</span>';
+                    return '<span class="label label-grey">—</span>';
+                }, sDefaultContent: '<span class="label label-grey">—</span>' },
                 { mData:null, sDefaultContent:'<div class="action-buttons"><a class="green" onclick="openEditDialog($(this).closest(\'tr\').find(\'td\').eq(1).text());"><i class="icon-pencil bigger-130"></i></a><a class="red" onclick="removeItem($(this).closest(\'tr\').find(\'td\').eq(1).text())"><i class="icon-trash bigger-130"></i></a></div>', "bSortable": false }
             ],
             "columns": [
@@ -278,6 +283,7 @@
                 {type: "string"},
                 {type: "numeric"},
                 {type: "currency"},
+                {type: "string"},
                 {type: "string"},
                 {type: "string"},
                 {type: "string"},
