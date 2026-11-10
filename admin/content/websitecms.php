@@ -194,6 +194,7 @@ var CMS = null, CMS_ITEMS = [], POS_ITEMS = {}, POS_CATS = {}, POS_SUPS = {};
 var CMS_WEB_BY_POS = {};
 var cmsProdSearch = '';
 
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escId(s){ return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 function cmsGet(id){ var el = document.getElementById(id); return el ? el.value : ''; }
 function cmsSet(id, v){ var el = document.getElementById(id); if (el) el.value = v || ''; }
