@@ -8,6 +8,7 @@
         </small>
     </h1>
 </div><!-- /.page-header -->
+<div id="dashCanvas" style="position:relative;">
 <div class="row">
     <div class="space-6"></div>
 
@@ -550,6 +551,7 @@
 <div class="hr hr32 hr-dotted"></div>
 <!-- inline scripts related to this page -->
 
+</div><!-- /dashCanvas -->
 <script type="text/javascript">
 
     var placeholder = $('#piechart-placeholder').css({'width':'90%' , 'min-height':'150px'});
@@ -1354,6 +1356,101 @@ $(document).ready(function(){
         setTimeout(loadLiveTracker, 1200); window._p3 = setInterval(loadLiveTracker, 15000);
     }
 });
+
+// --- Dashboard drag/resize/grid layout (opt-in) ---
+var DASH_LAYOUT_KEY = 'cb_dash_layout_v2';
+var dashEditMode = false;
+function dashCaptureLayout(){
+    var canvas = $('#dashCanvas');
+    var co = canvas.offset();
+    var layout = {};
+    canvas.find('.widget-box').each(function(i, el){
+        var $el = $(el);
+        var id = $el.attr('data-dw') || ('dw' + i);
+        $el.attr('data-dw', id);
+        var off = $el.offset();
+        layout[id] = {
+            left: Math.round((off.left - co.left)/20)*20,
+            top: Math.round((off.top - co.top)/20)*20,
+            width: Math.round($el.outerWidth()/20)*20,
+            height: Math.round($el.outerHeight()/20)*20
+        };
+    });
+    return layout;
+}
+function dashApplyLayout(layout){
+    var canvas = $('#dashCanvas');
+    for (var id in layout){
+        var $el = canvas.find('[data-dw="' + id + '"]');
+        if (!$el.length) continue;
+        var l = layout[id];
+        $el.css({ position: 'absolute', left: l.left + 'px', top: l.top + 'px', width: l.width + 'px', height: l.height + 'px' });
+    }
+    // canvas height
+    var maxBottom = 0;
+    canvas.find('.widget-box').each(function(){ maxBottom = Math.max(maxBottom, $(this).position().top + $(this).outerHeight()); });
+    canvas.css('min-height', (maxBottom + 40) + 'px');
+}
+function dashEnableEdit(){
+    if (dashEditMode) return;
+    dashEditMode = true;
+    var canvas = $('#dashCanvas');
+    canvas.css('position','relative');
+    var saved = null;
+    try { saved = localStorage.getItem(DASH_LAYOUT_KEY); } catch(e){}
+    if (!saved) {
+        var init = dashCaptureLayout();
+        try { localStorage.setItem(DASH_LAYOUT_KEY, JSON.stringify(init)); } catch(e){}
+        saved = JSON.stringify(init);
+    }
+    dashApplyLayout(JSON.parse(saved));
+    canvas.find('.widget-box').each(function(){
+        var $el = $(this);
+        if ($el.data('cb-drag')) return;
+        $el.data('cb-drag', true);
+        if ($.fn.draggable) $el.draggable({ grid: [20,20], containment: 'parent', handle: '.widget-header', cursor: 'move', opacity: 0.85 });
+        if ($.fn.resizable) $el.resizable({ grid: [20,20], handles: 'se', minWidth: 220, minHeight: 80 });
+        $el.on('dragstop.dash resizestop.dash', function(){
+            try { localStorage.setItem(DASH_LAYOUT_KEY, JSON.stringify(dashCaptureLayout())); } catch(e){}
+        });
+    });
+    $('#dashEditBtn').text('Done').removeClass('btn-primary').addClass('btn-success');
+    $('#dashResetBtn').show();
+}
+function dashDisableEdit(){
+    if (!dashEditMode) return;
+    dashEditMode = false;
+    var canvas = $('#dashCanvas');
+    canvas.find('.widget-box').each(function(){
+        var $el = $(this);
+        if ($el.data('ui-draggable')) try { $el.draggable('destroy'); } catch(e){}
+        if ($el.data('ui-resizable')) try { $el.resizable('destroy'); } catch(e){}
+        $el.removeData('cb-drag');
+        $el.off('.dash');
+    });
+    // keep applied layout (don't revert) so it persists visually
+    $('#dashEditBtn').text('Customize layout').removeClass('btn-success').addClass('btn-primary');
+}
+function dashResetLayout(){
+    try { localStorage.removeItem(DASH_LAYOUT_KEY); } catch(e){}
+    location.reload();
+}
+// auto-apply saved layout on load (without edit mode handles)
+$(function(){
+    var saved = null;
+    try { saved = localStorage.getItem(DASH_LAYOUT_KEY); } catch(e){}
+    if (saved) {
+        try { dashApplyLayout(JSON.parse(saved)); } catch(e) { console.error('dash layout apply failed', e); }
+    }
+    // inject toggle buttons into page header area
+    var btns = '<div style="margin:8px 0; text-align:right;">'
+        + '<button id="dashEditBtn" class="btn btn-primary btn-xs" onclick="dashToggleEdit();">Customize layout</button> '
+        + '<button id="dashResetBtn" class="btn btn-default btn-xs" onclick="dashResetLayout();" style="display:none;">Reset layout</button>'
+        + '</div>';
+    $('#dashCanvas').before(btns);
+});
+function dashToggleEdit(){ if (dashEditMode) dashDisableEdit(); else dashEnableEdit(); }
+
 // --- End Dashboard Orders Overview ---
 
 </script>
