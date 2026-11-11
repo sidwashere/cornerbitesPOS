@@ -68,6 +68,7 @@
             <button class="btn btn-primary btn-sm" onclick="openProductDialog();"><i class="icon-plus"></i> Add product</button>
             <button class="btn btn-success btn-sm" onclick="exportProducts();"><i class="icon-cloud-download align-top bigger-125"></i> Export CSV</button>
             <button class="btn btn-success btn-sm" onclick="openImportDialog();"><i class="icon-cloud-upload align-top bigger-125"></i> Import CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedProducts();" style="display:none;" id="cms-del-sel-btn"><i class="icon-trash"></i> Delete selected</button>
             <input type="text" id="cms-prod-search" placeholder="Search products..." style="width:160px; display:inline-block; margin-left:8px;" oninput="filterProducts(this.value)" />
             <span style="font-size:12px; color:#666; margin-left:8px;">One editor for everything — saving updates the till, kitchen and website at once.</span>
         </div>
@@ -278,6 +279,7 @@ function loadCms(){
             CMS_ITEMS = CMS.menu.items.map(function(it){ return Object.assign({}, it); });
             webByPos();
             fillGeneral(); fillProducts(); fillCategories(); fillPosCategories(); fillOffers(); fillCatSelects(); fillLinkedSelect(); fillPosSelects();
+        if (WPOS.isAdmin()) { $('#cms-del-sel-btn').show(); }
         } catch (e) {
             console.error('CMS load failed:', e && e.message, e);
             alert('Could not load the CMS data: ' + (e && e.message ? e.message : e));
@@ -378,7 +380,7 @@ function fillProducts(){
             + '<td>' + esc(p.code || '') + '</td>'
             + '<td>' + (w ? ('<span class="label label-success">Web</span> <input type="checkbox" ' + (w.visible !== false ? 'checked' : '') + ' onchange="toggleVisible(' + id + ', this.checked)" title="Visible on website"/> <small>order ' + (w.order || 0) + (w.badge ? ' · ' + esc(w.badge) : '') + (w.category ? ' · ' + esc(w.category) : '') + '</small>')
                      : ('<span class="label label-grey">not on website</span>')) + '</td>'
-            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openProductDialog(' + id + ')">Edit</button> <button class="btn btn-xs btn-danger" onclick="removeProduct(' + id + ')">Delete</button></td>'
+            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openProductDialog(' + id + ')">Edit</button>' + (WPOS.isAdmin() ? ' <button class="btn btn-xs btn-danger" onclick="removeProduct(' + id + ')">Delete</button>' : '') + '</td>'
             + '</tr>';
     });
     // unlinked website items (no POS product)
@@ -392,7 +394,7 @@ function fillProducts(){
             + '<td>' + WPOS.util.money(it.price || 0) + '</td>'
             + '<td>—</td><td>—</td><td>—</td><td>—</td>'
             + '<td><span class="label label-warning">not on till</span> <small>order ' + (it.order || 0) + (it.badge ? ' · ' + esc(it.badge) : '') + '</small></td>'
-            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openProductDialog(null, \'' + escId(it.id) + '\')">Edit</button> <button class="btn btn-xs btn-danger" onclick="removeProduct(null, \'' + escId(it.id) + '\')">Delete</button></td>'
+            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openProductDialog(null, \'' + escId(it.id) + '\')">Edit</button>' + (WPOS.isAdmin() ? ' <button class="btn btn-xs btn-danger" onclick="removeProduct(null, \'' + escId(it.id) + '\')">Delete</button>' : '') + '</td>'
             + '</tr>';
     });
     $('#cms-products-body').html(rows || '<tr><td colspan="11" class="center">No products yet. Click "Add product".</td></tr>');
@@ -664,6 +666,7 @@ function saveProductDialog(){
 }
 
 function removeProduct(posId, webId){
+    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
     var alsoPos = (posId != null && posId !== '');
     if (alsoPos) {
         if (!confirm('Delete POS product #' + posId + ' and its website menu item? This removes it from the till, kitchen and website.')) return;
@@ -686,6 +689,7 @@ function removeProduct(posId, webId){
 }
 
 function deleteSelectedProducts(){
+    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
     var ids = $('#cms-products-body .cms-prod-cb:checked').map(function(){ return $(this).data('posid'); }).get();
     if (!ids.length) { alert('Select at least one product'); return; }
     if (!confirm('Delete ' + ids.length + ' selected product(s) from the till and website?')) return;
@@ -724,7 +728,7 @@ function exportProducts(){
 function fillCategories(){
     var html = '';
     CMS.categories.forEach(function(c, i){
-        html += '<div style="margin:4px 0;"><input type="text" value="' + escAttr(c.label || '') + '" data-ci="' + i + '" style="width:200px;" /> <input type="text" value="' + escAttr(c.id || '') + '" data-ciid="' + i + '" style="width:150px;" placeholder="id" /> <button class="btn btn-xs btn-danger" onclick="CMS.categories.splice(' + i + ',1); fillCategories();">Remove</button></div>';
+        html += '<div style="margin:4px 0;"><input type="text" value="' + escAttr(c.label || '') + '" data-ci="' + i + '" style="width:200px;" /> <input type="text" value="' + escAttr(c.id || '') + '" data-ciid="' + i + '" style="width:150px;" placeholder="id" />' + (WPOS.isAdmin() ? ' <button class="btn btn-xs btn-danger" onclick="CMS.categories.splice(' + i + ',1); fillCategories();">Remove</button>' : '') + '</div>';
     });
     $('#cms-cats-list').html(html || '<p class="text-muted">No categories.</p>');
 }
@@ -742,7 +746,7 @@ function fillOffers(){
             + '<input type="text" value="' + escAttr(o.description || '') + '" data-oi="' + i + '" data-of="description" style="width:300px;" placeholder="Description" /> '
             + '<input type="text" value="' + escAttr(o.price || '') + '" data-oi="' + i + '" data-of="price" style="width:60px;" placeholder="KSh" /> '
             + '<input type="text" value="' + escAttr(o.badge || '') + '" data-oi="' + i + '" data-of="badge" style="width:100px;" placeholder="Badge" /> '
-            + '<button class="btn btn-xs btn-danger" onclick="CMS.offers.splice(' + i + ',1); fillOffers();">Remove</button></div>';
+            + (WPOS.isAdmin() ? '<button class="btn btn-xs btn-danger" onclick="CMS.offers.splice(' + i + ',1); fillOffers();">Remove</button>' : '') + '</div>';
     });
     $('#cms-offers-list').html(html || '<p class="text-muted">No offers.</p>');
     $('#cms-offers-list input').on('change', function(){
@@ -770,7 +774,7 @@ function fillPosCategories(){
             + '<td><strong>' + esc(c.name || '-') + '</strong></td>'
             + '<td>' + (c.numitems != null ? c.numitems : '-') + '</td>'
             + '<td>' + (img ? '<img src="' + img + '" style="max-height:36px; max-width:64px; border-radius:4px;"/> <small style="display:block; color:#888;">' + kind + '</small>' : '<span style="color:#999;">—</span>') + '</td>'
-            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openPosCategoryDialog(' + id + ')">Edit</button> <button class="btn btn-xs btn-danger" onclick="removePosCategory(' + id + ')">Delete</button></td>'
+            + '<td style="white-space:nowrap;"><button class="btn btn-xs btn-primary" onclick="openPosCategoryDialog(' + id + ')">Edit</button>' + (WPOS.isAdmin() ? ' <button class="btn btn-xs btn-danger" onclick="removePosCategory(' + id + ')">Delete</button>' : '') + '</td>'
             + '</tr>';
     });
     $('#cms-poscats-body').html(rows || '<tr><td colspan="5" class="center">No POS categories yet.</td></tr>');
@@ -838,6 +842,7 @@ function savePosCategory(){
     $('#cmsposcatdialog').dialog('close');
 }
 function removePosCategory(id){
+    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
     if (!confirm('Delete POS category #' + id + '? Items in it will become uncategorised.')) return;
     WPOS.util.showLoader();
     if (WPOS.sendJsonData('categories/delete', JSON.stringify({ id: id }))) {

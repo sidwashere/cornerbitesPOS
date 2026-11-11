@@ -447,7 +447,7 @@
         WPOS.util.hideLoader();
     }
     function removeSupplier(id){
-
+        if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
         var answer = confirm("Are you sure you want to delete this supplier?");
         if (answer){
             // show loader

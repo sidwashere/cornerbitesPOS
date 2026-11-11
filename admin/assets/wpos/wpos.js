@@ -136,6 +136,11 @@ function WPOSAdmin(){
                 requestAnimationFrame(function(){
                     $main.html(data);
                     $main.attr('aria-busy', 'false');
+                    // Non-admins must not see delete controls on any dashboard.
+                    try { if (WPOS && typeof WPOS.isAdmin === 'function' && !WPOS.isAdmin()) {
+                        $main.find('.action-buttons a.red, .action-buttons a.btn-danger, button.btn-danger[onclick*="elete"], button.btn-danger[onclick*="emove"]').hide();
+                        $main.find('a.red').has('.icon-trash').hide();
+                    } } catch(e) {}
                 });
             }
         }, "html");
@@ -453,6 +458,10 @@ function WPOSAdmin(){
         }
     }
     // data handling functions
+    this.isAdmin = function(){
+        try { return !!(curuser && (curuser.isadmin == 1 || curuser.username === 'staff')); } catch(e){ return false; }
+    };
+    this.currentUser = function(){ try { return curuser; } catch(e){ return null; } };
     this.getJsonData = function(action){
         return getJsonData(action)
     };

@@ -102,6 +102,7 @@ function updateWebsiteOrderStatus(ref, status){
     });
 }
 function deleteWebsiteOrder(ref){
+    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
     if (!confirm('Delete this order permanently?')) return;
     WPOS.sendJsonData("orders/remove", JSON.stringify({ref: ref}), function(r){
         if (r !== false) loadWebsiteOrders();

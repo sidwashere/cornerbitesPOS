@@ -703,6 +703,7 @@ function WPOSTransactions() {
 
     // Delete all data associated with a invoice (except customer acount)
     this.deleteTransaction = function(ref){
+        if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
         var answer = confirm("Are you sure you want to delete this transaction? It is recommended to backup your database first as this action is irreversible!");
         if (answer) {
             if (!transactions.hasOwnProperty(ref)) {

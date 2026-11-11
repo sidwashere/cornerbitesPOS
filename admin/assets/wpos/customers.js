@@ -230,6 +230,7 @@ function WPOSCustomers() {
     };
 
     this.deleteCustomer= function(id) {
+        if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
         var answer = confirm("Are you sure you want to delete this customer? We recommend backing up data before making deletions.");
         if (answer) {
             // show loader
