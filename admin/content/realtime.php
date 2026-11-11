@@ -49,12 +49,17 @@
                                 <i class="icon-caret-right blue"></i>
                                 Total
                             </th>
+
+                            <th class="hidden-320" style="width:60px;">
+                                <i class="icon-caret-right blue"></i>
+                                Actions
+                            </th>
                         </tr>
                         </thead>
 
                         <tbody id="recentsalestable">
                         <tr id="nosalesrow">
-                            <td colspan="5" style="text-align: center;"><strong>No sales data for today</strong></td>
+                            <td colspan="6" style="text-align: center;"><strong>No sales data for today</strong></td>
                         </tr>
                         </tbody>
                     </table>
@@ -443,7 +448,8 @@ function updateSalesTable(saleobj) {
     // preprend insert the new row with zero height
     $("#nosalesrow").remove();
     // TODO: If refund get the amount refunded
-    $("#recentsalestable").prepend('<tr id="sr-' + saleobj.ref + '"><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + '/' + WPOS.locations[saleobj.locid].name + '</td><td>' + getTotalItems(saleobj) + '</td><td>' + WPOS.util.currencyFormat(saleobj.total) + '</td></tr>');
+    var _delBtn = (WPOS.isAdmin && WPOS.isAdmin()) ? '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>' : '';
+    $("#recentsalestable").prepend('<tr id="sr-' + saleobj.ref + '"><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + '/' + WPOS.locations[saleobj.locid].name + '</td><td>' + getTotalItems(saleobj) + '</td><td>' + WPOS.util.currencyFormat(saleobj.total) + '</td><td style="text-align:center;">' + _delBtn + '</td></tr>');
     // animate does not work for table rows so as a workaround we temporarily wrap in a div
     $("#sr" + saleobj.ref).find('td').wrapInner('<div style="display: block;" />').parent().find('td > div')
         .slideUp(1000, function(){
@@ -457,8 +463,42 @@ function updateSalesTable(saleobj) {
     }
 }
 
+function deleteRealtimeSale(ref){
+    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
+    if (!confirm('Delete sale ' + ref + '? This removes it from the database and updates all totals.')) return;
+    WPOS.util.showLoader();
+    try {
+        var record = (typeof sales !== 'undefined' && sales) ? sales[ref] : null;
+        var a = (record && record.hasOwnProperty('duedt')) ? 'invoices/delete' : 'sales/delete';
+        var id = record ? record.id : null;
+        if (id && WPOS.sendJsonData(a, JSON.stringify({"id": id})) !== false) {
+            // remove from local sales map
+            if (typeof sales !== 'undefined' && sales && sales[ref]) delete sales[ref];
+            // update totals
+            if (typeof totals !== 'undefined' && totals && record && isSaleToday(record)) {
+                if (!record.hasOwnProperty('voiddata') && !record.hasOwnProperty('refunddata')) {
+                    totals.salenum = Math.max(0, parseInt(totals.salenum) - 1);
+                    totals.saletotal = parseFloat(totals.saletotal) - parseFloat(record.total);
+                    totals.cost = parseFloat(totals.cost) - parseFloat(record.cost || 0);
+                }
+                totals.totaltakings = parseFloat(totals.saletotal) - parseFloat(totals.refundtotal || 0);
+                // refresh dashboard fields
+                try { populateTodayStats(); } catch(e) {}
+            }
+            // remove row
+            $('#sr-' + ref).remove();
+            $("#recentsalestable tr").filter(function(){ return $(this).find('td').first().text().indexOf(ref) !== -1; }).remove();
+            if ($("#recentsalestable").children('tr').length === 0) {
+                $("#recentsalestable").html('<tr id="nosalesrow"><td colspan="6" style="text-align: center;"><strong>No sales data for today</strong></td></tr>');
+            }
+        }
+    } catch(e) { console.error('deleteRealtimeSale failed:', e); }
+    WPOS.util.hideLoader();
+}
+
 function insertIntoSaleTable(saleobj) {
-    $("#recentsalestable").append('<tr><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + ' / ' + WPOS.locations[saleobj.locid].name + '</td><td class="hidden-480 hidden-320">' + getTotalItems(saleobj) + '</td><td class="hidden-320">' + WPOS.util.currencyFormat(saleobj.total) + '</td></tr>');
+    var _delBtn2 = (WPOS.isAdmin && WPOS.isAdmin()) ? '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>' : '';
+    $("#recentsalestable").append('<tr><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + ' / ' + WPOS.locations[saleobj.locid].name + '</td><td class="hidden-480 hidden-320">' + getTotalItems(saleobj) + '</td><td class="hidden-320">' + WPOS.util.currencyFormat(saleobj.total) + '</td><td style="text-align:center;">' + _delBtn2 + '</td></tr>');
 }
 
 var stime;
