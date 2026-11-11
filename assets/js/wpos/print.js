@@ -626,6 +626,8 @@ function WPOSPrint(kitchenMode) {
         if (recval.recline3 != "") {
             header += recval.recline3 + "\n";
         }
+        var _phone = (WPOS.getConfigTable().general.biznumber && WPOS.getConfigTable().general.biznumber.trim() !== '' && WPOS.getConfigTable().general.biznumber !== '9999 999 999') ? WPOS.getConfigTable().general.biznumber : '0185 112 315';
+        header += "Tel: " + _phone + "\n";
         header += "\n" + esc_bold_off;
         return header;
     }
@@ -1177,6 +1179,7 @@ function WPOSPrint(kitchenMode) {
             header_line1: config.general.bizname,
             header_line2: config.pos.recline2,
             header_line3: config.pos.recline3,
+            phone: (config.general.biznumber && config.general.biznumber.trim() !== '' && config.general.biznumber !== '9999 999 999') ? config.general.biznumber : '0185 112 315',
             logo_url: document.location.protocol+"//"+document.location.host+config.pos.recemaillogo,
             footer: config.pos.recfooter,
             thermalprint: escpprint,
