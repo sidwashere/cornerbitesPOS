@@ -325,6 +325,7 @@
         wrapper.find('.row:eq(0) > .col-sm-6:eq(0)').removeClass('col-sm-6').addClass('col-sm-4');
 
         var maxdate = new Date().getTime();
+        if (etime === null) etime = maxdate;
         var sselect = $("#transstime"), eselect =$("#transetime");
         sselect.datepicker({dateFormat:"dd/mm/yy", maxDate: new Date(maxdate),
             onSelect: function(text, inst){
@@ -343,6 +344,7 @@
             }
         });
         sselect.datepicker('setDate', new Date(stime));
+        eselect.datepicker('setDate', new Date(etime));
 
         // hide loader
         WPOS.util.hideLoader();

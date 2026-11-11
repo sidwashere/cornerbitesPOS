@@ -398,6 +398,7 @@
         var invstime = $("#invstime");
         var invetime = $("#invetime");
         var maxdate = new Date().getTime();
+        if (etime === null) etime = maxdate;
         invstime.datepicker({dateFormat:"dd/mm/yy", maxDate: new Date(maxdate),
             onSelect: function(text, inst){
                 var date = $("#invstime").datepicker("getDate");
@@ -406,7 +407,7 @@
                 reloadInvoiceData();
             }
         });
-        invetime.datepicker({dateFormat:"dd/mm/yy",
+        invetime.datepicker({dateFormat:"dd/mm/yy", maxDate: new Date(maxdate),
             onSelect: function(text, inst){
                 var date = $("#invetime").datepicker("getDate");
                 date.setHours(23); date.setMinutes(59); date.setSeconds(59);
@@ -415,6 +416,7 @@
             }
         });
         invstime.datepicker('setDate', new Date(stime));
+        invetime.datepicker('setDate', new Date(etime));
 
         // Add invoice datepickers
         $("#ninvprocessdt").datepicker({dateFormat:"dd/mm/yy"});
