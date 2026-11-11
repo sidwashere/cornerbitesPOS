@@ -448,7 +448,7 @@ function updateSalesTable(saleobj) {
     // preprend insert the new row with zero height
     $("#nosalesrow").remove();
     // TODO: If refund get the amount refunded
-    var _delBtn = (WPOS.isAdmin && WPOS.isAdmin()) ? '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>' : '';
+    var _delBtn = '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>';
     $("#recentsalestable").prepend('<tr id="sr-' + saleobj.ref + '"><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + '/' + WPOS.locations[saleobj.locid].name + '</td><td>' + getTotalItems(saleobj) + '</td><td>' + WPOS.util.currencyFormat(saleobj.total) + '</td><td style="text-align:center;">' + _delBtn + '</td></tr>');
     // animate does not work for table rows so as a workaround we temporarily wrap in a div
     $("#sr" + saleobj.ref).find('td').wrapInner('<div style="display: block;" />').parent().find('td > div')
@@ -464,7 +464,7 @@ function updateSalesTable(saleobj) {
 }
 
 function deleteRealtimeSale(ref){
-    if (!WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
+    if (typeof WPOS.isAdmin === 'function' && !WPOS.isAdmin()) { alert('Only administrators can delete entries.'); return; }
     if (!confirm('Delete sale ' + ref + '? This removes it from the database and updates all totals.')) return;
     WPOS.util.showLoader();
     try {
@@ -497,7 +497,7 @@ function deleteRealtimeSale(ref){
 }
 
 function insertIntoSaleTable(saleobj) {
-    var _delBtn2 = (WPOS.isAdmin && WPOS.isAdmin()) ? '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>' : '';
+    var _delBtn2 = '<button class="btn btn-xs btn-danger" onclick="deleteRealtimeSale(\'' + saleobj.ref + '\')" title="Delete sale"><i class="icon-trash"></i></button>';
     $("#recentsalestable").append('<tr><td>' + WPOS.util.getDateFromTimestamp(saleobj.processdt) + '</td><td>' + getStatusLabel(getSaleStatus(saleobj)) + '</td><td>' + WPOS.devices[saleobj.devid].name + ' / ' + WPOS.locations[saleobj.locid].name + '</td><td class="hidden-480 hidden-320">' + getTotalItems(saleobj) + '</td><td class="hidden-320">' + WPOS.util.currencyFormat(saleobj.total) + '</td><td style="text-align:center;">' + _delBtn2 + '</td></tr>');
 }
 
