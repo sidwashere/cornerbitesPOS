@@ -619,11 +619,18 @@ function WPOSSales() {
         });
         return sum;
     }
+    function hasCreditMethod(){ // any payment row currently set to "credit" → show the credit strip for customer selection
+        var has = false;
+        $("#paymentstable").children('tr').each(function(i, el){
+            if ($(el).find('.paymethod option:selected').val() === 'credit') has = true;
+        });
+        return has;
+    }
     function hasCreditPayment(){ return getCreditAmount() > 0.005; } // amount-driven only: a deselected/empty credit row must never trigger credit logic
     function refreshCreditPreview(){
         var strip = $("#creditstrip");
         if (!strip.length) return;
-        var needCredit = hasCreditPayment();
+        var needCredit = hasCreditMethod();
         strip.toggle(needCredit);
         if (!needCredit) return;
         var thisAmt = getCreditAmount();
