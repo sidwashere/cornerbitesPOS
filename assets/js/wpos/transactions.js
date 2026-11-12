@@ -98,8 +98,8 @@ function WPOSTransactions() {
                 { "sType": "numeric", "mData":"numitems" },
                 { "sType": "currency", "mData":function(data,type,val){return WPOS.util.currencyFormat(data["total"]);} },
                 { "sType": "timestamp", "mData":function(data, type, val){return datatableTimestampRender(type, data.processdt || data.dt, WPOS.util.getDateFromTimestamp);} },
-                { "sType": "html", "mData":function(data,type,val){return getStatusHtml(getTransactionStatus(data.ref));} },
-                { "sType": "html", mData:function(data,type,val){ return "<button class='btn btn-sm btn-primary' onclick='WPOS.trans.showTransactionInfo("+"\""+data.ref+"\""+")'>View</button>"; }, "bSortable": false }
+                { "sType": "html", "mData":function(data,type,val){ var h = getStatusHtml(getTransactionStatus(data.ref)); if (data && data.edited) h += ' <span class="label label-info arrowed">Edited</span>'; return h; } },
+                { "sType": "html", mData:function(data,type,val){ var ref = data.ref; var btns = "<button class='btn btn-sm btn-primary' onclick='WPOS.trans.showTransactionInfo(\""+ref+"\")'>View</button> "; btns += "<button class='btn btn-sm btn-warning' onclick='WPOS.sales.loadSale(\""+ref+"\")'>Edit</button>"; return btns; }, "bSortable": false }
             ],
             "columns": [
                 {},

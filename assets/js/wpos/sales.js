@@ -963,6 +963,7 @@ function WPOSSales() {
         curround = 0.00;
         curgrandtotal = 0.00;
         curref = null;
+        window._editingSale = false;
         // remove error notice
         $("#invaliditemnotice").hide();
     }
@@ -1300,6 +1301,9 @@ function WPOSSales() {
         loadOrder(ref);
     };
 
+    this.loadSale = function(ref){
+        loadSale(ref);
+    };
     this.removeOrder = function(ref){
         var answer = confirm("Are you sure you want to delete this order?");
         if (answer){
@@ -1386,6 +1390,51 @@ function WPOSSales() {
         } else {
             alert("Could not find the current record.");
         }
+    }
+
+    function loadSale(ref){
+        // recall a completed sale into the cart for editing
+        var salesobj = WPOS.trans.getTransactionRecord(ref);
+        if (salesobj === false || !salesobj) { alert("Could not load sale " + ref); return; }
+        clearSalesForm();
+        $("#itemtable").html('');
+        // load items
+        var item;
+        for (var i in salesobj.items) {
+            item = salesobj.items[i];
+            var data = { desc: item.desc, ref: item.ref };
+            if (item.hasOwnProperty('mod')) data.mod = item.mod;
+            WPOS.items.addItemRow(item.qty, item.name, item.unit, item.taxid, item.sitemid, data);
+        }
+        // load sale data
+        $("#salediscount").val(salesobj.discount || 0);
+        $("#salenotes").val(salesobj.salenotes || '');
+        $("#custemail").val(salesobj.custemail || '');
+        $("#custid").val(salesobj.custid || 0);
+        if (salesobj.hasOwnProperty("custdata") && typeof salesobj.custdata === "object") {
+            var custdata = salesobj.custdata;
+            $("#custname").val(custdata.name || '');
+            $("#custphone").val(custdata.phone || '');
+            $("#custaddress").val(custdata.address || '');
+            $("#custsuburb").val(custdata.suburb || '');
+            $("#custcountry").val(custdata.country || '');
+            WPOS.sales.setUpdateCust();
+        }
+        var payment;
+        for (i in salesobj.payments) {
+            payment = salesobj.payments[i];
+            var tender = 0, change = 0;
+            if (payment.method === 'cash') { tender = payment.tender || payment.amount; change = payment.change || 0; }
+            addPaymentRow(payment.method, payment.amount, tender, change);
+        }
+        // mark as editing
+        curref = salesobj.ref;
+        window._editingSale = true;
+        WPOS.sales.updateSalesTotal();
+        WPOS.sales.updatePaymentSums();
+        $("#transactiondiv").dialog('close');
+        $("#wrapper").tabs("option", "active", 0);
+        alert("Editing sale " + ref + ". Make changes and click End Sale to save. The sale will be marked as EDITED.");
     }
 
     // FUNCTIONS BELOW ARE FOR PROCESSING THE SALE
@@ -1571,6 +1620,12 @@ function WPOSSales() {
             salesobj.ref = curref;
             try { delete salesobj.isorder; } catch(e){}
             try { removeSalesRecord(curref); } catch(e){}
+            // mark as edited if this is an edit of a completed sale
+            if (window._editingSale) {
+                salesobj.edited = true;
+                salesobj.editeddt = Date.now();
+                try { if (cursale) { cursale.edited = true; cursale.editeddt = salesobj.editeddt; } } catch(e){}
+            }
             } catch(e){}
         }
         try { addOfflineSale(salesobj, "sales/add"); } catch(e){}
