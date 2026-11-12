@@ -267,7 +267,7 @@
                 { "mData":function(data, type, val){ return (typeof data.numitems === 'number') ? data.numitems : ((Array.isArray(data.items)) ? data.items.length : ((data.items && typeof data.items === 'object') ? Object.keys(data.items).length : 0)); } },
                 { "sType": "timestamp", "mData":function(data, type, val){ return datatableTimestampRender(type, data.processdt, WPOS.util.getDateFromTimestamp);} },
                 { "sType": "currency", "mData":function(data,type,val){return WPOS.util.currencyFormat(data["total"]);} },
-                { "mData":function(data,type,val){return getStatusHtml(getTransactionStatus(data));} },
+                { "mData":function(data,type,val){ var h = getStatusHtml(getTransactionStatus(data)); if (data && data.edited) h += ' <span class="label label-info arrowed">Edited</span>'; return h; } },
                 { mData:null, sDefaultContent:'<div class="action-buttons"><a class="green" onclick="WPOS.transactions.openTransactionDialog($(this).closest(\'tr\').find(\'.reflabel\').attr(\'title\'));"><i class="icon-pencil bigger-130"></i></a><a class="red" onclick="WPOS.transactions.deleteTransaction($(this).closest(\'tr\').find(\'.reflabel\').attr(\'title\'))"><i class="icon-trash bigger-130"></i></a></div>', "bSortable": false }
             ],
             "columns": [
