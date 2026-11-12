@@ -579,6 +579,48 @@ class WposPosSale {
         // set email receipt flag
         $this->emailrec = isset($this->jsonobj->emailrec);
         unset($this->jsonobj->emailrec); // unset, we don't need to store this in the database
+
+        // --- Edit handling: if this is an update of an existing sale, record the diff ---
+        $isEdit = ($orderid > 0);
+        $oldSaleJson = null;
+        if ($isEdit && isset($sale) && is_array($sale) && !empty($sale)) {
+            $oldSaleJson = json_decode($sale[0]['data'], true);
+        }
+        if ($isEdit && $oldSaleJson) {
+            // return stock for old items (so re-deducting new ones doesn't double-count)
+            try {
+                $wposStock = new WposAdminStock();
+                if (isset($oldSaleJson['items']) && is_array($oldSaleJson['items'])) {
+                    foreach ($oldSaleJson['items'] as $oi) {
+                        if (isset($oi['sitemid']) && $oi['sitemid'] > 0 && isset($oi['qty'])) {
+                            $wposStock->incrementStockLevel($oi['sitemid'], $this->jsonobj->locid, $oi['qty'], false);
+                        }
+                    }
+                }
+            } catch (Exception $e) {}
+            // remove old sale_items & sale_payments so the new ones replace them
+            try {
+                $itemsMdl = new SaleItemsModel();
+                $payMdl = new SalePaymentsModel();
+                $itemsMdl->removeBySale($orderid);
+                $payMdl->removeBySale($orderid);
+            } catch (Exception $e) {}
+            // build edit-history entry
+            $editEntry = [
+                'dt' => round(microtime(true) * 1000),
+                'old_total' => isset($oldSaleJson['total']) ? $oldSaleJson['total'] : null,
+                'new_total' => isset($this->jsonobj->total) ? $this->jsonobj->total : null,
+                'old_items' => isset($oldSaleJson['items']) ? $oldSaleJson['items'] : [],
+                'new_items' => $this->jsonobj->items,
+                'old_payments' => isset($oldSaleJson['payments']) ? $oldSaleJson['payments'] : [],
+                'new_payments' => $this->jsonobj->payments,
+            ];
+            if (!isset($this->jsonobj->edithistory) || !is_array($this->jsonobj->edithistory)) $this->jsonobj->edithistory = [];
+            $this->jsonobj->edithistory[] = $editEntry;
+            $this->jsonobj->edited = true;
+            $this->jsonobj->editeddt = $editEntry['dt'];
+        }
+
         // insert the transaction record
         if (($gid = $this->insertTransactionRecord(1, $orderid))) {
             $this->id = $gid;
