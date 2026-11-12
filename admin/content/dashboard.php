@@ -932,9 +932,10 @@
         var interval = (rv[1] - rv[0]) <= 86400000 ? 3600000 : 86400000; // sub-day ranges → hourly points
         var req = {"stats/itemselling":{"stime":rv[0], "etime":rv[1]}, "stats/general":{"stime":rv[0], "etime":rv[1]}, "graph/general":{"stime":rv[0], "etime":rv[1], "interval":interval}};
         req["stats/takings"] = {"stime":rv[0], "etime":rv[1], "totals":true};
+        req["stats/today"] = {"stime":(function(){var d=new Date();d.setHours(0,0,0,0);return d.getTime();})(), "etime":Date.now()};
         var data = WPOS.sendJsonData("multi", JSON.stringify(req));
-        // Load todays stats
-        loadTodayStats(data['stats/general']);
+        // Load todays stats (strict today window so Today's Takings counts today's sales)
+        loadTodayStats(data['stats/today'] || data['stats/general']);
         // load graph
         drawGraph(data['graph/general']);
         // initialize the initial pie chart (takings split for this range)
@@ -1198,10 +1199,10 @@ function reloadLegacyStats(){
     try {
         var rv = dashRangeVals();
         var interval = (rv[1] - rv[0]) <= 86400000 ? 3600000 : 86400000;
-        var req = {"stats/itemselling":{"stime":rv[0], "etime":rv[1]}, "stats/general":{"stime":rv[0], "etime":rv[1]}, "graph/general":{"stime":rv[0], "etime":rv[1], "interval":interval}, "stats/takings":{"stime":rv[0], "etime":rv[1], "totals":true}};
+        var req = {"stats/itemselling":{"stime":rv[0], "etime":rv[1]}, "stats/general":{"stime":rv[0], "etime":rv[1]}, "graph/general":{"stime":rv[0], "etime":rv[1], "interval":interval}, "stats/takings":{"stime":rv[0], "etime":rv[1], "totals":true}, "stats/today":{"stime":(function(){var d=new Date();d.setHours(0,0,0,0);return d.getTime();})(), "etime":Date.now()}};
         var data = WPOS.sendJsonData("multi", JSON.stringify(req));
         if (!data) return;
-        loadTodayStats(data['stats/general']);
+        loadTodayStats(data['stats/today'] || data['stats/general']);
         drawGraph(data['graph/general']);
         generatePieChart(data['stats/takings']);
         loadPopularItems(data['stats/itemselling']);
