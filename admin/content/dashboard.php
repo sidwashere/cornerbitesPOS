@@ -15,10 +15,28 @@
 <div class="col-sm-5">
     <div class="widget-box transparent">
     <div class="widget-header widget-header-flat">
-        <h4 class="lighter">
+        <h4 class="lighter" style="display:inline-block;">
             <i class="icon-dollar"></i>
-            Today's Takings
+            Takings
         </h4>
+        <span style="float:right;">
+            <select id="takingsRange" onchange="onTakingsRangeChange();" style="color:#333; padding:2px 6px; font-size:12px;">
+                <option value="today" selected>Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="thismonth">This month</option>
+                <option value="lastmonth">Last month</option>
+                <option value="3m">Last 3 months</option>
+                <option value="6m">Last 6 months</option>
+                <option value="12m">Last 12 months</option>
+                <option value="custom">Custom…</option>
+            </select>
+            <span id="takingsCustom" style="display:none;">
+                <input type="datetime-local" id="takingsFrom" style="color:#333; padding:2px 4px; max-width:170px;" /> → <input type="datetime-local" id="takingsTo" style="color:#333; padding:2px 4px; max-width:170px;" />
+                <button class="btn btn-xs btn-primary" onclick="loadTakingsStats();">Go</button>
+            </span>
+        </span>
     </div>
     <div class="widget-body" style="padding-top: 10px; text-align: center;">
     <div class="infobox infobox-green infobox-sales">
@@ -321,7 +339,7 @@
                     <input type="datetime-local" id="dashFrom" style="color:#333; padding:2px 4px; max-width:170px;" /> → <input type="datetime-local" id="dashTo" style="color:#333; padding:2px 4px; max-width:170px;" />
                     <button class="btn btn-xs btn-primary" onclick="loadRichDashboard();loadLiveTracker();reloadLegacyStats();">Go</button>
                 </span>
-                <button class="btn btn-xs btn-default" onclick="loadRichDashboard();" title="Refresh"><i class="icon-refresh"></i></button>
+                <button class="btn btn-xs btn-default" onclick="loadRichDashboard(); loadTakingsStats();" title="Refresh"><i class="icon-refresh"></i></button>
                 <button class="btn btn-xs btn-default" onclick="if(typeof setOrderSoundMuted==='function') setOrderSoundMuted(!isOrderSoundMuted());" data-order-sound-toggle title="Toggle new-order ding">🔊 Sound: On</button>
                 <span id="dashUpdated" style="font-size:11px; color:#999;"></span>
             </span>
@@ -1194,6 +1212,47 @@ function dashRangeVals(){
     else stime = etime - 7*24*3600*1000;
     return [stime, etime];
 }
+function takingsRangeVals(){
+    var r = ($('#takingsRange').val() || 'today');
+    var now = Date.now();
+    var etime = now, stime = now;
+    if (r === 'today') { var d = new Date(); d.setHours(0,0,0,0); stime = d.getTime(); etime = now; }
+    else if (r === 'yesterday') { var d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); stime = d.getTime(); var e = new Date(d); e.setHours(23,59,59,999); etime = e.getTime(); }
+    else if (r === '7d') stime = now - 7*86400000;
+    else if (r === '30d') stime = now - 30*86400000;
+    else if (r === 'thismonth') { var d = new Date(); d.setDate(1); d.setHours(0,0,0,0); stime = d.getTime(); }
+    else if (r === 'lastmonth') { var d = new Date(); d.setMonth(d.getMonth()-1); d.setDate(1); d.setHours(0,0,0,0); stime = d.getTime(); var e = new Date(d); e.setMonth(e.getMonth()+1); e.setDate(0); e.setHours(23,59,59,999); etime = e.getTime(); }
+    else if (r === '3m') stime = now - 90*86400000;
+    else if (r === '6m') stime = now - 180*86400000;
+    else if (r === '12m') stime = now - 365*86400000;
+    else if (r === 'custom') {
+        var from = $('#takingsFrom').val(), to = $('#takingsTo').val();
+        var f = from ? new Date(from).getTime() : (now - 7*86400000);
+        var tt = to ? new Date(to).getTime() : now;
+        if (!isNaN(f) && !isNaN(tt) && tt > f) { stime = f; etime = tt; }
+        else { stime = now - 7*86400000; }
+    }
+    else stime = now - 7*86400000;
+    return [stime, etime];
+}
+function loadTakingsStats(){
+    try {
+        var rv = takingsRangeVals();
+        var data = WPOS.sendJsonData('stats/general', JSON.stringify({'stime':rv[0], 'etime':rv[1]}));
+        if (!data) return;
+        loadTodayStats(data);
+    } catch(e) { console.error('loadTakingsStats failed', e); }
+}
+function onTakingsRangeChange(){
+    $('#takingsCustom').toggle($('#takingsRange').val() === 'custom');
+    if ($('#takingsRange').val() === 'custom' && !$('#takingsFrom').val()) {
+        var fmt = function(v){ return v.toISOString().slice(0,16); };
+        var e = new Date(), s = new Date(Date.now() - 7*86400000);
+        $('#takingsFrom').val(fmt(s)); $('#takingsTo').val(fmt(e));
+    }
+    loadTakingsStats();
+}
+
 function reloadLegacyStats(){
     // Graph / Pie / Popular / Sales-by-source mirror the shared range selector
     try {
@@ -1202,7 +1261,6 @@ function reloadLegacyStats(){
         var req = {"stats/itemselling":{"stime":rv[0], "etime":rv[1]}, "stats/general":{"stime":rv[0], "etime":rv[1]}, "graph/general":{"stime":rv[0], "etime":rv[1], "interval":interval}, "stats/takings":{"stime":rv[0], "etime":rv[1], "totals":true}, "stats/today":{"stime":(function(){var d=new Date();d.setHours(0,0,0,0);return d.getTime();})(), "etime":Date.now()}};
         var data = WPOS.sendJsonData("multi", JSON.stringify(req));
         if (!data) return;
-        loadTodayStats(data['stats/today'] || data['stats/general']);
         drawGraph(data['graph/general']);
         generatePieChart(data['stats/takings']);
         loadPopularItems(data['stats/itemselling']);
