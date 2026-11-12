@@ -337,7 +337,7 @@
                 </select>
                 <span id="dashCustom" style="display:none;">
                     <input type="datetime-local" id="dashFrom" style="color:#333; padding:2px 4px; max-width:170px;" /> → <input type="datetime-local" id="dashTo" style="color:#333; padding:2px 4px; max-width:170px;" />
-                    <button class="btn btn-xs btn-primary" onclick="loadRichDashboard();loadLiveTracker();reloadLegacyStats();">Go</button>
+                    <button class="btn btn-xs btn-primary" onclick="loadRichDashboard();loadLiveTracker();reloadLegacyStats();loadTakingsStats();">Go</button>
                 </span>
                 <button class="btn btn-xs btn-default" onclick="loadRichDashboard(); loadTakingsStats();" title="Refresh"><i class="icon-refresh"></i></button>
                 <button class="btn btn-xs btn-default" onclick="if(typeof setOrderSoundMuted==='function') setOrderSoundMuted(!isOrderSoundMuted());" data-order-sound-toggle title="Toggle new-order ding">🔊 Sound: On</button>
@@ -1238,9 +1238,9 @@ function loadTakingsStats(){
     try {
         var rv = takingsRangeVals();
         var data = WPOS.sendJsonData('stats/general', JSON.stringify({'stime':rv[0], 'etime':rv[1]}));
-        if (!data) return;
+        if (!data) { alert('Could not load takings for the selected range.'); return; }
         loadTodayStats(data);
-    } catch(e) { console.error('loadTakingsStats failed', e); }
+    } catch(e) { console.error('loadTakingsStats failed', e); alert('Takings load failed: ' + (e && e.message ? e.message : e)); }
 }
 function onTakingsRangeChange(){
     $('#takingsCustom').toggle($('#takingsRange').val() === 'custom');
