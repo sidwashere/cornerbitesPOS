@@ -42,29 +42,51 @@
     function unlockOrderSound() { ensureCtx(); }
     global.unlockOrderSound = unlockOrderSound;
 
+    // Fallback beep (HTML5 Audio) used when WebAudio is unavailable/blocked.
+    var _fallbackAudio = null;
+    function _ensureFallback() {
+        if (_fallbackAudio) return _fallbackAudio;
+        try {
+            // Tiny base64 WAV (short beep) — plays after a user gesture even if AudioContext is suspended.
+            var b64 = "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+            _fallbackAudio = new Audio("data:audio/wav;base64," + b64);
+            _fallbackAudio.volume = 0.5;
+        } catch (e) { _fallbackAudio = null; }
+        return _fallbackAudio;
+    }
+
     function playOrderDing() {
         if (isMuted()) return;
         var ctx = ensureCtx();
-        if (!ctx) return;
-        try {
-            var t0 = ctx.currentTime;
-            // Soft two-tone ding: 880Hz then 1318Hz, quick decay, low gain.
-            [
-                { freq: 880, at: 0, dur: 0.16, gain: 0.06 },
-                { freq: 1318, at: 0.14, dur: 0.28, gain: 0.05 }
-            ].forEach(function (n) {
-                var osc = ctx.createOscillator();
-                var g = ctx.createGain();
-                osc.type = "sine";
-                osc.frequency.value = n.freq;
-                g.gain.setValueAtTime(0, t0 + n.at);
-                g.gain.linearRampToValueAtTime(n.gain, t0 + n.at + 0.02);
-                g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.at + n.dur);
-                osc.connect(g); g.connect(ctx.destination);
-                osc.start(t0 + n.at);
-                osc.stop(t0 + n.at + n.dur + 0.02);
-            });
-        } catch (e) { /* never throw from an alert path */ }
+        var played = false;
+        if (ctx) {
+            try {
+                var t0 = ctx.currentTime;
+                [
+                    { freq: 880, at: 0, dur: 0.16, gain: 0.06 },
+                    { freq: 1318, at: 0.14, dur: 0.28, gain: 0.05 }
+                ].forEach(function (n) {
+                    var osc = ctx.createOscillator();
+                    var g = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = n.freq;
+                    g.gain.setValueAtTime(0, t0 + n.at);
+                    g.gain.linearRampToValueAtTime(n.gain, t0 + n.at + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.at + n.dur);
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.start(t0 + n.at);
+                    osc.stop(t0 + n.at + n.dur + 0.02);
+                });
+                played = true;
+            } catch (e) { played = false; }
+        }
+        if (!played) {
+            // Fallback: HTML5 Audio beep (works after a user gesture).
+            try {
+                var a = _ensureFallback();
+                if (a) { a.currentTime = 0; var p = a.play(); if (p && typeof p.catch === 'function') p.catch(function(){}); }
+            } catch (e) {}
+        }
     }
     global.playOrderDing = playOrderDing;
 
