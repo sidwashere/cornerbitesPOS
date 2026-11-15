@@ -206,7 +206,7 @@ class WposAdminStats {
         foreach ($payRows as $r) {
             $byPayment[$r['k']] = ['payments'=>(int)$r['payments'], 'revenue'=>(float)$r['revenue']];
         }
-        $hourRows = $q("SELECT HOUR(FROM_UNIXTIME($normS / 1000)) AS h, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales s WHERE $rangeS" . $typeCondS . " GROUP BY h ORDER BY h");
+        $hourRows = $q("SELECT HOUR(FROM_UNIXTIME($normS / 1000)) AS h, SUM(CASE WHEN status IN (0,1) THEN 1 ELSE 0 END) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales s WHERE $rangeS" . $typeCondS . " GROUP BY h ORDER BY h");
         $byHour = [];
         $maxHourRev = 0;
         foreach ($hourRows as $r) {
