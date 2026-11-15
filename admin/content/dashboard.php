@@ -1109,7 +1109,8 @@ function trackerStatusClass(st){
 function loadLiveTracker(){
     var body = $('#liveTrackerBody');
     if (!body.length) return;
-    var vals = dashRangeVals();
+    // Live tracker defaults to TODAY so it matches "Today's Takings" and avoids mixing ranges.
+    var vals = (function(){ var d = new Date(); d.setHours(0,0,0,0); return [d.getTime(), Date.now()]; })();
     var statusFilter = ($('#trackerStatus').val() || 'all');
     var sourceFilter = ($('#trackerSource').val() || 'all');
     var search = ($('#trackerSearch').val() || '').toLowerCase().trim();
