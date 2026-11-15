@@ -244,7 +244,7 @@ class WposPosSale {
         if (!isset($this->jsonobj->discount)) $this->jsonobj->discount = 0;
         if (!isset($this->jsonobj->rounding)) $this->jsonobj->rounding = 0;
         if (!isset($this->jsonobj->cost)) $this->jsonobj->cost = 0;
-        if (!isset($this->jsonobj->processdt)) $this->jsonobj->processdt = time();
+        if (!isset($this->jsonobj->processdt)) $this->jsonobj->processdt = round(microtime(true) * 1000);
 
         // Delivery fee (flat rate for online delivery orders): appended as a service line so
         // POS/admin/kitchen totals include it everywhere, without touching stock (no sitemid).

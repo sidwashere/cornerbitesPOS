@@ -113,7 +113,7 @@ class WposAdminStats {
 
         // Group totals by sales source so POS, kitchen, dine-in, website and any future
         // channel are always summarized together without hard-coding each source name.
-        $sourceSql = "SELECT source, COALESCE(SUM(total), 0) as stotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE (processdt>= :stime AND processdt<= :etime) AND status != 0";
+        $sourceSql = "SELECT source, COALESCE(SUM(total), 0) as stotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ((processdt>= :stime AND processdt<= :etime) OR (processdt*1000>= :stime AND processdt*1000<= :etime)) AND status != 0 AND status != 3";
         $sourceParams = [':stime' => $stime, ':etime' => $etime];
         if (!empty($this->data->type)) {
             $sourceSql .= ' AND type = :type';
@@ -143,8 +143,15 @@ class WposAdminStats {
      * Rich dashboard aggregation: POS sales + external orders (website / Glovo /
      * Uber Eats / phone) in one paginated-friendly payload for the Admin
      * dashboard and Reports page.
-     * Range is driven by $data->stime/$data->etime (ms). `dt` is used for the
-     * time-window filter so seconds- and ms-based `processdt` rows both match.
+     * Range is driven by $data->stime/$data->etime (ms).
+     *
+     * IMPORTANT: the window always filters on `processdt` (the sale/order time),
+     * never on `dt` (the server insert time). A till that was offline can flush
+     * its queued sales days later, so `dt` would report those sales on the sync
+     * day (and therefore double-count them if the original day was already
+     * reported). `processdt` is the same source `stats/general`, `sales/get` and
+     * the sales graph use, so every page now agrees on the same figures.
+     * Both seconds- and milliseconds-based `processdt` rows are supported.
      */
     public function getDashboardStats($result){
         $salesMdl = new TransactionsModel();
@@ -153,10 +160,19 @@ class WposAdminStats {
         $stimeDt = date('Y-m-d H:i:s', max(0, (int)($stime / 1000)));
         $etimeDt = date('Y-m-d H:i:s', max(0, (int)($etime / 1000)));
         $typeFilter = $this->data->type; // null | sale | invoice
+
+        // Normalised sale time (ms) — supports legacy rows stored in seconds.
+        $norm  = 'CASE WHEN processdt > 100000000000 THEN processdt ELSE processdt*1000 END';
+        $normS = 'CASE WHEN s.processdt > 100000000000 THEN s.processdt ELSE s.processdt*1000 END';
+        $range  = "($norm >= :stime AND $norm <= :etime)";
+        $rangeS = "($normS >= :stime AND $normS <= :etime)";
+
         $typeCond = '';
-        $params = [':stime' => $stimeDt, ':etime' => $etimeDt];
+        $typeCondS = '';
+        $params = [':stime' => $stime, ':etime' => $etime];
         if (!empty($typeFilter) && $typeFilter !== 'all') {
             $typeCond = ' AND type = :type';
+            $typeCondS = ' AND s.type = :type';
             $params[':type'] = $typeFilter;
         }
 
@@ -166,7 +182,7 @@ class WposAdminStats {
         };
 
         // --- KPIs ---
-        $kpiRows = $q("SELECT COUNT(*) AS total_orders, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status=0 THEN 1 ELSE 0 END) AS queued, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(AVG(CASE WHEN status=1 THEN total END),0) AS avg_order FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond);
+        $kpiRows = $q("SELECT SUM(CASE WHEN status IN (0,1) THEN 1 ELSE 0 END) AS total_orders, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) AS completed, SUM(CASE WHEN status=0 THEN 1 ELSE 0 END) AS queued, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(AVG(CASE WHEN status=1 THEN total END),0) AS avg_order FROM sales WHERE $range" . $typeCond);
         $kpi = isset($kpiRows[0]) ? $kpiRows[0] : ['total_orders'=>0,'completed'=>0,'queued'=>0,'revenue'=>0,'avg_order'=>0];
         $revenue = (float)$kpi['revenue'];
         $orders = (int)$kpi['total_orders'];
@@ -175,22 +191,22 @@ class WposAdminStats {
         $completionRate = $orders > 0 ? round(($completed / $orders) * 100, 1) : 0;
 
         // --- Breakdowns ---
-        $bySourceRows = $q("SELECT COALESCE(NULLIF(source,''),'unknown') AS k, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(SUM(total),0) AS gross FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
+        $bySourceRows = $q("SELECT COALESCE(NULLIF(source,''),'unknown') AS k, SUM(CASE WHEN status IN (0,1) THEN 1 ELSE 0 END) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue, COALESCE(SUM(CASE WHEN status IN (0,1) THEN total ELSE 0 END),0) AS gross FROM sales WHERE $range" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
         $bySource = [];
         foreach ($bySourceRows as $r) {
             $bySource[$r['k']] = ['orders'=>(int)$r['orders'], 'revenue'=>(float)$r['revenue'], 'gross'=>(float)$r['gross']];
         }
-        $byTypeRows = $q("SELECT COALESCE(NULLIF(order_type,''),'unknown') AS k, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
+        $byTypeRows = $q("SELECT COALESCE(NULLIF(order_type,''),'unknown') AS k, SUM(CASE WHEN status IN (0,1) THEN 1 ELSE 0 END) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales WHERE $range" . $typeCond . " GROUP BY k ORDER BY revenue DESC");
         $byType = [];
         foreach ($byTypeRows as $r) {
             $byType[$r['k']] = ['orders'=>(int)$r['orders'], 'revenue'=>(float)$r['revenue']];
         }
-        $payRows = $q("SELECT p.method AS k, COUNT(*) AS payments, COALESCE(SUM(p.amount),0) AS revenue FROM sale_payments p JOIN sales s ON s.id = p.saleid WHERE s.dt >= :stime AND s.dt <= :etime AND s.status = 1" . (empty($typeFilter) || $typeFilter === 'all' ? '' : ' AND s.type = :type') . " GROUP BY p.method ORDER BY revenue DESC");
+        $payRows = $q("SELECT p.method AS k, COUNT(*) AS payments, COALESCE(SUM(p.amount),0) AS revenue FROM sale_payments p JOIN sales s ON s.id = p.saleid WHERE $rangeS AND s.status = 1" . $typeCondS . " GROUP BY p.method ORDER BY revenue DESC");
         $byPayment = [];
         foreach ($payRows as $r) {
             $byPayment[$r['k']] = ['payments'=>(int)$r['payments'], 'revenue'=>(float)$r['revenue']];
         }
-        $hourRows = $q("SELECT HOUR(dt) AS h, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . " GROUP BY h ORDER BY h");
+        $hourRows = $q("SELECT HOUR(FROM_UNIXTIME($normS / 1000)) AS h, COUNT(*) AS orders, COALESCE(SUM(CASE WHEN status=1 THEN total ELSE 0 END),0) AS revenue FROM sales s WHERE $rangeS" . $typeCondS . " GROUP BY h ORDER BY h");
         $byHour = [];
         $maxHourRev = 0;
         foreach ($hourRows as $r) {
@@ -200,14 +216,14 @@ class WposAdminStats {
         }
 
         // --- Top items (completed sales only) ---
-        $itemRows = $q("SELECT i.name AS name, SUM(i.qty) AS qty, COALESCE(SUM(i.price),0) AS revenue FROM sale_items i JOIN sales s ON s.id = i.saleid WHERE s.dt >= :stime AND s.dt <= :etime AND s.status = 1" . (empty($typeFilter) || $typeFilter === 'all' ? '' : ' AND s.type = :type') . " GROUP BY i.name ORDER BY qty DESC, revenue DESC LIMIT 8");
+        $itemRows = $q("SELECT i.name AS name, SUM(i.qty) AS qty, COALESCE(SUM(i.price),0) AS revenue FROM sale_items i JOIN sales s ON s.id = i.saleid WHERE $rangeS AND s.status = 1" . $typeCondS . " GROUP BY i.name ORDER BY qty DESC, revenue DESC LIMIT 8");
         $topItems = [];
         foreach ($itemRows as $r) {
             $topItems[] = ['name'=>$r['name'], 'qty'=>(int)$r['qty'], 'revenue'=>(float)$r['revenue']];
         }
 
         // --- Recent orders (detailed, newest first) ---
-        $recent = $q("SELECT id, ref, source, external_ref, order_type, total, status, customer, delivery_address, table_number, orderstatus, received_at FROM (SELECT id, ref, source, external_ref, order_type, total, status, JSON_UNQUOTE(JSON_EXTRACT(data,'$.customer.name')) AS customer, delivery_address, JSON_EXTRACT(data,'$.table_number') AS table_number, JSON_UNQUOTE(JSON_EXTRACT(data,'$.orderstatus')) AS orderstatus, received_at FROM sales WHERE dt >= :stime AND dt <= :etime" . $typeCond . ") t ORDER BY id DESC LIMIT 10");
+        $recent = $q("SELECT id, ref, source, external_ref, order_type, total, status, customer, delivery_address, table_number, orderstatus, received_at FROM (SELECT id, ref, source, external_ref, order_type, total, status, JSON_UNQUOTE(JSON_EXTRACT(data,'$.customer.name')) AS customer, delivery_address, JSON_EXTRACT(data,'$.table_number') AS table_number, JSON_UNQUOTE(JSON_EXTRACT(data,'$.orderstatus')) AS orderstatus, received_at FROM sales s WHERE $rangeS" . $typeCondS . ") t ORDER BY id DESC LIMIT 10");
         // Items detail is fetched lazily by the UI via poll.php; keep this payload light.
 
         $out = new stdClass();

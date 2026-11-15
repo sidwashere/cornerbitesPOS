@@ -85,7 +85,13 @@ class DbConfig
                 throw new PDOException('Failed to connect to database, php PDO extension may not be installed', 0, 0);
             }
 
-            $this->_db->query("SET time_zone = '+00:00'"); //Set timezone to GMT, previous statement didnt work (Australia/Sydney), and GMT preserved daylight savings.
+            // Keep the DB session in the same timezone PHP writes datetime columns in
+            // (`dt`, `received_at`, `stock_history.dt`, ...). Previously this was forced
+            // to '+00:00' while PHP ran in Africa/Nairobi, so NOW()/CURDATE()/
+            // FROM_UNIXTIME() were 3 hours behind the values stored in `dt` — which made
+            // "changed since" polling miss recent rows and skewed any date-based report.
+            // Using PHP's current offset keeps every date function consistent with `dt`.
+            $this->_db->query("SET time_zone = '".date('P')."'");
             //var_dump($this->_db->query("SELECT now()")->fetchAll());exit;
             //var_dump($this->_db->query("SELECT @@session.time_zone, @@global.time_zone")->fetchAll(PDO::FETCH_ASSOC));exit;
             $this->_db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
