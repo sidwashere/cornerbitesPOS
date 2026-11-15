@@ -19,6 +19,7 @@
             <i class="icon-dollar"></i>
             Takings
         </h4>
+        <span id="takingsRangeLabel" style="font-size:11px; color:#888; margin-left:8px;"></span>
         <span style="float:right;">
             <select id="takingsRange" onchange="onTakingsRangeChange();" style="color:#333; padding:2px 6px; font-size:12px;">
                 <option value="today" selected>Today</option>
@@ -1241,6 +1242,12 @@ function loadTakingsStats(){
         var data = WPOS.sendJsonData('stats/general', JSON.stringify({'stime':rv[0], 'etime':rv[1]}));
         if (!data) { alert('Could not load takings for the selected range.'); return; }
         loadTodayStats(data);
+        try {
+            var lbl = $('#takingsRange option:selected').text();
+            var from = new Date(rv[0]).toLocaleDateString();
+            var to = new Date(rv[1]).toLocaleDateString();
+            $('#takingsRangeLabel').text(lbl + ' · ' + from + (from !== to ? ' → ' + to : ''));
+        } catch(e) {}
     } catch(e) { console.error('loadTakingsStats failed', e); alert('Takings load failed: ' + (e && e.message ? e.message : e)); }
 }
 function onTakingsRangeChange(){
