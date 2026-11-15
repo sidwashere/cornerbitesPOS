@@ -78,6 +78,26 @@ class TransactionsModel extends DbConfig
     }
 
     /**
+     * Canonical time-window condition for every sales report.
+     *
+     * ALWAYS filter reports on `processdt` (when the sale was actually rung up),
+     * NEVER on `dt` (when the server inserted the row). A till that was offline
+     * flushes queued sales when it reconnects, so `dt` can be days later than the
+     * real sale time — filtering on `dt` would move those sales to the sync day
+     * and double-count them if the original day was already reported.
+     *
+     * Legacy rows may store `processdt` in seconds instead of milliseconds, so
+     * both forms are matched.
+     *
+     * @param string $alias Table alias (e.g. 's'), or '' for the unqualified column.
+     * @return string SQL fragment using the :stime / :etime placeholders.
+     */
+    public static function processDtRange($alias = ''){
+        $col = ($alias !== '' ? rtrim($alias, '.').'.' : '').'processdt';
+        return "(($col >= :stime AND $col <= :etime) OR ($col*1000 >= :stime AND $col*1000 <= :etime))";
+    }
+
+    /**
      * Returns an array of sales or totals from the specified range
      * @param $stime
      * @param $etime
@@ -90,7 +110,7 @@ class TransactionsModel extends DbConfig
     public function getRange($stime, $etime, $deviceids=null, $status=null, $statparity= true, $includeorders=true){
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = 'SELECT * FROM sales WHERE ((processdt>= :stime AND processdt<= :etime) OR (processdt*1000>= :stime AND processdt*1000<= :etime))';
+        $sql = 'SELECT * FROM sales WHERE '.self::processDtRange();
 
         if ($deviceids !== null) {
             if (is_array($deviceids)){
@@ -126,7 +146,7 @@ class TransactionsModel extends DbConfig
     public function getRangeWithRefunds($stime, $etime, $deviceids=null, $status=null, $statparity=true, $includeorders=true){
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = 'SELECT s.* FROM sales as s LEFT JOIN sale_voids as v ON s.id=v.saleid WHERE (((s.processdt>= :stime AND s.processdt<= :etime) OR (s.processdt*1000>= :stime AND s.processdt*1000<= :etime)) OR (v.processdt>= :stime AND v.processdt<= :etime))';
+        $sql = 'SELECT s.* FROM sales as s LEFT JOIN sale_voids as v ON s.id=v.saleid WHERE ('.self::processDtRange('s').' OR (v.processdt>= :stime AND v.processdt<= :etime))';
 
         if ($deviceids !== null) {
             if (is_array($deviceids)){
@@ -162,7 +182,7 @@ class TransactionsModel extends DbConfig
     public function getTotals($stime, $etime, $status=null, $statparity=true, $includeorders=false, $ttype=null){
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = "SELECT *, COALESCE(SUM(total), 0) as stotal, COALESCE(SUM(cost), 0) as ctotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ((processdt>= :stime AND processdt<= :etime) OR (processdt*1000>= :stime AND processdt*1000<= :etime))";
+        $sql = "SELECT *, COALESCE(SUM(total), 0) as stotal, COALESCE(SUM(cost), 0) as ctotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ".self::processDtRange();
 
         if ($status !== null) {
             $sql .= ' AND status'.($statparity?'=':'!=').' :status';
@@ -193,7 +213,7 @@ class TransactionsModel extends DbConfig
     public function getUnaccountedTotals($stime, $etime, $includeorders=false, $ttype=null){
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = "SELECT *, COALESCE(SUM(s.balance), 0) as stotal, COUNT(s.id) as snum, COALESCE(GROUP_CONCAT(s.ref SEPARATOR ','),'') as refs FROM sales AS s WHERE ((s.processdt>= :stime AND s.processdt<= :etime) OR (s.processdt*1000>= :stime AND s.processdt*1000<= :etime)) AND (s.status!=3 AND s.balance!=0)";
+        $sql = "SELECT *, COALESCE(SUM(s.balance), 0) as stotal, COUNT(s.id) as snum, COALESCE(GROUP_CONCAT(s.ref SEPARATOR ','),'') as refs FROM sales AS s WHERE ".self::processDtRange('s')." AND (s.status!=3 AND s.balance!=0)";
 
         // do not total orders & invoices for reporting functions
         if ($includeorders==false){
@@ -236,7 +256,7 @@ class TransactionsModel extends DbConfig
         }
 
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
-        $sql = "SELECT *, d.id as groupid, ".($grouptype=='device'?"CONCAT(d.name, ' (', l.name, ')')":'d.name')." as name, SUM(s.total) as stotal, COUNT(s.id) as snum, COALESCE(GROUP_CONCAT(s.ref SEPARATOR ','),'') as refs FROM sales as s LEFT JOIN ".$joinsql." WHERE ((s.processdt>= :stime AND s.processdt<= :etime) OR (s.processdt*1000>= :stime AND s.processdt*1000<= :etime))";
+        $sql = "SELECT *, d.id as groupid, ".($grouptype=='device'?"CONCAT(d.name, ' (', l.name, ')')":'d.name')." as name, SUM(s.total) as stotal, COUNT(s.id) as snum, COALESCE(GROUP_CONCAT(s.ref SEPARATOR ','),'') as refs FROM sales as s LEFT JOIN ".$joinsql." WHERE ".self::processDtRange('s');
 
         if ($status !== null) {
             $sql .= ' AND status'.($statparity?'=':'!=').' :status';

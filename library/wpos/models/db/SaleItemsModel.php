@@ -196,7 +196,7 @@ class SaleItemsModel extends DbConfig
         }
 
         $sql = "SELECT ".($group>0?'si.'.$groupcol.' AS groupid, p.name AS name':'i.storeditemid AS groupid, i.name AS name').", COALESCE(SUM(i.qty), 0) AS itemnum, COALESCE(SUM(i.price-(i.price*(s.discount/100))), 0) AS itemtotal, COALESCE(SUM((i.price*(s.discount/100))), 0) AS discounttotal, COALESCE(SUM(i.tax_total-(i.tax_total*(s.discount/100))), 0) AS taxtotal, COALESCE(SUM(i.refundqty), 0) AS refnum, COALESCE(SUM(i.unit*i.refundqty), 0) AS reftotal, COALESCE(GROUP_CONCAT(DISTINCT s.ref SEPARATOR ','),'') as refs";
-        $sql.= ' FROM sale_items AS i LEFT JOIN sales AS s ON i.saleid=s.id'.($group>0 ? ' LEFT JOIN stored_items AS si ON i.storeditemid=si.id LEFT JOIN '.$grouptable.' AS p ON si.'.$groupcol.'=p.id' : '').' WHERE (s.processdt>= :stime AND s.processdt<= :etime) '.($novoids?'AND s.status!=3':'');
+        $sql.= ' FROM sale_items AS i LEFT JOIN sales AS s ON i.saleid=s.id'.($group>0 ? ' LEFT JOIN stored_items AS si ON i.storeditemid=si.id LEFT JOIN '.$grouptable.' AS p ON si.'.$groupcol.'=p.id' : '').' WHERE '.TransactionsModel::processDtRange('s').' '.($novoids?'AND s.status!=3':'');
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
 
         if ($ttype!=null){
@@ -218,7 +218,7 @@ class SaleItemsModel extends DbConfig
      */
     public function getTotalsRange($stime, $etime, $novoids = true, $ttype=null){
 
-        $sql = "SELECT i.*, COALESCE(i.price-(i.price*(s.discount/100)), 0) AS itemtotal, COALESCE((i.price*(s.discount/100)/i.qty)*i.refundqty, 0) AS refundtotal, s.ref as ref, s.discount as discount FROM sale_items AS i LEFT JOIN sales AS s ON i.saleid=s.id WHERE (s.processdt>= :stime AND s.processdt<= :etime) ".($novoids?'AND s.status!=3':'');
+        $sql = "SELECT i.*, COALESCE(i.price-(i.price*(s.discount/100)), 0) AS itemtotal, COALESCE((i.price*(s.discount/100)/i.qty)*i.refundqty, 0) AS refundtotal, s.ref as ref, s.discount as discount FROM sale_items AS i LEFT JOIN sales AS s ON i.saleid=s.id WHERE ".TransactionsModel::processDtRange('s')." ".($novoids?'AND s.status!=3':'');
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
 
         if ($ttype!=null){
@@ -235,7 +235,7 @@ class SaleItemsModel extends DbConfig
      * @return array|bool Returns a single row array with to total amount of cash rounding and the qty of sales rounding was applied to
      */
     public function getRoundingTotal($stime, $etime){
-        $sql = "SELECT COALESCE(SUM(rounding), 0) as total, COALESCE(COUNT(id), 0) as num, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE (processdt>= :stime AND processdt<= :etime) AND rounding!=0";
+        $sql = "SELECT COALESCE(SUM(rounding), 0) as total, COALESCE(COUNT(id), 0) as num, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ".TransactionsModel::processDtRange()." AND rounding!=0";
         $placeholders = [":stime"=>$stime, ":etime"=>$etime];
 
         return $this->select($sql, $placeholders);

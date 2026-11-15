@@ -113,7 +113,7 @@ class WposAdminStats {
 
         // Group totals by sales source so POS, kitchen, dine-in, website and any future
         // channel are always summarized together without hard-coding each source name.
-        $sourceSql = "SELECT source, COALESCE(SUM(total), 0) as stotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ((processdt>= :stime AND processdt<= :etime) OR (processdt*1000>= :stime AND processdt*1000<= :etime)) AND status != 0 AND status != 3";
+        $sourceSql = "SELECT source, COALESCE(SUM(total), 0) as stotal, COUNT(id) as snum, COALESCE(GROUP_CONCAT(ref SEPARATOR ','),'') as refs FROM sales WHERE ".TransactionsModel::processDtRange()." AND status != 0 AND status != 3";
         $sourceParams = [':stime' => $stime, ':etime' => $etime];
         if (!empty($this->data->type)) {
             $sourceSql .= ' AND type = :type';
@@ -162,10 +162,10 @@ class WposAdminStats {
         $typeFilter = $this->data->type; // null | sale | invoice
 
         // Normalised sale time (ms) — supports legacy rows stored in seconds.
-        $norm  = 'CASE WHEN processdt > 100000000000 THEN processdt ELSE processdt*1000 END';
         $normS = 'CASE WHEN s.processdt > 100000000000 THEN s.processdt ELSE s.processdt*1000 END';
-        $range  = "($norm >= :stime AND $norm <= :etime)";
-        $rangeS = "($normS >= :stime AND $normS <= :etime)";
+        // Canonical range condition (shared with stats/general, sales/get, graph).
+        $range  = TransactionsModel::processDtRange();
+        $rangeS = TransactionsModel::processDtRange('s');
 
         $typeCond = '';
         $typeCondS = '';
